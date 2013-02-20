@@ -43,6 +43,7 @@ PDL::Graphics::Simple supports:
 
 =item Prima (via PDL::Graphics::Prima).
 
+=back
 
 =head1 FUNCTIONS
 
@@ -70,6 +71,28 @@ our @EXPORT = qw(spwin);
 
 # Knowledge base containing found info about each possible backend
 our $mods = {};
+our $last_successful_type = undef;
+
+##############################
+# Constructor - scan through registered subclasses and generate the correct one.
+
+=head2 new 
+
+=for usage
+
+ $w = new PDL::Graphics::Simple( %opts );
+
+=for ref
+
+new is the main constructor for PDL::Graphics::Simple.  It accepts a list of options
+about the type of window you want, including 
+
+=cut
+sub new {
+}
+
+
+
 
 
 ##############################

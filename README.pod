@@ -70,3 +70,24 @@ new is the main constructor for PDL::Graphics::Simple.  It accepts a list of opt
 about the type of window you want, including 
 
 =cut
+=head1 REPOSITORY
+
+L<https:/github.com/drzowie/PDL-Graphics-Simple>
+
+=head1 AUTHOR
+
+Craig DeForest, C<< <craig@deforest.org> >>
+
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright 2012 Craig DeForest
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of either: the Gnu General Public License v2 as
+published by the Free Software Foundation; or the Perl Artistic
+License included with the Perl language.
+
+see http://dev.perl.org/licenses/ for more information.
+
+=cut

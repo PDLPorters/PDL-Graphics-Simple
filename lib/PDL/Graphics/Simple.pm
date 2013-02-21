@@ -180,8 +180,8 @@ sub new {
 		my $a;
 		eval "\$a = $mods->{$engine}->{module}::check()";
 		my $s = ($a ? "ok" : "nope");
-		chomp $@;
-		$s .= "\n ($@)\n" if ($@);
+#		chomp $@;
+#		$s .= "\n ($@)\n" if ($@);
 		print $s."\n";
 		if($a) {
 		    $last_successful_type = $engine;
@@ -749,15 +749,15 @@ sub new {
 
     # Do different things for interactive and file types
     if($opt->{type} =~ m/^[iI]/) {
-	push(@params, "output"=>$opt->{output});
+	push(@params, "title"=>$opt->{output}) if(defined($opt->{output}));
 
 	# Interactive - try WXT, Aqua, X11 in that order
 	if($mod->{itype}) {
 	    $gpw = gpwin($mod->{itype}, @params);
 	} else {
-	    for my $try( 'wxt', 'aqua', 'x11' ) {
+	    attempt:for my $try( 'wxt', 'aqua', 'x11' ) {
 		eval { $gpw = gpwin($try, @params); };
-		last if($gpw);
+		last attempt if($gpw);
 	    }
 	    die "Couldn't start a gnuplot interactive window" unless($gpw);
 	    $mod->{itype} = $gpw->{terminal};
@@ -814,6 +814,13 @@ sub plot {
 	$me->{obj}->replot($po, map { (@$_) } @_);
     } else {
 	$me->{obj}->plot($po, map { (@$_) } @_);
+    }
+
+    if($me->{conv_fn}) {
+	print "converting $me->{conv_fn} to $me->{opt}->{output}...";
+	$a = rim($me->{conv_fn});
+	wim($a, $me->{opt}->{output});
+	unlink($me->{conv_fn});
     }
 }
 	

@@ -127,7 +127,82 @@ Most other standard file types are supported but are not guaranteed to work.
 
 =for ref
 
-RSN
+C<plot> plots zero or more traces of data on a graph.  It accepts two kinds of
+options: plot options that affect the whole plot, and curve options
+that affect each curve.  The arguments are divided into "curve blocks", each
+of which contains a curve options hash followed by data.  
+
+If the last argument is a hash ref, it is always treated as plot options.
+If the first and second arguments are both hash refs, then the first argument
+is treated as plot options and the second as curve options for the first curve
+block.
+
+=head3 Plot options:
+
+=over 3
+
+=item oplot
+
+If this is set, then the plot overplots a previous plot.
+
+=item title
+
+If this is set, it is a title for the plot as a whole.
+
+=item xlabel
+
+If this is set, it is a title for the X axis.
+
+=item ylabel
+
+If this is set, it is a title for the Y axis.
+
+=item key
+
+TBD
+
+=item xrange
+
+If this is set, it is a two-element ARRAY ref containing a range for the X axis.
+
+=item yrange
+
+If this is set, it is a two-element ARRAY ref containing a range for the Y axis.
+
+=back
+
+=head3 Curve options:
+
+=over 3
+
+=item with
+
+This names the type of curve to be plotted.  See below for supported curve types.
+
+=item legend
+
+This gives a name for the following curve, to be placed in a master plot legend.
+
+=back
+
+=head3 Curve types supported
+
+=over 3
+
+=item lines
+
+This is a simple line plot. It takes 1 or 2 columns of data.
+
+=item points
+
+This is a simple point plot.  It takes 1 or 2 columns of data.
+
+=item image
+
+This is a monochrome or RGB image.  It takes a 2-D or 3-D array of values, as
+(width x height x color-index).
+
+=back
 
 =cut
 =head1 Internals
@@ -182,27 +257,6 @@ curve block consists of an ARRAY ref with a hash in the 0 element and
 all required data in the following elements, one PDL per (ordinate/abscissa).
 For 1-D plot types (like points and lines) the PDLs must be 1D.  For image
 plot types the lone PDL must be 2D (monochrome) or 3D(RGB).
-
-Notes:
-
-=over 3
-
-=item replot/oplot
-
-One of the plot options should cause overplotting rather than direct clear plotting.
-
-=item plot types
-
-Standard plot types (lines, points, tbd) are generated as individual curves;
-the "lines" convenience routine in the parent module just invokes plot.
-
-=item argument parsing
-
-irregularities in arguments are parsed by the parent module.
-
-=back
-
-=head3 
 
 =cut
 =head1 REPOSITORY

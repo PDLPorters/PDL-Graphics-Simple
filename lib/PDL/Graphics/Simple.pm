@@ -175,12 +175,13 @@ sub new {
     unless($opt->{engine}) {
 	# find the first working subclass...
 	unless($last_successful_type) {
-	    attempt: for my $engine( sort keys %$mods ) {
+	    attempt: for my $engine( sort {$b cmp $a} keys %$mods ) {
 		print "Trying $engine ($mods->{$engine}->{engine})...";
 		my $a;
 		eval "\$a = $mods->{$engine}->{module}::check()";
 		my $s = ($a ? "ok" : "nope");
-		$s .= " ($@)" if ($@);
+		chomp $@;
+		$s .= "\n ($@)\n" if ($@);
 		print $s."\n";
 		if($a) {
 		    $last_successful_type = $engine;
@@ -387,7 +388,26 @@ sub plot {
     }
 
     $po = $plot_options->options($po);
-    
+
+    ##############################
+    # Check the plot options for correctness.
+    if( defined($po->{xrange}) and (
+	    !ref($po->{xrange}) or 
+	    ref($po->{xrange}) ne 'ARRAY' or
+	    @{$po->{xrange}} != 2 or
+	    $po->{xrange}->[0] == $po->{xrange}->[1])
+	) {
+	die "Invalid X range (must be a 2-element ARRAY ref with differing values)\n";
+    }
+
+    if( defined($po->{yrange}) and (
+	    !ref($po->{yrange}) or 
+	    ref($po->{yrange}) ne 'ARRAY' or
+	    @{$po->{yrange}} != 2 or
+	    $po->{yrange}->[0] == $po->{yrange}->[1])
+	) {
+	die "Invalid Y range (must be a 2-element ARRAY ref with differing values)\n";
+    }
 
     ##############################
     # Parse out curve blocks and check each one for existence.
@@ -640,27 +660,6 @@ curve block consists of an ARRAY ref with a hash in the 0 element and
 all required data in the following elements, one PDL per (ordinate/abscissa).
 For 1-D plot types (like points and lines) the PDLs must be 1D.  For image
 plot types the lone PDL must be 2D (monochrome) or 3D(RGB).
-
-Notes:
-
-=over 3
-
-=item replot/oplot
-
-One of the plot options should cause overplotting rather than direct clear plotting.
-
-=item plot types
-
-Standard plot types (lines, points, tbd) are generated as individual curves;
-the "lines" convenience routine in the parent module just invokes plot.
-
-=item argument parsing
-
-irregularities in arguments are parsed by the parent module.
-
-=back
-
-=head3 
 
 =cut
 

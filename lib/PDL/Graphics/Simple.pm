@@ -600,7 +600,7 @@ sub rsn {
 
 ############################## 
 ## Loop over all methods we are *supposed* to have and make a generic stub for each.
-for my $stub(qw/check new plot oplot replot/) {
+for my $stub(qw/check new plot/) {
     eval sprintf('sub %s { rsn( $_[0], "%s" )}',$stub, $stub);
 }  
 

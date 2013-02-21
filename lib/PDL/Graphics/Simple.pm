@@ -55,8 +55,8 @@ package PDL::Graphics::Simple;
 
 use strict;
 use warnings;
-use PDL::Lite;
-use PDL::Options q/parse/;
+use PDL;
+use PDL::Options q/iparse/;
 use File::Temp qw/tempfile tempdir/;
 
 our $VERSION = '0.1';
@@ -75,6 +75,7 @@ our @EXPORT = qw(spwin);
 our $mods = {};
 our $mod_abbrevs = undef;
 our $last_successful_type = undef;
+our $global_plot = undef;
 
 =head2 show
 
@@ -84,7 +85,7 @@ our $last_successful_type = undef;
 
 =for ref
 
-C<list> lists the supported engines.
+C<show> lists the supported engines and a one-line synopsis of each.
 
 =cut
 sub show {
@@ -166,7 +167,7 @@ sub new {
 	$opt_in = \%opt;
     }
 
-    my $opt = { parse( $new_defaults, $opt_in ) };
+    my $opt = { iparse( $new_defaults, $opt_in ) };
 
     ##############################
     # Pick out a working plot engine...
@@ -195,9 +196,9 @@ sub new {
     
     ##############################
     # Deal with abbreviations.  
-    # $mod_abbrevs becomes a hash linking unique abbreviated strings to their
-    # corresponding engine names.
-    _make_mod_abbrevs() unless($mod_abbrevs);
+    # This can't be done at load time since the modules have to self-register then -- so 
+    # we do it at run time instead.
+    $mod_abbrevs = _make_abbrevs($mods) unless($mod_abbrevs);
     
     my $engine = $mod_abbrevs->{lc($opt->{engine})};
     unless(defined($engine) and defined($mods->{$engine})) {
@@ -239,15 +240,237 @@ sub new {
 
 =for ref
 
-RSN
+C<plot> plots zero or more traces of data on a graph.  It accepts two kinds of
+options: plot options that affect the whole plot, and curve options
+that affect each curve.  The arguments are divided into "curve blocks", each
+of which contains a curve options hash followed by data.  
+
+If the last argument is a hash ref, it is always treated as plot options.
+If the first and second arguments are both hash refs, then the first argument
+is treated as plot options and the second as curve options for the first curve
+block.
+
+=head3 Plot options:
+
+=over 3
+
+=item oplot
+
+If this is set, then the plot overplots a previous plot.
+
+=item title
+
+If this is set, it is a title for the plot as a whole.
+
+=item xlabel
+
+If this is set, it is a title for the X axis.
+
+=item ylabel
+
+If this is set, it is a title for the Y axis.
+
+=item key
+
+TBD
+
+=item xrange
+
+If this is set, it is a two-element ARRAY ref containing a range for the X axis.
+
+=item yrange
+
+If this is set, it is a two-element ARRAY ref containing a range for the Y axis.
+
+=back
+
+=head3 Curve options:
+
+=over 3
+
+=item with
+
+This names the type of curve to be plotted.  See below for supported curve types.
+
+=item legend
+
+This gives a name for the following curve, to be placed in a master plot legend.
+
+=back
+
+=head3 Curve types supported
+
+=over 3
+
+=item lines
+
+This is a simple line plot. It takes 1 or 2 columns of data.
+
+=item points
+
+This is a simple point plot.  It takes 1 or 2 columns of data.
+
+=item image
+
+This is a monochrome or RGB image.  It takes a 2-D or 3-D array of values, as
+(width x height x color-index).
+
+=back
 
 =cut
-   
-sub plot {
 
+# Plot options have a bunch of names for familiarity to different package users.  
+# They're hammered into the gnuplot-like names.
+
+our $plot_options = new PDL::Options( {
+    oplot=> 0,
+    title => undef,
+    xlabel=> undef,
+    ylabel=> undef,
+    key   => undef,
+    xrange=> undef,
+    yrange=> undef
+    });
+$plot_options->synonyms( {
+    replot=>'oplot',
+    xtitle=>'xlabel',
+    ytitle=>'ylabel',
+    legend=>'key'
+    });
+
+    
+our $plot_types = {
+    lines  => { args=>[1,2], ndims=>[1]   },
+    points => { args=>[1,2], ndims=>[1]   },
+    image  => { args=>[1,3], ndims=>[2,3] },
+};
+our $plot_type_abbrevs = _make_abbrevs($plot_types);
+
+sub plot {
+    my $obj;
+    if(UNIVERSAL::isa($_[0],"PDL::Graphics::Simple")) {
+	$obj = shift;
+    } else {
+	$obj = $global_plot = new('PDL::Graphics::Simple');
+    }
+
+    my $curve_options = new PDL::Options( {
+	with => 'lines',
+	legend => undef
+					  });
+    $curve_options->synonyms( {
+	key =>'legend',
+	name=>'legend'
+			      });
+    $curve_options->incremental(1);
+
+    
+    ##############################
+    # Collect plot options.  These can be in a leading or trailing
+    # hash ref, with the trailing overriding the lead.  If the first
+    # two elements are hash refs, then the first is plot options and
+    # the second is curve options, otherwise we treat the first as curve options.
+    # A curve option hash is required for every curve.
+    my $po = {};
+    if(ref($_[0]) eq 'HASH'   and    ref($_[1]) eq 'HASH') {
+	for my $k(keys %{$_[0]}) {
+	    $po->{$k} = $_[0]->{$k};
+	}
+	shift;
+    }
+
+    if(ref($_[$#_]) eq 'HASH') {
+	for my $k(keys %{$_[$#_]}) {
+	    $po->{$k} = $_[$#_]->{$k};
+	};
+	pop;
+    }
+
+    $po = $plot_options->options($po);
+    
+
+    ##############################
+    # Parse out curve blocks and check each one for existence.
+    my @blocks = ();
+    while( @_ ) {
+	my $co = {};
+	my @args = ();
+
+	if (ref $_[0] eq 'HASH') {
+	    $co = shift;
+	} else {
+	    # Attempt to parse out curve option hash entries from an inline hash.
+	    # Keys must exists and not be refs and contain at least one letter.
+	    while( @_  and  !ref($_[0]) and $_[0] =~ m/[a-zA-Z]/ ) {
+		my $a = shift;
+		my $b = shift;
+		$co->{$a} = $b;
+	    }
+	}
+
+	while( @_ and  ( !ref($_[0])  or  UNIVERSAL::isa($_[0], 'PDL') ) ) {
+	    push(@args, pdl(shift));
+	}
+
+	##############################
+	# Now check options
+	$curve_options->options({legend=>undef});
+	my %co2 = %{$curve_options->options( $co )};
+	my $co2 = \%co2;
+
+	my $ptn = $plot_type_abbrevs->{ $co2->{with} };
+	unless( defined($ptn) and defined($plot_types->{$ptn}) ) {
+	    die "Unknown plot type $ptn\n";
+	}
+	my $pt = $plot_types->{$ptn};
+	$co2->{with} = $ptn;
+	
+	unless(@args == $pt->{args}->[0]  or  @args == $pt->{args}->[1]) {
+	    die sprintf("plot style %s requires %d or %d columns; you gave %d\n",$ptn,$pt->{args}->[0],$pt->{args}->[1],0+@args);
+	}
+	
+	# Add an index if needed
+	if( $pt->{args}->[1] - @args == 2 ) {
+	    unshift(@args, xvals($args[0]), yvals($args[0]));
+	}
+	if( $pt->{args}->[1] - @args == 1 ) {
+	    unshift(@args, xvals($args[0]) );
+	}
+
+	# Check that the PDL arguments all agree in a threading sense...
+	my @dims = map { [$_->dims] } @args;
+	my $dims;
+	{
+	    local $PDL::undefval = 1;
+	    $dims = pdl(@dims);
+	}
+	my $dmax = $dims->mv(1,0)->maximum;
+	unless( ( ($dims==1)  | ($dims==$dmax) )->all ) {
+	    die "Data dimensions do not agree in plot.\n";
+	}
+
+	# Push the curve block to the list.
+	push(@blocks, [$co2, @args] );
+    }
+
+    ##############################
+    # At long last, the parsing is over.  Dispatch the call.
+    our @plot_args = ($po,@blocks);
+    $obj->{obj}->plot( $po, @blocks );
 }
 
 sub oplot {
+    my $h;
+
+    if(ref($_[$#_]) eq 'HASH') {
+	$h = $_[$#_];
+    } else {
+	$h = {};
+	push(@_, $h);
+    }
+    $h->{replot} = 1;
+    
+    plot(@_);
 }
 
 sub line {
@@ -318,20 +541,21 @@ sub _regularize_size {
 
 ##########
 # make_mod_abbrevs - generate abbrev hash for module list.  Cheesy but fast to code.
-sub _make_mod_abbrevs {
-    $mod_abbrevs = {};
+sub _make_abbrevs {
+    my $hash = shift;
+    my $abbrevs = {};
     my %ab = ();
-    for my $engine(keys %$mods) {
-	my $s = $engine;
+    for my $k(keys %$hash) {
+	my $s = $k;
 	while(length($s)) {
-	    push(@{$ab{$s}},$engine);
+	    push(@{$ab{$s}},$k);
 	    chop $s;
 	}
-	
-	for my $k(keys %ab) {
-	    $mod_abbrevs->{$k} = $ab{$k}->[0] if( @{$ab{$k}} == 1);
-	}
     }
+    for my $k(keys %ab) {
+	$abbrevs->{$k} = $ab{$k}->[0] if( @{$ab{$k}} == 1);
+    }
+    return $abbrevs;
 }
 
 ##############################
@@ -365,7 +589,14 @@ for my $stub(qw/check new plot oplot replot/) {
 PDL::Graphics::Simple defines several subclasses that implement the
 individual interfaces.  The subclasses are very simple and inherit
 only a collection of stubroutines that die with a "not implemented"
-message. 
+message -- i.e. they are expected to contain a minimum set of methods
+on their own.
+
+Argument parsing and defaults are handled by the main
+PDL::Graphics::Simple class; actual plot commands are dispatched in a
+regularized form to the appropriate subclasses.  The subclasses are
+responsible for converting the regularized parameters to plot calls 
+in the form expected by their corresponding plot modules.
 
 =head2 Interface subclass methods
 
@@ -393,18 +624,12 @@ flag.
 C<new> creates and returns an appropriate plot object, or dies on
 failure.
 
-Each c<new> method should accept the following options, defined by the
-PDL::Graphics::Simple::new method (above).
+Each C<new> method should accept the following options, defined as in 
+the description for PDL::Graphics::Simple::new (above).  There is 
+no need to set default values as all argument should be set to 
+reasonable values by the superclass. 
 
-=over 3
-
-=item size
-
-=item type
-
-=item output
-
-=back
+Required options: C<size>, C<type>, C<output>. 
 
 =head3 plot
 
@@ -415,8 +640,6 @@ curve block consists of an ARRAY ref with a hash in the 0 element and
 all required data in the following elements, one PDL per (ordinate/abscissa).
 For 1-D plot types (like points and lines) the PDLs must be 1D.  For image
 plot types the lone PDL must be 2D (monochrome) or 3D(RGB).
-
-Details TBD.
 
 Notes:
 
@@ -451,7 +674,7 @@ irregularities in arguments are parsed by the parent module.
 ##
 #
 package PDL::Graphics::Simple::Gnuplot;
-use PDL::Options q/parse/;
+use PDL::Options q/iparse/;
 use File::Temp qw/tempfile/;
 
 our @ISA = q/PDL::Graphics::Simple::Stubs/;
@@ -507,7 +730,7 @@ sub new {
     my $class = shift;
     my $opt_in = shift;
     $opt_in = {} unless(defined($opt_in));
-    my $opt = { parse( $new_defaults, $opt_in ) };
+    my $opt = { iparse( $new_defaults, $opt_in ) };
     my $gpw;
 
     # Force a recheck on failure, in case the user fixed gnuplot.
@@ -575,7 +798,26 @@ sub new {
 
 # plot
 
-# oplot -> replot
+sub plot {
+    my $me = shift;
+
+    my $ipo = shift;
+    my $po = {
+	title  => $ipo->{title},
+	xlab   => $ipo->{xlabel},
+	ylab   => $ipo->{ylabel},
+	key    => $ipo->{key},
+	xrange => $ipo->{xrange},
+	yrange => $ipo->{yrange}
+    };
+
+    if($ipo->{oplot}) {
+	$me->{obj}->replot($po, map { (@$_) } @_);
+    } else {
+	$me->{obj}->plot($po, map { (@$_) } @_);
+    }
+}
+	
 
 ##############################
 # PGPLOT interface.

@@ -66,7 +66,7 @@ PDL::Graphics::Simple supports:
 
 =for ref
 
-C<list> lists the supported engines.
+C<show> lists the supported engines and a one-line synopsis of each.
 
 =cut
 =head2 new 
@@ -135,7 +135,14 @@ RSN
 PDL::Graphics::Simple defines several subclasses that implement the
 individual interfaces.  The subclasses are very simple and inherit
 only a collection of stubroutines that die with a "not implemented"
-message. 
+message -- i.e. they are expected to contain a minimum set of methods
+on their own.
+
+Argument parsing and defaults are handled by the main
+PDL::Graphics::Simple class; actual plot commands are dispatched in a
+regularized form to the appropriate subclasses.  The subclasses are
+responsible for converting the regularized parameters to plot calls 
+in the form expected by their corresponding plot modules.
 
 =head2 Interface subclass methods
 
@@ -159,18 +166,12 @@ flag.
 C<new> creates and returns an appropriate plot object, or dies on
 failure.
 
-Each c<new> method should accept the following options, defined by the
-PDL::Graphics::Simple::new method (above).
+Each C<new> method should accept the following options, defined as in 
+the description for PDL::Graphics::Simple::new (above).  There is 
+no need to set default values as all argument should be set to 
+reasonable values by the superclass. 
 
-=over 3
-
-=item size
-
-=item type
-
-=item output
-
-=back
+Required options: C<size>, C<type>, C<output>. 
 
 =head3 plot
 
@@ -181,8 +182,6 @@ curve block consists of an ARRAY ref with a hash in the 0 element and
 all required data in the following elements, one PDL per (ordinate/abscissa).
 For 1-D plot types (like points and lines) the PDLs must be 1D.  For image
 plot types the lone PDL must be 2D (monochrome) or 3D(RGB).
-
-Details TBD.
 
 Notes:
 

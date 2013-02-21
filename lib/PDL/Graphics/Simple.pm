@@ -73,6 +73,7 @@ our @EXPORT = qw(spwin);
 
 # Knowledge base containing found info about each possible backend
 our $mods = {};
+our $mod_abbrevs = undef;
 our $last_successful_type = undef;
 
 =head2 show
@@ -107,7 +108,7 @@ sub show {
 
 =for ref
 
-new is the main constructor for PDL::Graphics::Simple.  It accepts a list of options
+c<new> is the main constructor for PDL::Graphics::Simple.  It accepts a list of options
 about the type of window you want:
 
 =over 3
@@ -127,31 +128,123 @@ inch.
 
 =item type
 
-This should describe the kind of plot to create. The default is
+This describes the kind of plot to create. The default is
 "interactive" if neither type nor output are specified, and should
 result in a plot being displayed (e.g. via X11 or the engine's default
-display method).
+display method). If the output is specified and appears to be a qualified
+graphics filename (i.e. has a dot-extension with 2-4 characters at the end)
+the default is 'f'.
 
-Accepted values are "interactive" and "file".
+Accepted values are "interactive" and "file", which can be abbreviated
+to 'i' and 'f'.
 
 =item output
 
 This should be a window number for interactive plots, or a file name
 for file plots.  The default file name is "plot.png" in the current
-working directory.  The output should be autodetected and given the
-correct output style for common extensions.  At least ".png", ".pdf",
-".ps", and ".svg" should be supported.  It is acceptable to convert
-the file after generation by the back-end engine.  If "output" is
-defined and non-numeric, then "type" should default to "file".
+working directory.  Individual plotting modules are meant to support
+at least '.png', '.pdf', and '.ps', if necessary via format conversion.
+Most other standard file types are supported but are not guaranteed to work.
 
 =back
 
-
 =cut
+our $dstr = '';
+our $new_defaults = {
+    engine => '',
+    size => [6,4.5,'in'],
+    type => $dstr,
+    output => $dstr
+};
+
 sub new {
+    my $pkg = shift;
+    my $opt_in = shift;
+    $opt_in = {} unless(defined($opt_in));
+    if(!(ref($opt_in))) {
+	my %opt = ($opt_in, @_);
+	$opt_in = \%opt;
+    }
+
+    my $opt = { parse( $new_defaults, $opt_in ) };
+
+    ##############################
+    # Pick out a working plot engine...
+
+    unless($opt->{engine}) {
+	# find the first working subclass...
+	unless($last_successful_type) {
+	    attempt: for my $engine( sort keys %$mods ) {
+		print "Trying $engine ($mods->{$engine}->{engine})...";
+		my $a;
+		eval "\$a = $mods->{$engine}->{module}::check()";
+		my $s = ($a ? "ok" : "nope");
+		$s .= " ($@)" if ($@);
+		print $s."\n";
+		if($a) {
+		    $last_successful_type = $engine;
+		    last attempt;
+		}
+	    }
+	      unless( $last_successful_type ) {
+		  die "Sorry, all known plotting engines failed.  Install one and try again.\n";
+	      }
+	}
+	$opt->{engine} = $last_successful_type;
+    }
+    
+    ##############################
+    # Deal with abbreviations.  
+    # $mod_abbrevs becomes a hash linking unique abbreviated strings to their
+    # corresponding engine names.
+    _make_mod_abbrevs() unless($mod_abbrevs);
+    
+    my $engine = $mod_abbrevs->{lc($opt->{engine})};
+    unless(defined($engine) and defined($mods->{$engine})) {
+	die "$opt->{engine} is not a known plotting engine. Use PDL::Graphics::Simple::show() for a list. ";
+    }
+    
+    
+    my $size = _regularize_size($opt->{size},'in');
+
+    my $type = $opt->{type};
+    my $output = $opt->{output};
+    
+    unless($type) {
+	# Default to file if output looks like a filename; to interactive otherwise.
+	$type = (  ($output =~ m/\.(\w{2,4})$/) ? 'f' : 'i'  );
+    }	
+    unless($type =~ m/^[fi]/i) {
+	die "$type is not a known output type (must be 'file' or 'interactive')\n";
+    }
+
+    unless($output) {
+	$output = ($type eq 'f') ? "plot.png" : "";
+    }
+
+    my $submod= $mods->{$engine}->{module};
+    my $params = { size=>$size, type=>$type, output=>$output };
+    my $obj = eval "new $mods->{$engine}->{module}(\$params)";
+    my $me = { engine=>$engine, params=>$params, obj=>$obj };
+    return bless($me,$pkg);
+
 }
 
+=head2 plot
+
+=for usage
+
+ $w = new PDL::Graphics::Simple ( %opts );
+ $w->plot($data);
+
+=for ref
+
+RSN
+
+=cut
+   
 sub plot {
+
 }
 
 sub oplot {
@@ -168,6 +261,8 @@ sub image {
 
 ##############################
 # Utilities.
+
+### Units table - cheesy but also horrible.
 our $units = {
     'inch'=>1,
     'inc'=>1,
@@ -182,6 +277,7 @@ our $units = {
     'poin'=>72,
     'poi'=>72,
     'po'=>72,
+    'pt'=>72,
     'px'=>100,
     'pixels'=>100,
     'pixel'=>100,
@@ -192,7 +288,9 @@ our $units = {
     'mm' => 25.4,
     'cm' => 2.54
 };
-sub regularize_size {
+
+### regularize_size -- handle the various cases for the size option to new.
+sub _regularize_size {
     my $size = shift;
     my $unit = shift;
     
@@ -216,6 +314,24 @@ sub regularize_size {
     $ret->[1] = $size->[1] / $units->{$size->[2]} * $units->{$unit};
     $ret->[2] = $unit;
     return $ret;
+}
+
+##########
+# make_mod_abbrevs - generate abbrev hash for module list.  Cheesy but fast to code.
+sub _make_mod_abbrevs {
+    $mod_abbrevs = {};
+    my %ab = ();
+    for my $engine(keys %$mods) {
+	my $s = $engine;
+	while(length($s)) {
+	    push(@{$ab{$s}},$engine);
+	    chop $s;
+	}
+	
+	for my $k(keys %ab) {
+	    $mod_abbrevs->{$k} = $ab{$k}->[0] if( @{$ab{$k}} == 1);
+	}
+    }
 }
 
 ##############################
@@ -294,9 +410,11 @@ PDL::Graphics::Simple::new method (above).
 
 C<plot> generates a plot.  It should accept a standardized collection of
 options as generated by the PDL::Graphics::Simple plot method: standard
-plot options as a hash ref, followed by curve blocks consisting of 
-a curve hash ref defining the curve, followed by the exact required 
-number of PDLs for that curve type.  
+plot options as a hash ref, followed by a list of curve blocks.  Each
+curve block consists of an ARRAY ref with a hash in the 0 element and
+all required data in the following elements, one PDL per (ordinate/abscissa).
+For 1-D plot types (like points and lines) the PDLs must be 1D.  For image
+plot types the lone PDL must be 2D (monochrome) or 3D(RGB).
 
 Details TBD.
 
@@ -377,7 +495,7 @@ sub check {
 ##########
 # PDL::Graphics::Simple::Gnuplot::new
 # Constructor
-our $dstr = '%%default%%';
+our $dstr = '';
 our $new_defaults = {
     size => [6,4.5,'in'],
     type => $dstr,
@@ -400,26 +518,16 @@ sub new {
 
     my $mod = $PDL::Graphics::Simple::mods->{gnuplot};
     
-    if($opt->{type} !~ m/^[ifIF]/ and $opt->{type} ne $dstr ) {
-	die "PDL::Graphics::Simple::new: unknown window type '$opt->{type}'\n\t(must be 'interactive' or 'file')\n";	}
-
-    if($opt->{type} eq $dstr) {
-	$opt->{type} = (   ( $opt->{output} eq $dstr) ? 'i' : 'f'   );
-    }
-
-
     # Generate the @params array to feed to gnuplot
     my @params;
-    my $size = PDL::Graphics::Simple::regularize_size($opt->{size},'in');
-    push( @params, "size" => $size );
-    
+    push( @params, "size" => $opt->{size} );
     
     # tempfile gets set if we need to write to a temporary file for image conversion
     my $conv_tempfile = '';
 
     # Do different things for interactive and file types
     if($opt->{type} =~ m/^[iI]/) {
-	push(@params, "output"=>$opt->{output}) unless($opt->{output} eq $dstr);
+	push(@params, "output"=>$opt->{output});
 
 	# Interactive - try WXT, Aqua, X11 in that order
 	if($mod->{itype}) {
@@ -435,10 +543,6 @@ sub new {
     } else {
 	# File output - parse out file type, and then see if we support it.
 	# (Maybe the parsing part could be pushed into a utility routine...)
-	if($opt->{output} eq $dstr) {
-	    $opt->{output} = "plot.png";
-	}
-
 
 	# Filename extension -- 2-4 characters 
 	my $ext;

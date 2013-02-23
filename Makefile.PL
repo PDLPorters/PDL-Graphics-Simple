@@ -31,7 +31,7 @@ sub MY::postamble {
     my $text = <<'FOO';
 install ::
 	@echo "Updating PDL documentation database...";
-	@$(PERL) -e 'use PDL::Doc; eval { PDL::Doc::add_module("PDL::Graphics::Simple"); }; '
+	@$(PERL) -d -e "use PDL::Doc; PDL::Doc::add_module(q[PDL::Graphics::Simple] ); "
 
 FOO
     return $text;

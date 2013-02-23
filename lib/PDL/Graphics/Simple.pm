@@ -29,9 +29,11 @@ important than configurability, plot quality, or speed.
 Only 2-D plotting is supported.  For 3-D plotting, use PDL::Graphics::Gnuplot
 or PDL::Graphics::Trid directly.
 
-=head1 SUPPORTED BACKENDS
+=head1 SUPPORTED GRAPHICS ENGINES
 
-PDL::Graphics::Simple supports:
+PDL::Graphics::Simple supports the following graphics engines as
+distributed.  Additional modules can be loaded dynamically;
+see C<register>, below.
 
 =over 3
 
@@ -39,15 +41,9 @@ PDL::Graphics::Simple supports:
 
 =item PGPLOT  (via PDL::Graphics::PGPLOT::Window)
 
-=item PLplot (via PDL::Graphics::PLplot)
-
-=item Prima (via PDL::Graphics::Prima).
-
 =back
 
 =head1 FUNCTIONS
-
-(More to come RSN)
 
 =cut
 
@@ -58,8 +54,9 @@ use warnings;
 use PDL;
 use PDL::Options q/iparse/;
 use File::Temp qw/tempfile tempdir/;
+use Scalar::Util q/looks_like_number/;
 
-our $VERSION = '0.1';
+our $VERSION = '0.002';
 
 ##############################
 # Exporting
@@ -150,12 +147,11 @@ Most other standard file types are supported but are not guaranteed to work.
 =back
 
 =cut
-our $dstr = '';
 our $new_defaults = {
     engine => '',
     size => [6,4.5,'in'],
-    type => $dstr,
-    output => $dstr
+    type => '',
+    output => ''
 };
 
 sub new {
@@ -273,15 +269,25 @@ If this is set, it is a title for the Y axis.
 
 =item key
 
-TBD
+If this is set, it should be a string containing two words: either
+"top", "center", or "bottom" followed by "left", "center", or "right".
+The words may be abbreviated.  
 
 =item xrange
 
 If this is set, it is a two-element ARRAY ref containing a range for the X axis.
+If it is clear, the engine or plot module is responsible for setting the range.
 
 =item yrange
 
 If this is set, it is a two-element ARRAY ref containing a range for the Y axis.
+If it is clear, the engine or plot module is responsible for setting the range.
+
+=item crange 
+
+If this is set, it is a two-element ARRAY ref containing a range for color values,
+full black to full white.  If it is clear, the engine or plot module is responsible for
+setting the range.
 
 =back
 
@@ -314,14 +320,15 @@ This is a simple point plot.  It takes 1 or 2 columns of data.
 =item image
 
 This is a monochrome or RGB image.  It takes a 2-D or 3-D array of values, as
-(width x height x color-index).
+(width x height x color-index).  There is no interface for pseudocolor images - 
+monochrome may be greyscale or a fixed color table depending on implementation.
 
 =back
 
 =cut
 
 # Plot options have a bunch of names for familiarity to different package users.  
-# They're hammered into the gnuplot-like names.
+# They're hammered into a single simplified set for transfer to the engines.
 
 our $plot_options = new PDL::Options( {
     oplot=> 0,
@@ -330,9 +337,11 @@ our $plot_options = new PDL::Options( {
     ylabel=> undef,
     key   => undef,
     xrange=> undef,
-    yrange=> undef
+    yrange=> undef,
+    crange=> undef,
     });
 $plot_options->synonyms( {
+    cbrange=>'crange',
     replot=>'oplot',
     xtitle=>'xlabel',
     ytitle=>'ylabel',
@@ -365,6 +374,15 @@ sub plot {
 			      });
     $curve_options->incremental(1);
 
+
+    ##############################
+    # Trap some simple errors
+    if($#_ == 0) {
+	die "plot: requires at least one argument to plot!\n";
+    }
+    if($#_ == 1  and  ref($_[0]) eq 'HASH') {
+	die "plot: requires at least one argument to plot, in addition to plot options\n";
+    }
     
     ##############################
     # Collect plot options.  These can be in a leading or trailing
@@ -428,7 +446,7 @@ sub plot {
 	    }
 	}
 
-	while( @_ and  ( !ref($_[0])  or  UNIVERSAL::isa($_[0], 'PDL') ) ) {
+	while( @_ and  (  UNIVERSAL::isa($_[0], 'PDL') or looks_like_number($_[0]) ) )  {
 	    push(@args, pdl(shift));
 	}
 
@@ -449,7 +467,7 @@ sub plot {
 	    die sprintf("plot style %s requires %d or %d columns; you gave %d\n",$ptn,$pt->{args}->[0],$pt->{args}->[1],0+@args);
 	}
 	
-	# Add an index if needed
+	# Add an index variable if needed
 	if( $pt->{args}->[1] - @args == 2 ) {
 	    unshift(@args, xvals($args[0]), yvals($args[0]));
 	}
@@ -469,6 +487,12 @@ sub plot {
 	    die "Data dimensions do not agree in plot.\n";
 	}
 
+	# Check that the number of dimensions is correct...
+	if($dims->dim(0) != $pt->{ndims}->[0]  and  
+	   ((!defined($pt->{ndims}->[1])) or ($dims->dim(0) != $pt->ndims->[1]))) {
+	    die "Data dimension (".$dims->dim(0)."-D PDLs) is not correct for plot type $ptn";
+	}
+
 	# Push the curve block to the list.
 	push(@blocks, [$co2, @args] );
     }
@@ -478,6 +502,22 @@ sub plot {
     our @plot_args = ($po,@blocks);
     $obj->{obj}->plot( $po, @blocks );
 }
+
+=head2 oplot
+
+=for usage
+
+ $w = new PDL::Graphics::Simple ( %opts );
+ $w->plot($data);
+ $w->oplot($more_data);
+
+=for ref 
+
+C<oplot> is a convenience interface.  It is exactly
+equivalent to C<plot> except it sets the plot option C<oplot>,
+so that the plot will be overlain on the previous one.
+
+=cut
 
 sub oplot {
     my $h;
@@ -493,14 +533,42 @@ sub oplot {
     plot(@_);
 }
 
-sub line {
+=head2 line, points, image, imag
+
+=for usage
+
+ $w = new PDL::Graphics::Simple ( % opts );
+ $w->line($data);
+
+=for ref
+
+C<line>, C<points>, C<image>, and C<imag> are convenience
+interfaces.  They are exactly equivalent to C<plot> except that
+they set the default "with" curve option to the appropriate
+plot type.
+
+=cut
+
+sub _convenience_plot{
+    my( $type, $me, @args ) = @_;
+    die "Not enough args to PDL::Graphics::Simplar::$type()\n" if( @args < 2 );
+    if( ref($args[0]) eq 'HASH' ) {
+	if( ref($args[1]) eq 'HASH' ) {
+	    $args[1]->{with} = $type;
+	} else {
+	    $args[0]->{with} = $type;
+	}
+    } else {
+	unshift(@args, 'with', $type);
+    }
+    plot( $me, @args );
 }
 
-sub points {
-}
+sub line   { _convenience_plot( 'line',   @_ ); }
+sub points { _convenience_plot( 'points', @_ ); }
+sub image  { _convenience_plot( 'image',  @_ ); }
+sub imag   { _convenience_plot( 'image',  @_ ); }
 
-sub image {
-}
 
 ##############################
 # Utilities.
@@ -578,6 +646,67 @@ sub _make_abbrevs {
     return $abbrevs;
 }
 
+=head2 register
+
+=for usage
+
+ PDL::Graphics::Simple::register( $module_name );
+
+=for ref
+
+This is the registration mechanism for new driver methods for C<PDL::Graphics::Simple>.
+Compliant drivers should announce themselves at compile time by calling C<register>.  
+At call time they should have already defined a package global hash ref, C<$mod>, containing
+the following keys:
+
+=over
+
+=item shortname
+
+This is the short name of the engine, by which users refer to it colloquially.
+
+=item module
+
+This is the fully qualified package name of the module itself.
+
+=item engine
+
+This is the fully qualified package name of the Perl API for the graphics engine.
+
+=item synopsis
+
+This is a brief string describing the backend
+
+=item pgs_version 
+
+This is a one-period version number of PDL::Graphics::Simple against which
+the module has been tested.  A warning will be thrown if the version isn't the
+same as C<$PDL::Graphics::Simple::VERSION>.
+
+=back
+
+=cut
+sub register {
+    my $module = shift;
+    
+    my $modname = "\$${module}::mod";
+    die "PDL::Graphics::Simple::register: tried to register $module \n\t...but $modname wasn't defined.\n"
+	unless (eval qq{defined($modname) and ref($modname) eq 'HASH';});
+
+    my $mod = eval $modname;
+
+    for(qw/shortname module engine synopsis pgs_version/) {
+	die "PDL::Graphics::Simple::register: $modname looks fishy; I give up\n" 
+	    unless( defined($mod->{$_}));
+    }
+
+    warn "PDL::Graphics::Simple::register: $module is out of date - winging it"
+	unless($mod->{pgs_version} eq $VERSION);
+
+    $mods->{$mod->{shortname}} = $mod;
+}
+
+
 ##############################
 # Methods.
 # 
@@ -587,22 +716,6 @@ sub _make_abbrevs {
 # The "new" method should check that its module loads properly and the constructor
 # succeeded, and should die if it failed.
 
-
-##############################
-# Stubs subclass -- die if anyone tries anything funny.
-package PDL::Graphics::Simple::Stubs;
-## Generic stub
-sub rsn {
-    my($pack, $name) = @_;
-    $pack = ref $pack if(ref $pack);
-    die("PDL::Graphics::Simple: ${name}() isn't yet implemented for ${pack}.\n");
-}
-
-############################## 
-## Loop over all methods we are *supposed* to have and make a generic stub for each.
-for my $stub(qw/check new plot/) {
-    eval sprintf('sub %s { rsn( $_[0], "%s" )}',$stub, $stub);
-}  
 
 =head1 Internals
 
@@ -676,13 +789,15 @@ package PDL::Graphics::Simple::Gnuplot;
 use PDL::Options q/iparse/;
 use File::Temp qw/tempfile/;
 
-our @ISA = q/PDL::Graphics::Simple::Stubs/;
-
-$PDL::Graphics::Simple::mods->{gnuplot} = {
-    module => 'PDL::Graphics::Simple::Gnuplot',
+our $mod = {
+    shortname => 'gnuplot',
+    module=>'PDL::Graphics::Simple::Gnuplot',
     engine => 'PDL::Graphics::Gnuplot',
-    synopsis=> 'Gnuplot 2D/3D (versatile; beautiful output)'
+    synopsis=> 'Gnuplot 2D/3D (versatile; beautiful output)',
+    pgs_version=> '0.002'
 };
+PDL::Graphics::Simple::register( 'PDL::Graphics::Simple::Gnuplot' );
+
 
 ##########
 # PDL::Graphics::Simple::Gnuplot::check
@@ -690,8 +805,6 @@ $PDL::Graphics::Simple::mods->{gnuplot} = {
 sub check {
     my $force = shift;
     $force = 0 unless(defined($force));
-
-    my $mod = $PDL::Graphics::Simple::mods->{gnuplot};
 
     return $mod->{ok} unless( $force or !defined($mod->{ok}) );
 
@@ -717,11 +830,10 @@ sub check {
 ##########
 # PDL::Graphics::Simple::Gnuplot::new
 # Constructor
-our $dstr = '';
 our $new_defaults = {
     size => [6,4.5,'in'],
-    type => $dstr,
-    output => $dstr
+    type => '',
+    output => ''
 };
 
 
@@ -735,18 +847,16 @@ sub new {
     # Force a recheck on failure, in case the user fixed gnuplot.
     # Also loads PDL::Graphics::Gnuplot.
     unless(check()) {
-	check(1);
+	die "$mod->{shortname} appears nonfunctional\n" unless(check(1));
     }
 
-    my $mod = $PDL::Graphics::Simple::mods->{gnuplot};
-    
     # Generate the @params array to feed to gnuplot
     my @params;
     push( @params, "size" => $opt->{size} );
     
     # tempfile gets set if we need to write to a temporary file for image conversion
     my $conv_tempfile = '';
-
+    
     # Do different things for interactive and file types
     if($opt->{type} =~ m/^[iI]/) {
 	push(@params, "title"=>$opt->{output}) if(defined($opt->{output}));
@@ -785,7 +895,7 @@ sub new {
 
 	    # Term is invalid but png is supported - set up a tempfile for conversion.
 	    my($fh);
-	    ($fh,$conv_tempfile) = tempfile();
+	    ($fh,$conv_tempfile) = tempfile('pgg_gnuplot_XXXX');
 	    close $fh;
 	}
 	push( @params, "output" => ($conv_tempfile || $opt->{output}) );
@@ -807,7 +917,9 @@ sub plot {
 	ylab   => $ipo->{ylabel},
 	key    => $ipo->{key},
 	xrange => $ipo->{xrange},
-	yrange => $ipo->{yrange}
+	yrange => $ipo->{yrange},
+	cbrange=> $ipo->{crange},
+	clut   => 'sepia'
     };
 
     if($ipo->{oplot}) {
@@ -825,26 +937,157 @@ sub plot {
 }
 	
 
-##############################
-# PGPLOT interface.
-$PDL::Graphics::Simple::mods->{pgplot} = { # register PGPLOT
-    module => 'PDL::Graphics::Simple::PGPLOT',
-    engine => 'PDL::Graphics::PGPLOT::Window',
-    synopsis => 'PGPLOT (old but trusted)'
-};
+######################################################################
+######################################################################
+######################################################################
+###
+###
+### PGPLOT interface.
+###
+##
+#
+
 package PDL::Graphics::Simple::PGPLOT;
-our @ISA = q/PDL::Graphics::Simple::Stubs/;
+use File::Temp qw/tempfile/;
+use PDL::Options q/iparse/;
 
-##############################
-# Prima interface.
-$PDL::Graphics::Simple::mods->{prima} = { # register Prima
-    module  => 'PDL::Graphics::Simple::Prima',
-    engine => 'PDL::Graphics::Prima',
-    synopsis => 'Prima (under devel.; fast, interactive.)'
-}; 
-package PDL::Graphics::Simple::Prima;
-our @ISA = q/PDL::Graphics::Simple::Stubs/;
+our $mod = {
+    shortname => 'pgplot',
+    module=>'PDL::Graphics::Simple::PGPLOT',
+    engine => 'PDL::Graphics::PGPLOT::Window',
+    synopsis=> 'PGPLOT (old but trusted)',
+    pgs_version=> '0.002'
+};
+PDL::Graphics::Simple::register( 'PDL::Graphics::Simple::PGPLOT' );
 
+##########
+# PDL::Graphics::Simple::PGPLOT::check
+# Checker
+
+sub check {
+    my $force = shift;
+    $force = 0 unless(defined($force));
+
+    return $mod->{ok} unless( $force or !defined($mod->{ok}) );
+    
+    eval 'use PDL::Graphics::PGPLOT::Window;';
+    if($@) {
+	$mod->{ok} = 0;
+	$mod->{msg} = $@;
+	return 0;
+    }
+    
+    # Module loaded OK, now try to extract valid devices from it
+    my ($fh,$tf) = tempfile('pgg_pgplot_XXXX');
+    close $fh;
+
+    my $cmd = qq{|perl -e "use PGPLOT; open STDOUT,q[>$tf] || die; open STDERR,STDOUT || die; pgopen(q[?])"};
+    open FOO,$cmd;
+    print FOO "?\n";
+    close FOO;
+    open FOO,"<$tf";
+    my @lines = grep /^\s+\//, (<FOO>) ;
+    close FOO;
+    unlink $tf;
+    
+    $mod->{devices} = { map { chomp; s/^\s*\///; s/\s.*//; ($_,1) } @lines };
+
+    if( $mod->{devices}->{'XWINDOW'} ) {
+	$mod->{disp_dev} = 'XWINDOW';
+    } elsif($mod->{devices}->{'XSERVE'} ) {
+	$mod->{disp_dev} = 'XSERVE';
+    } else {
+	$mod->{ok} = 0;
+	die "Your PGPLOT library loaded OK but can't display graphics. Giving up.\n";
+    }
+
+    return 1;
+}
+
+##########
+# PDL::Graphics::Simple::PGPLOT::new
+our $new_defaults ={
+    size => [8,6,'in'],
+    type => '',
+    output=>''
+};
+
+sub new {
+    my $pkg = shift;
+    my $opt_in = shift;
+    my $opt = { iparse( $new_defaults, $opt_in ) };
+    
+    my $pgw;
+    
+    # Force a recheck on failure, in case the user fixed PGPLOT.
+    # Also loads PDL::Graphics::PGPLOT::Window.
+    unless(check()) {
+	die "$mod->{shortname} appears nonfunctional\n" unless(check(1));
+    }
+
+    # Figure the device name and size to feed to PGPLOT.
+    # size has already been regularized.
+    if( $opt->{type} =~ m/^[iI]/) {
+	my $dev = ( defined($opt->{output}) ? $opt->{output} : "" ) . "/" . $mod->{disp_dev};
+	print "dev='$dev'\n";
+	print "opt->size is ".join(",",@{$opt->{size}})."\n";
+	eval '$pgw = pgwin( $dev, {size=>[ $opt->{size}->[0], $opt->{size}->[1] ]} );';
+	if($@) {
+	    die $@;
+	}
+
+    } else {
+	die "PGPLOT file output is not yet supported. RSN!";
+    }
+
+    my $me = { opt=>$opt, obj=>$pgw };
+    return bless($me, 'PDL::Graphics::Simple::PGPLOT');
+}
+
+our $pgplot_methods = {
+    'line'   => 'line',
+    'lines'  => 'line',
+    'point'  => 'points',
+    'points' => 'points',
+    'image'  => 'imag'
+};
+
+sub plot {
+    my $me = shift;
+    my $ipo = shift;
+    my $po = {
+	title  => $ipo->{title},
+	xtitle => $ipo->{xlabel},
+	ytitle => $ipo->{ylabel},
+	xrange => $ipo->{xrange},
+	yrange => $ipo->{yrange}
+    };
+    my $more = 0;
+
+    if($ipo->{oplot}) {
+	$me->{obj}->hold;
+    } else {
+	$me->{obj}->release;
+    }
+
+    warn "P::G::S::PGPLOT: key not implemented yet" if($ipo->{key});
+
+    while(@_) {
+	my ($co, @data) = @{shift()};
+
+	my $pgpm = $pgplot_methods->{$co->{with}};
+	die "Unknown curve option 'with $co->{with}'!" unless($pgpm);
+
+	my $str = sprintf('$me->{obj}->%s(@data%s)',
+			  $pgpm,
+			  ($me->{obj}->{held} ? '' : ',$po')
+	    );
+	print "$str\n";
+	eval $str;
+	$me->{obj}->hold;
+    }
+    $me->{obj}->release;
+}
 
 1;
 

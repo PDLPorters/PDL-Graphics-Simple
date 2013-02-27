@@ -339,6 +339,7 @@ our $plot_options = new PDL::Options( {
     xrange=> undef,
     yrange=> undef,
     crange=> undef,
+    bounds=> undef
     });
 $plot_options->synonyms( {
     cbrange=>'crange',
@@ -407,8 +408,31 @@ sub plot {
 
     $po = $plot_options->options($po);
 
+
     ##############################
     # Check the plot options for correctness.
+
+    ### bounds is a synonym for xrange/yrange together.
+    ### (dcm likes it)
+    if(defined($po->{bounds})) {
+	if( !ref($po->{bounds})  or  
+	    ref($po->{bounds}) ne 'ARRAY'  or
+	    @{$po->{bounds}} != 2 
+	    ) {
+	    die "Bounds option must be a 2-element ARRAY ref containing (xrange, yrange)\n";
+	}
+
+	if( defined($po->{bounds}->[0]) ) {
+	    print STDERR "WARNING: bounds overriding xrange since both were specified\n"  if(defined($po->{xrange}));
+	    $po->{xrange} = $po->{bounds}->[0];
+	}
+
+	if( defined($po->{bounds}->[1]) ) {
+	    print STDERR "WARNING: bounds overriding yrange since both were specified\n"  if(defined($po->{yrange}));
+	    $po->{yrange} = $po->{bounds}->[1];
+	}
+    }
+
     if( defined($po->{xrange}) and (
 	    !ref($po->{xrange}) or 
 	    ref($po->{xrange}) ne 'ARRAY' or
@@ -426,6 +450,9 @@ sub plot {
 	) {
 	die "Invalid Y range (must be a 2-element ARRAY ref with differing values)\n";
     }
+
+	
+
 
     ##############################
     # Parse out curve blocks and check each one for existence.
@@ -551,7 +578,7 @@ plot type.
 
 sub _convenience_plot{
     my( $type, $me, @args ) = @_;
-    die "Not enough args to PDL::Graphics::Simplar::$type()\n" if( @args < 2 );
+    die "Not enough args to PDL::Graphics::Simple::$type()\n" if( @args < 1 );
     if( ref($args[0]) eq 'HASH' ) {
 	if( ref($args[1]) eq 'HASH' ) {
 	    $args[1]->{with} = $type;
@@ -1060,8 +1087,14 @@ sub plot {
 	xtitle => $ipo->{xlabel},
 	ytitle => $ipo->{ylabel},
 	xrange => $ipo->{xrange},
-	yrange => $ipo->{yrange}
+	yrange => $ipo->{yrange},
     };
+    my %color_opts = ();
+    if(defined($ipo->{crange})) {
+	$color_opts{'min'} = $ipo->{crange}->[0] if(defined($ipo->{crange}->[0]));
+	$color_opts{'max'} = $ipo->{crange}->[0] if(defined($ipo->{crange}->[1]));
+    }
+    
     my $more = 0;
 
     if($ipo->{oplot}) {
@@ -1074,13 +1107,28 @@ sub plot {
 
     while(@_) {
 	my ($co, @data) = @{shift()};
+	my @extra_opts = ();
 
 	my $pgpm = $pgplot_methods->{$co->{with}};
 	die "Unknown curve option 'with $co->{with}'!" unless($pgpm);
 
+	if($pgpm eq 'imag') {
+	    for my $k(keys %color_opts) {
+		$po->{$k} = $color_opts{$k};
+	    }
+	    my $transform = $me->{obj}->transform(ImageDimensions => [$data[2]->dim(0),$data[2]->dim(1)],
+						  Angle => 0,
+						  Pixinc=>1,
+						  RefPos=>[ [ 0,0],[0,0] ]
+		);
+		
+	    
+	}
+	
 	my $str = sprintf('$me->{obj}->%s(@data%s)',
 			  $pgpm,
 			  ($me->{obj}->{held} ? '' : ',$po')
+
 	    );
 	print "$str\n";
 	eval $str;
@@ -1090,6 +1138,16 @@ sub plot {
 }
 
 1;
+
+=head1 ARCHITECTURE
+
+PDL::Graphics::Simple works through a central object-and-dispatch
+system rather than taking full advantage of inheritance.  That is for
+two reasons: (1) it makes central control mildly easier going forward
+forward, since calls are dispatched through the main module; and (2)
+it makes the non-object-oriented interface easier to implement since the
+main interace modules are in one place and can access the global object
+easily.
 
 =head1 REPOSITORY
 

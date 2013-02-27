@@ -29,6 +29,10 @@ important than configurability, plot quality, or speed.
 Only 2-D plotting is supported.  For 3-D plotting, use PDL::Graphics::Gnuplot
 or PDL::Graphics::Trid directly.
 
+When plotting to a file, the file output is not guaranteed to be present
+until the plot object is destroyed (e.g. by being undefed or going out of
+scope).
+
 =head1 SUPPORTED GRAPHICS ENGINES
 
 PDL::Graphics::Simple supports the following graphics engines as
@@ -126,15 +130,10 @@ inch.
 
 =item type
 
-This describes the kind of plot to create. The default is
-"interactive" if neither type nor output are specified, and should
-result in a plot being displayed (e.g. via X11 or the engine's default
-display method). If the output is specified and appears to be a qualified
-graphics filename (i.e. has a dot-extension with 2-4 characters at the end)
-the default is 'f'.
-
-Accepted values are "interactive" and "file", which can be abbreviated
-to 'i' and 'f'.
+This describes the kind of plot to create. It will match either /^i/i
+or /^f/i.  The former is "interactive", and should result in a plot
+being displayed (e.g. via X11 or the engine's default display
+method). 
 
 =item output
 
@@ -216,8 +215,14 @@ sub new {
 	die "$type is not a known output type (must be 'file' or 'interactive')\n";
     }
 
+    # Default to 'plot.png'  if no output is specified.
     unless($output) {
 	$output = ($type eq 'f') ? "plot.png" : "";
+    }
+    
+    # Hammer it into a '.png' if no suffix is specified
+    if( $opt->{type} =~ m/^f/i   and     $output !~ m/\.(\w{2,4})$/  ) {
+	$output .= ".png";
     }
 
     my $submod= $mods->{$engine}->{module};
@@ -275,19 +280,27 @@ The words may be abbreviated.
 
 =item xrange
 
-If this is set, it is a two-element ARRAY ref containing a range for the X axis.
-If it is clear, the engine or plot module is responsible for setting the range.
+If this is set, it is a two-element ARRAY ref containing a range for
+the X axis.  If it is clear, the engine or plot module is responsible
+for setting the range.
 
 =item yrange
 
-If this is set, it is a two-element ARRAY ref containing a range for the Y axis.
-If it is clear, the engine or plot module is responsible for setting the range.
+If this is set, it is a two-element ARRAY ref containing a range for
+the Y axis.  If it is clear, the engine or plot module is responsible
+for setting the range.
 
 =item crange 
 
-If this is set, it is a two-element ARRAY ref containing a range for color values,
-full black to full white.  If it is clear, the engine or plot module is responsible for
-setting the range.
+If this is set, it is a two-element ARRAY ref containing a range for
+color values, full black to full white.  If it is clear, the engine or
+plot module is responsible for setting the range.
+
+=item wedge
+
+If this is set, then image plots get a scientific colorbar on the
+right side of the plot.  (You can also say "colorbar", "colorbox", or "cb" if
+you're more familiar with Gnuplot).
 
 =back
 
@@ -339,14 +352,18 @@ our $plot_options = new PDL::Options( {
     xrange=> undef,
     yrange=> undef,
     crange=> undef,
-    bounds=> undef
+    bounds=> undef,
+    wedge => 0,
     });
 $plot_options->synonyms( {
     cbrange=>'crange',
     replot=>'oplot',
     xtitle=>'xlabel',
     ytitle=>'ylabel',
-    legend=>'key'
+    legend=>'key',
+    colorbar=>'wedge',
+    colorbox=>'wedge',
+    cb=>'wedge'
     });
 
     
@@ -451,6 +468,9 @@ sub plot {
 	die "Invalid Y range (must be a 2-element ARRAY ref with differing values)\n";
     }
 
+    if( defined($po->{wedge}) ) {
+	$po->{wedge} = !!$po->{wedge};
+    }
 	
 
 
@@ -885,7 +905,7 @@ sub new {
     my $conv_tempfile = '';
     
     # Do different things for interactive and file types
-    if($opt->{type} =~ m/^[iI]/) {
+    if($opt->{type} =~ m/^i/i) {
 	push(@params, "title"=>$opt->{output}) if(defined($opt->{output}));
 
 	# Interactive - try WXT, Aqua, X11 in that order
@@ -908,8 +928,8 @@ sub new {
 	if($opt->{output} =~ m/\.(\w{2,4})$/) {
 	    $ext = $1;
 	} else {
-	    $opt->{output} .= ".png";
-	    $ext = "png";
+	    $ext = '.png';
+	    print STDERR "PDL::Graphics::Simple::Gnuplot:  Warning - defaulting to .png type for file '$opt->{output}'\n";
 	}
 	$opt->{ext} = $ext;
 
@@ -922,8 +942,10 @@ sub new {
 
 	    # Term is invalid but png is supported - set up a tempfile for conversion.
 	    my($fh);
-	    ($fh,$conv_tempfile) = tempfile('pgg_gnuplot_XXXX');
+	    ($fh,$conv_tempfile) = tempfile('pgs_gnuplot_XXXX');
 	    close $fh;
+	    unlink($conv_tempfile); # just to be sure;
+	    $conv_tempfile .= ".png";
 	}
 	push( @params, "output" => ($conv_tempfile || $opt->{output}) );
 	$gpw = gpwin( $conv_tempfile ? 'png' : $ext,  @params );
@@ -932,6 +954,9 @@ sub new {
     return bless($me, 'PDL::Graphics::Simple::Gnuplot');
 }
 
+
+##############################
+# PDL::Graphics::Simple::Gnuplot::plot 
 # plot
 
 sub plot {
@@ -946,6 +971,7 @@ sub plot {
 	xrange => $ipo->{xrange},
 	yrange => $ipo->{yrange},
 	cbrange=> $ipo->{crange},
+	colorbox => $ipo->{wedge},
 	clut   => 'sepia'
     };
 
@@ -977,6 +1003,7 @@ sub plot {
 package PDL::Graphics::Simple::PGPLOT;
 use File::Temp qw/tempfile/;
 use PDL::Options q/iparse/;
+use PDL;
 
 our $mod = {
     shortname => 'pgplot',
@@ -1025,7 +1052,12 @@ sub check {
 	$mod->{disp_dev} = 'XSERVE';
     } else {
 	$mod->{ok} = 0;
-	die "Your PGPLOT library loaded OK but can't display graphics. Giving up.\n";
+	return 0;
+    }
+
+    unless( $mod->{devices}->{'VCPS'} ) {
+	$mod->{ok} = 0;
+	return 0;
     }
 
     return 1;
@@ -1037,6 +1069,11 @@ our $new_defaults ={
     size => [8,6,'in'],
     type => '',
     output=>''
+};
+
+our $filetypes = {
+    png => 'PNG',
+    ps  => 'VCPS'
 };
 
 sub new {
@@ -1054,20 +1091,46 @@ sub new {
 
     # Figure the device name and size to feed to PGPLOT.
     # size has already been regularized.
-    if( $opt->{type} =~ m/^[iI]/) {
-	my $dev = ( defined($opt->{output}) ? $opt->{output} : "" ) . "/" . $mod->{disp_dev};
-	print "dev='$dev'\n";
-	print "opt->size is ".join(",",@{$opt->{size}})."\n";
-	eval '$pgw = pgwin( $dev, {size=>[ $opt->{size}->[0], $opt->{size}->[1] ]} );';
-	if($@) {
-	    die $@;
+    my $conv_tempfile;
+    my $dev;
+
+    if( $opt->{type} =~ m/^i/i) {
+	$dev = ( defined($opt->{output}) ? $opt->{output} : "" ) . "/" . $mod->{disp_dev};
+    } else {
+	my $ext;
+
+	if( $opt->{output} =~ m/\.(\w{2,4})$/ ) {
+	    $ext = $1;
+	} else {
+	    $ext = 'png';
+	    $opt->{output} .= ".png";
 	}
 
-    } else {
-	die "PGPLOT file output is not yet supported. RSN!";
+	our $mod;
+	unless(  $filetypes->{$ext}  and  $mod->{devices}->{$filetypes->{$ext}} ) {
+	    my($fh);
+	    ($fh, $conv_tempfile) = tempfile('pgs_pgplot_XXXX');
+	    close $fh;
+	    unlink $conv_tempfile; # just to be sure...
+	    $conv_tempfile .= ".ps";
+	    $dev = "$conv_tempfile/VCPS";
+	} else {
+	    $dev = "$opt->{output}/$filetypes->{$ext}";
+	}
     }
 
-    my $me = { opt=>$opt, obj=>$pgw };
+    print "dev='$dev'\n";
+    print "opt->size is ".join(",",@{$opt->{size}})."\n";
+
+    ($ENV{'PGPLOT_PS_WIDTH'}) = $opt->{size}->[0] * 1000;
+    ($ENV{'PGPLOT_PS_HEIGHT'}) = $opt->{size}->[1] * 1000;
+
+
+    my $creator = 'pgwin( $dev, {size=>[ $opt->{size}->[0], $opt->{size}->[1] ]} );';
+    $pgw = eval $creator;
+    print STDERR $@ if($@);
+    
+    my $me = { opt=>$opt, conv_fn=>$conv_tempfile, obj=>$pgw };
     return bless($me, 'PDL::Graphics::Simple::PGPLOT');
 }
 
@@ -1078,6 +1141,9 @@ our $pgplot_methods = {
     'points' => 'points',
     'image'  => 'imag'
 };
+
+##############################
+# PDL::Graphics::Simple::PGPLOT::plot
 
 sub plot {
     my $me = shift;
@@ -1091,8 +1157,8 @@ sub plot {
     };
     my %color_opts = ();
     if(defined($ipo->{crange})) {
-	$color_opts{'min'} = $ipo->{crange}->[0] if(defined($ipo->{crange}->[0]));
-	$color_opts{'max'} = $ipo->{crange}->[0] if(defined($ipo->{crange}->[1]));
+	$color_opts{'MIN'} = $ipo->{crange}->[0] if(defined($ipo->{crange}->[0]));
+	$color_opts{'MAX'} = $ipo->{crange}->[0] if(defined($ipo->{crange}->[1]));
     }
     
     my $more = 0;
@@ -1109,32 +1175,91 @@ sub plot {
 	my ($co, @data) = @{shift()};
 	my @extra_opts = ();
 
+	our $pgplot_methods;
 	my $pgpm = $pgplot_methods->{$co->{with}};
 	die "Unknown curve option 'with $co->{with}'!" unless($pgpm);
+
+
+	my %ppo = ();
+	unless($me->{obj}->{held}) {
+	    %ppo = %{$po};
+	}
+	my $ppo = \%ppo;
 
 	if($pgpm eq 'imag') {
 	    for my $k(keys %color_opts) {
 		$po->{$k} = $color_opts{$k};
 	    }
-	    my $transform = $me->{obj}->transform(ImageDimensions => [$data[2]->dim(0),$data[2]->dim(1)],
-						  Angle => 0,
-						  Pixinc=>1,
-						  RefPos=>[ [ 0,0],[0,0] ]
-		);
-		
-	    
-	}
-	
-	my $str = sprintf('$me->{obj}->%s(@data%s)',
-			  $pgpm,
-			  ($me->{obj}->{held} ? '' : ',$po')
 
-	    );
-	print "$str\n";
+	    # Extract transform parameters from the corners of the image...
+	    my $xcoords = shift(@data);
+	    my $ycoords = shift(@data);
+
+	    my $datum_pix = [0,0];
+	    my $datum_sci = [$xcoords->at(0,0), $ycoords->at(0,0)];
+	    
+	    my $t1 = ($xcoords->slice("(-1),(0)") - $xcoords->slice("(0),(0)")) / ($xcoords->dim(0)-1);
+	    my $t2 = ($xcoords->slice("(0),(-1)") - $xcoords->slice("(0),(0)")) / ($xcoords->dim(1)-1);
+	    
+	    my $t4 = ($ycoords->slice("(-1),(0)") - $ycoords->slice("(0),(0)")) / ($ycoords->dim(0)-1);
+	    my $t5 = ($ycoords->slice("(0),(-1)") - $ycoords->slice("(0),(0)")) / ($ycoords->dim(1)-1);
+	    
+	    my $transform = pdl(
+		$datum_sci->[0] - $t1 * $datum_pix->[0] - $t2 * $datum_pix->[1],
+		$t1, $t2,
+		$datum_sci->[1] - $t4 * $datum_pix->[0] - $t5 * $datum_pix->[1],
+		$t4, $t5
+		)->flat;
+
+	    {   # sepia color table
+		my $r = (xvals(256)/255)->sqrt;
+		my $g = (xvals(256)/255);
+		my $b = (xvals(256)/255)**2;
+		$me->{obj}->ctab($g, $r, $g, $b);
+	    }
+	}
+
+	for my $k(keys %$ppo) {
+	    delete $ppo->{$k} unless( defined($ppo->{$k}) );
+	}
+
+	my $str= sprintf('$me->{obj}->%s(@data,%s);',$pgpm,'$ppo');
 	eval $str;
 	$me->{obj}->hold;
     }
     $me->{obj}->release;
+    $me->{obj}->close if($me->{opt}->{type} =~ m/^f/i);
+
+    my $file = ( ($me->{conv_fn}) ? $me->{conv_fn} : $me->{output} );
+    if($file =~ m/\.ps$/) {
+	print "Patching up  $file...\n";
+	open FOO, "<$file";
+	my @lines = <FOO>;
+	my $i;
+	
+	for($i=0; $i<@lines; $i++) {
+
+	    if($lines[$i] =~ m/^\%\%BoundingBox: \(atend\)/) {
+		$lines[$i] = sprintf("%%%%BoundingBox: 35 35 %d %d\n", 
+				     35 + 72 * $me->{opt}->{size}->[0], 
+				     35 + 72 * $me->{opt}->{size}->[1]);
+	    } elsif( $lines[$i] =~ m/^\%\%BoundingBox:/ ) {
+		$lines[$i] = "%%\n";
+	    } elsif( $lines[$i] =~ m/^\%\%PageBoundingBox:/) {
+		$lines[$i] = sprintf("%%%%PageBoundingBox: 35 35 %d %d\n", 
+				     35 + 72 * $me->{opt}->{size}->[0], 
+				     35 + 72 * $me->{opt}->{size}->[1]);
+	    }
+	}
+	open FOO,">$file";
+	print FOO join("",@lines);
+    };
+
+    if($me->{conv_fn}) {
+	$a = rim($me->{conv_fn});
+	wim($a, $me->{opt}->{output});
+#	unlink($me->{conv_fn});
+    } 
 }
 
 1;

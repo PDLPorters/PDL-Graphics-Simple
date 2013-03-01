@@ -92,7 +92,7 @@ C<show> lists the supported engines and a one-line synopsis of each.
 sub show {
     my $format = "%-10s %-30s %-s\n";
     printf($format, "NAME","Module","(synopsis)");
-    printf($format, "----","------","----------\n");
+    printf($format, "----","------","----------");
     for my $engine( sort keys %$mods ) {
 	printf($format, $engine, $mods->{$engine}->{engine}, $mods->{$engine}->{synopsis});
     }
@@ -580,6 +580,27 @@ sub plot {
 	$yminmax->[0] = $minmax[0] if( !defined($yminmax->[0])  or  $minmax[0] < $yminmax->[0] );
 	$yminmax->[1] = $minmax[1] if( !defined($yminmax->[1])  or  $minmax[1] > $yminmax->[1] );
 
+	##############################
+	# Hammer the data to all be the same size...
+	# First: accumulate dims across the data
+	my @datadims = ();
+	for my $arg(@args) {
+	    my @argdims = $arg->dims;
+	    for my $i(0..$#argdims) {
+		if(  !defined($datadims[$i])  or  (  $argdims[$i] != 1   and    $datadims[$i] == 1  )   ) {
+		    $datadims[$i] = $argdims[$i];
+		}
+		if( $argdims[$i] != 1   and   $datadims[$i] != 1   and $argdims[$i] != $datadims[$i]  ) {
+		    die "Plot: argument dimensions disagree.\n";
+		}
+	    }
+	}
+	# Next: hammer the data to be exactly the same dimension.
+	my $z = zeroes(@datadims);
+	for my $i(0..$#args) {
+	    $args[$i] = $args[$i] + zeroes($z);  
+	}
+	
 	# Push the curve block to the list.
 	push(@blocks, [$co2, @args] );
     }
@@ -1222,8 +1243,18 @@ our $pgplot_methods = {
     'lines'  => 'line',
     'bins'   => 'bin',
     'points' => 'points',
-    'errorbars' => 'errb',
-    'limitbars'=>'errb',
+    'errorbars' => sub {
+	my ($me, $ipo, $data, $ppo) = @_;
+	$me->{obj}->points($data->[0],$data->[1],$ppo);
+	$me->{obj}->errb($data->[0],$data->[1],$data->[2]);
+    },
+    'limitbars'=> sub {
+	my ($me, $ipo, $data, $ppo) = @_;
+	# use XY absolute error form, but with X errorbars right on the point
+	$me->{obj}->points($data->[0],$data->[1],$ppo);
+	my $z = zeroes($data->[0]);
+	$me->{obj}->errb($data->[0],$data->[1], $z, $z, -($data->[2]-$data->[1]), $data->[3]-$data->[1], $ppo);
+    },
     'image'  => 'imag',
     'circles'=> sub { 
 	my ($me,$ipo,$data,$ppo) = @_;
@@ -1264,6 +1295,17 @@ sub plot {
 
     warn "P::G::S::PGPLOT: key not implemented yet" if($ipo->{key});
 
+
+    # ppo is "post-plot options", which are really a mix of plot and curve options.  
+    # Currently we don't parse any plot options into it (they're handled by the "env"
+    # call) but if we end up doing so, it should go here.  The linestyle and color
+    # are curve options that are autoincremented each curve.
+    my %ppo = ();
+    my $ppo = \%ppo;
+    
+    $ppo->{linestyle} = 1;
+    $ppo->{color}=1;
+    
     while(@_) {
 	my ($co, @data) = @{shift()};
 	my @extra_opts = ();
@@ -1271,11 +1313,7 @@ sub plot {
 	our $pgplot_methods;
 	my $pgpm = $pgplot_methods->{$co->{with}};
 	die "Unknown curve option 'with $co->{with}'!" unless($pgpm);
-	print "pgpm is $pgpm\n";
 
-	# Placeholder in case other plot options come in beyond the env() command above
-	my %ppo = ();
-	my $ppo = \%ppo;
 
 	if($pgpm eq 'imag') {
 	    for my $k(keys %color_opts) {
@@ -1310,15 +1348,16 @@ sub plot {
 	    }
 	}
 
-	for my $k(keys %$ppo) {
-	    delete $ppo->{$k} unless( defined($ppo->{$k}) );
-	}
-	
 	if(ref($pgpm) eq 'CODE') {
 	    &$pgpm($me, $ipo, \@data, $ppo);
 	} else {
-	    my $str= sprintf('$me->{obj}->%s(@data,%s);',$pgpm,'$ppo');
+	    my $str= sprintf('$me->{obj}->%s(@data,%s);%s',$pgpm,'$ppo',"\n");
 	    eval $str;
+	}
+
+	unless($pgpm eq 'imag') {
+	    $ppo->{linestyle}++;
+	    $ppo->{color}++;
 	}
 
 	$me->{obj}->hold;

@@ -152,11 +152,11 @@ If this is set, it is a title for the X axis.
 
 If this is set, it is a title for the Y axis.
 
-=item key
+=item legend
 
 If this is set, it should be a string containing two words: either
 "top", "center", or "bottom" followed by "left", "center", or "right".
-The words may be abbreviated.  
+The words may be abbreviated.   [Note: legends are not yet implemented]
 
 =item justify
 

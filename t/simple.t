@@ -1,8 +1,8 @@
 #!perl
 
 BEGIN {
-    our $tests_per_engine = 10;
-    our @engines = (pgplot,gnuplot);
+    our $tests_per_engine = 11;
+    our @engines = qw/pgplot gnuplot/;
 }
 use Test::More tests=> (3 + (@engines)*($tests_per_engine));
 
@@ -32,7 +32,7 @@ for $engine(@engines) {
       ok(!$@, "${module}::check() ran OK");
 
       unless($check_ok) {
-	  skip "Skipping tests for engine $engine (not working)", 9;
+	  skip "Skipping tests for engine $engine (not working)", 10;
       }
 
       eval { $w = new PDL::Graphics::Simple(engine=>$engine) };

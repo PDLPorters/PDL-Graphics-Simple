@@ -23,7 +23,6 @@ sub MY::libscan
 
     # Don't install the README.pod or any .pl file
     return undef if $file =~ /\.pl$|^README.pod/;
-
     return $self->SUPER::libscan ($file);
 }
 
@@ -31,7 +30,7 @@ sub MY::postamble {
     my $text = <<'FOO';
 install ::
 	@echo "Updating PDL documentation database...";
-	@$(PERL) -d -e "use PDL::Doc; PDL::Doc::add_module(q[PDL::Graphics::Simple] ); "
+	@$(PERL) -e "use PDL::Doc; PDL::Doc::add_module(q[PDL::Graphics::Simple] ); "
 
 FOO
     return $text;

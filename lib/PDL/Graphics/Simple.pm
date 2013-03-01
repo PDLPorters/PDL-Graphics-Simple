@@ -21,10 +21,10 @@ backend or allow PDL::Graphics::Simple to find a backend that seems to work
 on your system.  Subsequent plotting commands are translated and passed
 through to your chosen plotting module.
 
-Only a small subset of PDL's graphics functionality is supported --
+Only a small subset of PDL's complete graphics functionality is supported --
 PDL::Graphics::Simple is intended for quick monkeying around with data 
 or for demos or other applications where platform independence is more
-important than configurability, plot quality, or speed.
+important than configurability or plot quality.
 
 Only 2-D plotting is supported.  For 3-D plotting, use PDL::Graphics::Gnuplot
 or PDL::Graphics::Trid directly.
@@ -278,6 +278,11 @@ If this is set, it should be a string containing two words: either
 "top", "center", or "bottom" followed by "left", "center", or "right".
 The words may be abbreviated.  
 
+=item justify
+
+If this is set to a nonzero value, then the plot is scaled to have the
+correct aspect ratio (assuming X and Y are in the same units.
+
 =item xrange
 
 If this is set, it is a two-element ARRAY ref containing a range for
@@ -354,6 +359,7 @@ our $plot_options = new PDL::Options( {
     crange=> undef,
     bounds=> undef,
     wedge => 0,
+    justify=>0,
     });
 $plot_options->synonyms( {
     cbrange=>'crange',
@@ -368,9 +374,13 @@ $plot_options->synonyms( {
 
     
 our $plot_types = {
-    lines  => { args=>[1,2], ndims=>[1]   },
-    points => { args=>[1,2], ndims=>[1]   },
-    image  => { args=>[1,3], ndims=>[2,3] },
+    points    => { args=>[1,2], ndims=>[1]   },
+    lines     => { args=>[1,2], ndims=>[1]   },
+    bins      => { args=>[1,2], ndims=>[1]   },
+    circles   => { args=>[2,3], ndims=>[1]   },
+    errorbars => { args=>[2,3], ndims=>[1]   },
+    limitbars => { args=>[3,4], ndims=>[1]   },
+    image     => { args=>[1,3], ndims=>[2,3] },
 };
 our $plot_type_abbrevs = _make_abbrevs($plot_types);
 
@@ -477,6 +487,10 @@ sub plot {
     ##############################
     # Parse out curve blocks and check each one for existence.
     my @blocks = ();
+    my $xminmax = [undef,undef];
+    my $yminmax = [undef,undef];
+
+
     while( @_ ) {
 	my $co = {};
 	my @args = ();
@@ -540,9 +554,42 @@ sub plot {
 	    die "Data dimension (".$dims->dim(0)."-D PDLs) is not correct for plot type $ptn";
 	}
 
+	# Accumulate x and y ranges...
+	my @minmax;
+	my $dcorner = pdl(0,0);
+
+	# Deal with half-pixel offset at edges of images
+	if($args[0]->dims > 1) {
+	    my $xymat = pdl( [ ($args[0]->slice("(1),(0)")-$args[0]->slice("(0),(0)")), 
+			       ($args[0]->slice("(0),(1)")-$args[0]->slice("(0),(0)")) ],
+			     [ ($args[1]->slice("(1),(0)")-$args[1]->slice("(0),(0)")), 
+			       ($args[1]->slice("(0),(1)")-$args[1]->slice("(0),(0)")) ]
+		);
+	    $dcorner = ($xymat x pdl(0.5,0.5)->slice("*1"))->slice("(0)")->abs;
+	}
+
+	@minmax = $args[0]->minmax;
+	$minmax[0] -= $dcorner->at(0); 
+	$minmax[1] += $dcorner->at(0);
+	$xminmax->[0] = $minmax[0] if( !defined($xminmax->[0])  or  $minmax[0] < $xminmax->[0] );
+	$xminmax->[1] = $minmax[1] if( !defined($xminmax->[1])  or  $minmax[1] > $xminmax->[1] );
+	
+	@minmax = $args[1]->minmax;
+	$minmax[0] -= $dcorner->at(1); 
+	$minmax[1] += $dcorner->at(1);
+	$yminmax->[0] = $minmax[0] if( !defined($yminmax->[0])  or  $minmax[0] < $yminmax->[0] );
+	$yminmax->[1] = $minmax[1] if( !defined($yminmax->[1])  or  $minmax[1] > $yminmax->[1] );
+
 	# Push the curve block to the list.
 	push(@blocks, [$co2, @args] );
     }
+
+    ##############################
+    # Deal with context-dependent defaults.
+    $po->{xrange}->[0] = $xminmax->[0] unless(defined($po->{xrange}->[0]));
+    $po->{xrange}->[1] = $xminmax->[1] unless(defined($po->{xrange}->[1]));
+    $po->{yrange}->[0] = $yminmax->[0] unless(defined($po->{yrange}->[0]));
+    $po->{yrange}->[1] = $yminmax->[1] unless(defined($po->{yrange}->[1]));
 
     ##############################
     # At long last, the parsing is over.  Dispatch the call.
@@ -959,26 +1006,63 @@ sub new {
 # PDL::Graphics::Simple::Gnuplot::plot 
 # plot
 
+our $curve_types = {
+    points    => 'points',
+    lines     => 'lines',
+    bins      => 'histeps',
+    errorbars => 'yerrorbars',
+    limitbars => 'yerrorbars',
+    image     => 'image',
+    circles   => sub {
+	my($me, $po, $co, @data) = @_;
+	my $ang = PDL->xvals(362)*3.14159/180;
+	my $c = $ang->cos;
+	my $s = $ang->sin;
+	$s->slice("361") .= $c->slice("361") .= PDL->pdl(1.1)->acos;  # NaN
+	my $dr = $data[2]->flat;
+	my $dx = ($data[0]->flat->slice("*1") + $dr->slice("*1") * $c)->flat;
+	my $dy = ($data[1]->flat->slice("*1") + $dr->slice("*1") * $s)->flat;
+	$co->{with} = "lines";
+	return [ $co, $dx, $dy ];
+    }
+
+};
+    
 sub plot {
     my $me = shift;
-
     my $ipo = shift;
+
     my $po = {
-	title  => $ipo->{title},
-	xlab   => $ipo->{xlabel},
-	ylab   => $ipo->{ylabel},
-	key    => $ipo->{key},
-	xrange => $ipo->{xrange},
-	yrange => $ipo->{yrange},
-	cbrange=> $ipo->{crange},
+	title    => $ipo->{title},
+	xlab     => $ipo->{xlabel},
+	ylab     => $ipo->{ylabel},
+	key      => $ipo->{key},
+	xrange   => $ipo->{xrange},
+	yrange   => $ipo->{yrange},
+	cbrange  => $ipo->{crange},
 	colorbox => $ipo->{wedge},
+	justify  => $ipo->{justify} ? $ipo->{justify} : undef,
 	clut   => 'sepia'
     };
 
+    my @arglist = ($po);
+    for my $block(@_) {
+	my $ct = $curve_types->{  $block->[0]->{with}  };
+	unless(defined($ct)) {
+	    die "PDL::Graphics::Simple::Gnuplot: undefined curve type $ct";
+	}
+	if(ref($ct) eq 'CODE') {
+	    $block = &$ct($me, $po, @$block);
+	} else {
+	    $block->[0]->{with} = $ct;
+	}
+	push(@arglist, (@$block));
+    }
+
     if($ipo->{oplot}) {
-	$me->{obj}->replot($po, map { (@$_) } @_);
+	$me->{obj}->replot(@arglist);
     } else {
-	$me->{obj}->plot($po, map { (@$_) } @_);
+	$me->{obj}->plot(@arglist);
     }
 
     if($me->{conv_fn}) {
@@ -1135,11 +1219,15 @@ sub new {
 }
 
 our $pgplot_methods = {
-    'line'   => 'line',
     'lines'  => 'line',
-    'point'  => 'points',
+    'bins'   => 'bin',
     'points' => 'points',
-    'image'  => 'imag'
+    'image'  => 'imag',
+    'circles'=> sub { 
+	my ($me,$ipo,$data,$ppo) = @_;
+	$ppo->{filltype}='outline';
+	$me->{obj}->tcircle(@$data, $ppo);
+    }
 };
 
 ##############################
@@ -1152,8 +1240,9 @@ sub plot {
 	title  => $ipo->{title},
 	xtitle => $ipo->{xlabel},
 	ytitle => $ipo->{ylabel},
-	xrange => $ipo->{xrange},
-	yrange => $ipo->{yrange},
+	justify=> $ipo->{justify},
+#	xrange => $ipo->{xrange},
+#	yrange => $ipo->{yrange},
     };
     my %color_opts = ();
     if(defined($ipo->{crange})) {
@@ -1164,10 +1253,12 @@ sub plot {
     my $more = 0;
 
     if($ipo->{oplot}) {
-	$me->{obj}->hold;
-    } else {
-	$me->{obj}->release;
+	die "oplot not yet supported";
     }
+
+    $me->{obj}->release;
+    $me->{obj}->env(@{$ipo->{xrange}}, @{$ipo->{yrange}}, $po);
+    $me->{obj}->hold;
 
     warn "P::G::S::PGPLOT: key not implemented yet" if($ipo->{key});
 
@@ -1178,12 +1269,10 @@ sub plot {
 	our $pgplot_methods;
 	my $pgpm = $pgplot_methods->{$co->{with}};
 	die "Unknown curve option 'with $co->{with}'!" unless($pgpm);
+	print "pgpm is $pgpm\n";
 
-
+	# Placeholder in case other plot options come in beyond the env() command above
 	my %ppo = ();
-	unless($me->{obj}->{held}) {
-	    %ppo = %{$po};
-	}
 	my $ppo = \%ppo;
 
 	if($pgpm eq 'imag') {
@@ -1222,16 +1311,21 @@ sub plot {
 	for my $k(keys %$ppo) {
 	    delete $ppo->{$k} unless( defined($ppo->{$k}) );
 	}
+	
+	if(ref($pgpm) eq 'CODE') {
+	    &$pgpm($me, $ipo, \@data, $ppo);
+	} else {
+	    my $str= sprintf('$me->{obj}->%s(@data,%s);',$pgpm,'$ppo');
+	    eval $str;
+	}
 
-	my $str= sprintf('$me->{obj}->%s(@data,%s);',$pgpm,'$ppo');
-	eval $str;
 	$me->{obj}->hold;
     }
     $me->{obj}->release;
     $me->{obj}->close if($me->{opt}->{type} =~ m/^f/i);
 
     my $file = ( ($me->{conv_fn}) ? $me->{conv_fn} : $me->{output} );
-    if($file =~ m/\.ps$/) {
+    if(defined($file) and $file =~ m/\.ps$/) {
 	print "Patching up  $file...\n";
 	open FOO, "<$file";
 	my @lines = <FOO>;

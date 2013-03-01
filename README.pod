@@ -29,17 +29,23 @@ backend or allow PDL::Graphics::Simple to find a backend that seems to work
 on your system.  Subsequent plotting commands are translated and passed
 through to your chosen plotting module.
 
-Only a small subset of PDL's graphics functionality is supported --
+Only a small subset of PDL's complete graphics functionality is supported --
 PDL::Graphics::Simple is intended for quick monkeying around with data 
 or for demos or other applications where platform independence is more
-important than configurability, plot quality, or speed.
+important than configurability or plot quality.
 
 Only 2-D plotting is supported.  For 3-D plotting, use PDL::Graphics::Gnuplot
 or PDL::Graphics::Trid directly.
 
-=head1 SUPPORTED BACKENDS
+When plotting to a file, the file output is not guaranteed to be present
+until the plot object is destroyed (e.g. by being undefed or going out of
+scope).
 
-PDL::Graphics::Simple supports:
+=head1 SUPPORTED GRAPHICS ENGINES
+
+PDL::Graphics::Simple supports the following graphics engines as
+distributed.  Additional modules can be loaded dynamically;
+see C<register>, below.
 
 =over 3
 
@@ -47,15 +53,9 @@ PDL::Graphics::Simple supports:
 
 =item PGPLOT  (via PDL::Graphics::PGPLOT::Window)
 
-=item PLplot (via PDL::Graphics::PLplot)
-
-=item Prima (via PDL::Graphics::Prima).
-
 =back
 
 =head1 FUNCTIONS
-
-(More to come RSN)
 
 =cut
 =head2 show
@@ -97,15 +97,10 @@ inch.
 
 =item type
 
-This describes the kind of plot to create. The default is
-"interactive" if neither type nor output are specified, and should
-result in a plot being displayed (e.g. via X11 or the engine's default
-display method). If the output is specified and appears to be a qualified
-graphics filename (i.e. has a dot-extension with 2-4 characters at the end)
-the default is 'f'.
-
-Accepted values are "interactive" and "file", which can be abbreviated
-to 'i' and 'f'.
+This describes the kind of plot to create. It will match either /^i/i
+or /^f/i.  The former is "interactive", and should result in a plot
+being displayed (e.g. via X11 or the engine's default display
+method). 
 
 =item output
 
@@ -159,17 +154,44 @@ If this is set, it is a title for the Y axis.
 
 =item key
 
-TBD
+If this is set, it should be a string containing two words: either
+"top", "center", or "bottom" followed by "left", "center", or "right".
+The words may be abbreviated.  
+
+=item justify
+
+If this is set to a nonzero value, then the plot is scaled to have the
+correct aspect ratio (assuming X and Y are in the same units.
 
 =item xrange
 
-If this is set, it is a two-element ARRAY ref containing a range for the X axis.
-If it is clear, the engine or plot module is responsible for setting the range.
+If this is set, it is a two-element ARRAY ref containing a range for
+the X axis.  If it is clear, the engine or plot module is responsible
+for setting the range.
 
 =item yrange
 
-If this is set, it is a two-element ARRAY ref containing a range for the Y axis.
-If it is clear, the engine or plot module is responsible for setting the range.
+If this is set, it is a two-element ARRAY ref containing a range for
+the Y axis.  If it is clear, the engine or plot module is responsible
+for setting the range.
+
+=item crange 
+
+If this is set, it is a two-element ARRAY ref containing a range for
+color values, full black to full white.  If it is clear, the engine or
+plot module is responsible for setting the range.
+
+=item wedge
+
+If this is set, then image plots get a scientific colorbar on the
+right side of the plot.  (You can also say "colorbar", "colorbox", or "cb" if
+you're more familiar with Gnuplot).
+
+=item justify
+
+If this is set to a true value, then the screen aspect ratio is adjusted
+to keep the Y axis and X axis scales equal -- so circles appear circular, and
+squares appear square.
 
 =back
 
@@ -191,18 +213,112 @@ This gives a name for the following curve, to be placed in a master plot legend.
 
 =over 3
 
-=item lines
-
-This is a simple line plot. It takes 1 or 2 columns of data.
-
 =item points
 
 This is a simple point plot.  It takes 1 or 2 columns of data.
 
+=item lines
+
+This is a simple line plot. It takes 1 or 2 columns of data.
+
+=item bins
+
+Stepwise line plot, with the steps centered on each X value.  1 or 2 columns.
+
+=item errorbars
+
+Simple points-with-errorbar plot, with centered errorbars.  It takes 2
+or 3 columns, and the last column is the absolute size of the errorbar (which
+is centered on the data point).
+
+=item limitbars
+
+Simple points-with-errorbar plot, with asymmetric errorbars.  It takes 3 or 4
+columns, and the last two columns are the absolute low and high values of the 
+errorbar around each point (specified relative to the origin, not relative to the
+data point value).
+
+=item circles
+
+Plot unfilled circles.  Requires 2 or 3 columns of data; the last
+column is the radius of each circle.  The circles are circular in scientific coordinates,
+not necessarily in screen coordinates (unless you specify the "justify" plot option).
+
 =item image
 
 This is a monochrome or RGB image.  It takes a 2-D or 3-D array of values, as
-(width x height x color-index).
+(width x height x color-index).  There is no interface for pseudocolor images - 
+monochrome may be greyscale or a fixed color table depending on implementation.
+
+=back
+
+=cut
+=head2 oplot
+
+=for usage
+
+ $w = new PDL::Graphics::Simple ( %opts );
+ $w->plot($data);
+ $w->oplot($more_data);
+
+=for ref 
+
+C<oplot> is a convenience interface.  It is exactly
+equivalent to C<plot> except it sets the plot option C<oplot>,
+so that the plot will be overlain on the previous one.
+
+=cut
+=head2 line, points, image, imag
+
+=for usage
+
+ $w = new PDL::Graphics::Simple ( % opts );
+ $w->line($data);
+
+=for ref
+
+C<line>, C<points>, C<image>, and C<imag> are convenience
+interfaces.  They are exactly equivalent to C<plot> except that
+they set the default "with" curve option to the appropriate
+plot type.
+
+=cut
+=head2 register
+
+=for usage
+
+ PDL::Graphics::Simple::register( $module_name );
+
+=for ref
+
+This is the registration mechanism for new driver methods for C<PDL::Graphics::Simple>.
+Compliant drivers should announce themselves at compile time by calling C<register>.  
+At call time they should have already defined a package global hash ref, C<$mod>, containing
+the following keys:
+
+=over
+
+=item shortname
+
+This is the short name of the engine, by which users refer to it colloquially.
+
+=item module
+
+This is the fully qualified package name of the module itself.
+
+=item engine
+
+This is the fully qualified package name of the Perl API for the graphics engine.
+
+=item synopsis
+
+This is a brief string describing the backend
+
+=item pgs_version 
+
+This is a one-period version number of PDL::Graphics::Simple against which
+the module has been tested.  A warning will be thrown if the version isn't the
+same as C<$PDL::Graphics::Simple::VERSION>.
 
 =back
 
@@ -261,6 +377,16 @@ For 1-D plot types (like points and lines) the PDLs must be 1D.  For image
 plot types the lone PDL must be 2D (monochrome) or 3D(RGB).
 
 =cut
+=head1 ARCHITECTURE
+
+PDL::Graphics::Simple works through a central object-and-dispatch
+system rather than taking full advantage of inheritance.  That is for
+two reasons: (1) it makes central control mildly easier going forward
+forward, since calls are dispatched through the main module; and (2)
+it makes the non-object-oriented interface easier to implement since the
+main interace modules are in one place and can access the global object
+easily.
+
 =head1 REPOSITORY
 
 L<https:/github.com/drzowie/PDL-Graphics-Simple>

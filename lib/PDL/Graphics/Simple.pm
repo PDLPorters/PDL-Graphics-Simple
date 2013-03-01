@@ -307,6 +307,12 @@ If this is set, then image plots get a scientific colorbar on the
 right side of the plot.  (You can also say "colorbar", "colorbox", or "cb" if
 you're more familiar with Gnuplot).
 
+=item justify
+
+If this is set to a true value, then the screen aspect ratio is adjusted
+to keep the Y axis and X axis scales equal -- so circles appear circular, and
+squares appear square.
+
 =back
 
 =head3 Curve options:
@@ -327,13 +333,36 @@ This gives a name for the following curve, to be placed in a master plot legend.
 
 =over 3
 
+=item points
+
+This is a simple point plot.  It takes 1 or 2 columns of data.
+
 =item lines
 
 This is a simple line plot. It takes 1 or 2 columns of data.
 
-=item points
+=item bins
 
-This is a simple point plot.  It takes 1 or 2 columns of data.
+Stepwise line plot, with the steps centered on each X value.  1 or 2 columns.
+
+=item errorbars
+
+Simple points-with-errorbar plot, with centered errorbars.  It takes 2
+or 3 columns, and the last column is the absolute size of the errorbar (which
+is centered on the data point).
+
+=item limitbars
+
+Simple points-with-errorbar plot, with asymmetric errorbars.  It takes 3 or 4
+columns, and the last two columns are the absolute low and high values of the 
+errorbar around each point (specified relative to the origin, not relative to the
+data point value).
+
+=item circles
+
+Plot unfilled circles.  Requires 2 or 3 columns of data; the last
+column is the radius of each circle.  The circles are circular in scientific coordinates,
+not necessarily in screen coordinates (unless you specify the "justify" plot option).
 
 =item image
 

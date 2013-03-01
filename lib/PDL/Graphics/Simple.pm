@@ -661,6 +661,8 @@ C<oplot> is a convenience interface.  It is exactly
 equivalent to C<plot> except it sets the plot option C<oplot>,
 so that the plot will be overlain on the previous one.
 
+(Note: oplotting is not yet fully implemented - use at own risk)
+
 =cut
 
 sub oplot {
@@ -1432,10 +1434,10 @@ sub plot {
 
 PDL::Graphics::Simple works through a central object-and-dispatch
 system rather than taking full advantage of inheritance.  That is for
-two reasons: (1) it makes central control mildly easier going forward
-forward, since calls are dispatched through the main module; and (2)
-it makes the non-object-oriented interface easier to implement since the
-main interace modules are in one place and can access the global object
+two reasons: (1) it makes central control mildly easier going forward,
+since calls are dispatched through the main module; and (2) it makes
+the non-object-oriented interface easier to implement since the main
+interface modules are in one place and can access the global object
 easily.
 
 =head1 REPOSITORY

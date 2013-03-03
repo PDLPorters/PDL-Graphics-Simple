@@ -143,6 +143,13 @@ working directory.  Individual plotting modules are meant to support
 at least '.png', '.pdf', and '.ps', if necessary via format conversion.
 Most other standard file types are supported but are not guaranteed to work.
 
+=item multi
+
+This enables plotting multiple plots on a single screen.  You feed in 
+a single array ref containing (nx, ny).  Subsequent calls to plot 
+send graphics to subsequent locations on the window.  The ordering 
+is always horizontal first, and left-to-right, top-to-bottom.
+
 =back
 
 =cut
@@ -150,7 +157,8 @@ our $new_defaults = {
     engine => '',
     size => [6,4.5,'in'],
     type => '',
-    output => ''
+    output => '',
+    multi => undef
 };
 
 sub new {
@@ -173,10 +181,14 @@ sub new {
 	    attempt: for my $engine( sort {$b cmp $a} keys %$mods ) {
 		print "Trying $engine ($mods->{$engine}->{engine})...";
 		my $a;
+		my $s;
 		eval "\$a = $mods->{$engine}->{module}::check()";
-		my $s = ($a ? "ok" : "nope");
-#		chomp $@;
-#		$s .= "\n ($@)\n" if ($@);
+		if($@) {
+		    chomp $@;
+		    $s = "$@";
+		} else {
+		    $s = ($a ? "ok" : "nope");
+		}
 		print $s."\n";
 		if($a) {
 		    $last_successful_type = $engine;
@@ -201,7 +213,6 @@ sub new {
 	die "$opt->{engine} is not a known plotting engine. Use PDL::Graphics::Simple::show() for a list. ";
     }
     
-    
     my $size = _regularize_size($opt->{size},'in');
 
     my $type = $opt->{type};
@@ -225,8 +236,17 @@ sub new {
 	$output .= ".png";
     }
 
+    # Error-check multi
+    if( defined($opt->{multi}) ) {
+	if(  ref($opt->{multi}) ne 'ARRAY'  or  @{$opt->{multi}} != 2  ) {
+	    die "PDL::Graphics::Simple::new: 'multi' option requires a 2-element ARRAY ref\n";
+	}
+	$opt->{multi}->[0] = 1  unless(  $opt->{multi}->[0]  );
+	$opt->{multi}->[1] = 1  unless(  $opt->{multi}->[1]  );
+    }
+
     my $submod= $mods->{$engine}->{module};
-    my $params = { size=>$size, type=>$type, output=>$output };
+    my $params = { size=>$size, type=>$type, output=>$output, multi=>$opt->{multi} };
     my $obj = eval "new $mods->{$engine}->{module}(\$params)";
     my $me = { engine=>$engine, params=>$params, obj=>$obj };
     return bless($me,$pkg);
@@ -390,6 +410,7 @@ our $plot_options = new PDL::Options( {
     wedge => 0,
     justify=>0,
     });
+
 $plot_options->synonyms( {
     cbrange=>'crange',
     replot=>'oplot',
@@ -401,7 +422,6 @@ $plot_options->synonyms( {
     cb=>'wedge'
     });
 
-    
 our $plot_types = {
     points    => { args=>[1,2], ndims=>[1]   },
     lines     => { args=>[1,2], ndims=>[1]   },
@@ -411,6 +431,7 @@ our $plot_types = {
     limitbars => { args=>[3,4], ndims=>[1]   },
     image     => { args=>[1,3], ndims=>[2,3] },
 };
+
 our $plot_type_abbrevs = _make_abbrevs($plot_types);
 
 sub plot {
@@ -510,7 +531,6 @@ sub plot {
     if( defined($po->{wedge}) ) {
 	$po->{wedge} = !!$po->{wedge};
     }
-	
 
 
     ##############################
@@ -559,7 +579,8 @@ sub plot {
 	
 	# Add an index variable if needed
 	if( $pt->{args}->[1] - @args == 2 ) {
-	    unshift(@args, xvals($args[0]), yvals($args[0]));
+	    my @dims = ($args[0]->slice(":,:")->dims)[0,1];
+	    unshift(@args, xvals(@dims), yvals(@dims)); 
 	}
 	if( $pt->{args}->[1] - @args == 1 ) {
 	    unshift(@args, xvals($args[0]) );
@@ -579,7 +600,7 @@ sub plot {
 
 	# Check that the number of dimensions is correct...
 	if($dims->dim(0) != $pt->{ndims}->[0]  and  
-	   ((!defined($pt->{ndims}->[1])) or ($dims->dim(0) != $pt->ndims->[1]))) {
+	   ((!defined($pt->{ndims}->[1])) or ($dims->dim(0) != $pt->{ndims}->[1]))) {
 	    die "Data dimension (".$dims->dim(0)."-D PDLs) is not correct for plot type $ptn";
 	}
 
@@ -609,27 +630,6 @@ sub plot {
 	$yminmax->[0] = $minmax[0] if( !defined($yminmax->[0])  or  $minmax[0] < $yminmax->[0] );
 	$yminmax->[1] = $minmax[1] if( !defined($yminmax->[1])  or  $minmax[1] > $yminmax->[1] );
 
-	##############################
-	# Hammer the data to all be the same size...
-	# First: accumulate dims across the data
-	my @datadims = ();
-	for my $arg(@args) {
-	    my @argdims = $arg->dims;
-	    for my $i(0..$#argdims) {
-		if(  !defined($datadims[$i])  or  (  $argdims[$i] != 1   and    $datadims[$i] == 1  )   ) {
-		    $datadims[$i] = $argdims[$i];
-		}
-		if( $argdims[$i] != 1   and   $datadims[$i] != 1   and $argdims[$i] != $datadims[$i]  ) {
-		    die "Plot: argument dimensions disagree.\n";
-		}
-	    }
-	}
-	# Next: hammer the data to be exactly the same dimension.
-	my $z = zeroes(@datadims);
-	for my $i(0..$#args) {
-	    $args[$i] = $args[$i] + zeroes($z);  
-	}
-	
 	# Push the curve block to the list.
 	push(@blocks, [$co2, @args] );
     }
@@ -979,7 +979,8 @@ sub check {
 our $new_defaults = {
     size => [6,4.5,'in'],
     type => '',
-    output => ''
+    output => '',
+    multi=>undef
 };
 
 
@@ -1049,7 +1050,18 @@ sub new {
 	push( @params, "output" => ($conv_tempfile || $opt->{output}) );
 	$gpw = gpwin( $conv_tempfile ? 'png' : $ext,  @params );
     }
+
+
     my $me = { opt => $opt, conv_fn => $conv_tempfile, obj=>$gpw };
+
+    # Deal with multiplot setup...
+    if(defined($opt->{multi})) {
+	$me->{nplots} = $opt->{multi}->[0] * $opt->{multi}->[1];
+	$me->{plot_no} = 0;
+    } else {
+	$me->{nplots} = 0;
+    }
+
     return bless($me, 'PDL::Graphics::Simple::Gnuplot');
 }
 
@@ -1111,6 +1123,14 @@ sub plot {
 	push(@arglist, (@$block));
     }
 
+    if($me->{nplots}) {
+	print "nplots...\n";
+	unless($me->{plot_no}) {
+	    print "issue multiplot...\n";
+	    $me->{obj}->multiplot( layout=>[$me->{opt}->{multi}->[0], $me->{opt}->{multi}->[1]] );
+	}
+    }
+
     if($ipo->{oplot}) {
 	$me->{obj}->replot(@arglist);
     } else {
@@ -1122,6 +1142,14 @@ sub plot {
 	$a = rim($me->{conv_fn});
 	wim($a, $me->{opt}->{output});
 	unlink($me->{conv_fn});
+    }
+
+    if($me->{nplots}) {
+	$me->{plot_no}++;
+	if($me->{plot_no} >= $me->{nplots}) {
+	    $me->{obj}->end_multi();
+	    $me->{plot_no} = 0;
+	}
     }
 }
 	
@@ -1204,7 +1232,8 @@ sub check {
 our $new_defaults ={
     size => [8,6,'in'],
     type => '',
-    output=>''
+    output=>'',
+    multi=>undef
 };
 
 our $filetypes = {
@@ -1261,8 +1290,14 @@ sub new {
     ($ENV{'PGPLOT_PS_WIDTH'}) = $opt->{size}->[0] * 1000;
     ($ENV{'PGPLOT_PS_HEIGHT'}) = $opt->{size}->[1] * 1000;
 
+    my @params = ( 'size => [$opt->{size}->[0], $opt->{size}->[1] ]' );
+    if( defined($opt->{multi}) ) {
+	push(@params, 'nx=>$opt->{multi}->[0]');
+	push(@params, 'ny=>$opt->{multi}->[1]');
+    }
 
-    my $creator = 'pgwin( $dev, {size=>[ $opt->{size}->[0], $opt->{size}->[1] ]} );';
+    
+    my $creator = 'pgwin( $dev, { '. join(",", @params) . '} );';
     $pgw = eval $creator;
     print STDERR $@ if($@);
     
@@ -1300,14 +1335,12 @@ our $pgplot_methods = {
 sub plot {
     my $me = shift;
     my $ipo = shift;
-    my $po = {
-	title  => $ipo->{title},
-	xtitle => $ipo->{xlabel},
-	ytitle => $ipo->{ylabel},
-	justify=> $ipo->{justify},
-#	xrange => $ipo->{xrange},
-#	yrange => $ipo->{yrange},
-    };
+    my $po = {};
+    $po->{title} = $ipo->{title}   if(defined($ipo->{title}));
+    $po->{xtitle}= $ipo->{xtitle}  if(defined($ipo->{xtitle}));
+    $po->{ytitle}= $ipo->{ytitle}  if(defined($ipo->{ytitle}));
+    $po->{justify}=$ipo->{justify} if(defined($ipo->{justify})); 
+
     my %color_opts = ();
     if(defined($ipo->{crange})) {
 	$color_opts{'MIN'} = $ipo->{crange}->[0] if(defined($ipo->{crange}->[0]));

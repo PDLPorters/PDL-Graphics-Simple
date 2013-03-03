@@ -1,7 +1,7 @@
 #!perl
 
 BEGIN {
-    our $tests_per_engine = 11;
+    our $tests_per_engine = 13;
     our @engines = qw/pgplot gnuplot/;
 }
 use Test::More tests=> (3 + (@engines)*($tests_per_engine));
@@ -18,6 +18,7 @@ eval "PDL::Graphics::Simple::show();";
 ok(!$@);
 
 *mods = \$PDL::Graphics::Simple::mods;
+*mods = \$PDL::Graphics::Simple::mods; # duplicate to shut up the typo detector.
 ok( (  defined($mods) and ref $mods eq 'HASH'  ) ,
     "module registration hash exists");
 
@@ -27,7 +28,7 @@ for $engine(@engines) {
 	"there is a modules entry for $engine ($module)" );
 
   SKIP: {
-
+      my($check_ok);
       eval qq{\$check_ok = ${module}::check(1)};
       ok(!$@, "${module}::check() ran OK");
 
@@ -108,6 +109,27 @@ FOO
       $a = <STDIN>; 
       ok( $a !~ m/^n/i,
 	  "errorbars / limitbars OK");
+
+
+   
+
+##############################
+# Multiplot
+      eval { $w=new PDL::Graphics::Simple(engine=>$engine, multi=>[2,2]); };
+      ok(!$@, "Multiplot declaration was OK");
+      
+      $w->image(rvals(9,9));       $w->image(-rvals(9,9));;
+      $w->image(sequence(9,9));    $w->image( pdl(xvals(9,9),yvals(9,9),rvals(9,9)) );
+      
+      print STDERR << "FOO";
+Testing $engine engine: You should see two bullseyes across the top (one in 
+negative print), a gradient at bottom left, and an RGB blur (if supported
+by the engine - otherwise a modified gradient) at bottom right. 
+OK? (Y/n)
+FOO
+$a = <STDIN>;
+      ok($a !~ m/^n/i,
+	 "multiplot OK");
 
 
     }

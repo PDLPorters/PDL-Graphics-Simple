@@ -12,7 +12,23 @@ PDL::Graphics::Simple - Simple backend-independent plotting for PDL
 
 =head1 SYNOPSIS
  
- TBD
+ # Simple interface - throw plots up on-screen, ASAP
+ use PDL::Graphics::Simple;
+ imag $a;                     # Display an image PDL
+ imag $a, 0, 300;             # Display with color range
+ line $rrr, $fit;             # Plot a line
+ 
+ points $rr, $sec;            # Plot points
+ hold;                        # Hold graphics so subsequent calls overplot
+ line $rrr, $fit;             # Overplot a line in a contrasting color
+ release;                     # Release graphics
+
+ # Object interface - simple plotting, to file or screen
+ $w = pgswin( size=>[8,4], multi=>[2,2] ); # 2x2 plot grid on an 8"x4" window
+ $w = pgswin( size=>[1000,1000,'px'], output=>'plot.png' ); # output to a PNG
+
+ $w->plot( with=>'points', $rr, $sec, with=>'line', $rrr, $fit, 
+           {title=>"Points and fit", xlabel=>"Abscissa", ylabel=>"Ordinate"});
 
 =head1 DESCRIPTION
 
@@ -274,15 +290,43 @@ so that the plot will be overlain on the previous one.
 
 =for usage
 
+ # Object-oriented convenience
  $w = new PDL::Graphics::Simple ( % opts );
  $w->line($data);
 
+ # Very Lazy Convenience
+ $a = xvals(50);
+ lines $a;
+ $im = sin(rvals(100,100)/3);
+ imag $im;
+ imag $im, 0, 1, {title=>"Bullseye?", j=>1};
+
 =for ref
 
-C<line>, C<points>, C<image>, and C<imag> are convenience
+C<line>, C<points>, and C<image> are convenience
 interfaces.  They are exactly equivalent to C<plot> except that
 they set the default "with" curve option to the appropriate
 plot type.
+
+C<imag> is even more DWIMMy for PGPLOT users or PDL Book readers:
+it accepts up to three non-hash arguments at the start of the
+argument list.  The second and third are taken to be values for 
+the C<crange> plot option.
+
+=cut
+=head2 erase
+
+=for usage 
+
+ use PDL::Graphics::Simple;
+ line xvals(10), xvals(10)**2 ;
+ sleep 5;
+ erase;
+
+=for ref 
+
+C<erase> removes a global plot window.  It should not be called as a method.
+To remove a plot window contained in a variable, undefine it.
 
 =cut
 =head2 register
@@ -293,10 +337,11 @@ plot type.
 
 =for ref
 
-This is the registration mechanism for new driver methods for C<PDL::Graphics::Simple>.
-Compliant drivers should announce themselves at compile time by calling C<register>.  
-At call time they should have already defined a package global hash ref, C<$mod>, containing
-the following keys:
+This is the registration mechanism for new driver methods for
+C<PDL::Graphics::Simple>.  Compliant drivers should announce
+themselves at compile time by calling C<register>.  When they do that,
+they should have already defined a package global hash ref, C<$mod>,
+containing the following keys:
 
 =over
 

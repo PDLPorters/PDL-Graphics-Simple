@@ -700,8 +700,16 @@ sub oplot {
 
 =for usage
 
+ # Object-oriented convenience
  $w = new PDL::Graphics::Simple ( % opts );
  $w->line($data);
+
+ # Very Lazy Convenience
+ $a = xvals(50);
+ lines $a;
+ $im = sin(rvals(100,100)/3);
+ imag $im;
+ imag $im, 0, 1, {title=>"Bullseye?", j=>1};
 
 =for ref
 

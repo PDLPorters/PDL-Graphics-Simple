@@ -4,7 +4,23 @@ PDL::Graphics::Simple - Simple backend-independent plotting for PDL
 
 =head1 SYNOPSIS
  
- TBD
+ # Simple interface - throw plots up on-screen, ASAP
+ use PDL::Graphics::Simple;
+ imag $a;                     # Display an image PDL
+ imag $a, 0, 300;             # Display with color range
+ line $rrr, $fit;             # Plot a line
+ 
+ points $rr, $sec;            # Plot points
+ hold;                        # Hold graphics so subsequent calls overplot
+ line $rrr, $fit;             # Overplot a line in a contrasting color
+ release;                     # Release graphics
+
+ # Object interface - simple plotting, to file or screen
+ $w = pgswin( size=>[8,4], multi=>[2,2] ); # 2x2 plot grid on an 8"x4" window
+ $w = pgswin( size=>[1000,1000,'px'], output=>'plot.png' ); # output to a PNG
+
+ $w->plot( with=>'points', $rr, $sec, with=>'line', $rrr, $fit, 
+           {title=>"Points and fit", xlabel=>"Abscissa", ylabel=>"Ordinate"});
 
 =head1 DESCRIPTION
 
@@ -65,8 +81,8 @@ our $VERSION = '0.004';
 ##############################
 # Exporting
 use base 'Exporter';
-our @EXPORT_OK = qw(pdlwin plot line point image erase);
-our @EXPORT = qw(pdlwin);
+our @EXPORT_OK = qw(pgswin plot line points image imag hold release);
+our @EXPORT = qw(pgswin line points imag hold release erase);
 
 
 ##############################
@@ -161,13 +177,13 @@ is always horizontal first, and left-to-right, top-to-bottom.
 =cut
 our $new_defaults = {
     engine => '',
-    size => [6,4.5,'in'],
+    size => [8,6,'in'],
     type => '',
     output => '',
     multi => undef
 };
 
-sub pdlwin { new('PDL::Graphics::Simple',@_); }
+sub pgswin { new('PDL::Graphics::Simple',@_); }
 
 sub new {
     my $pkg = shift;
@@ -689,15 +705,29 @@ sub oplot {
 
 =for ref
 
-C<line>, C<points>, C<image>, and C<imag> are convenience
+C<line>, C<points>, and C<image> are convenience
 interfaces.  They are exactly equivalent to C<plot> except that
 they set the default "with" curve option to the appropriate
 plot type.
 
+C<imag> is even more DWIMMy for PGPLOT users or PDL Book readers:
+it accepts up to three non-hash arguments at the start of the
+argument list.  The second and third are taken to be values for 
+the C<crange> plot option.
+
 =cut
 
 sub _convenience_plot{
-    my( $type, $me, @args ) = @_;
+    my $type = shift;
+    my $me;
+    if( UNIVERSAL::isa($_[0], 'PDL::Graphics::Simple') ) {
+	$me = shift;
+    } else {
+	$me = _global_or_new();
+    }
+
+    my @args = @_;
+
     die "Not enough args to PDL::Graphics::Simple::$type()\n" if( @args < 1 );
     if( ref($args[0]) eq 'HASH' ) {
 	if( ref($args[1]) eq 'HASH' ) {
@@ -711,14 +741,83 @@ sub _convenience_plot{
     plot( $me, @args );
 }
 
-sub line   { _convenience_plot( 'line',   @_ ); }
-sub points { _convenience_plot( 'points', @_ ); }
-sub image  { _convenience_plot( 'image',  @_ ); }
-sub imag   { _convenience_plot( 'image',  @_ ); }
+sub line    { _convenience_plot( 'line',   @_ ); }
+*PDL::line   = \&line;
 
+sub lines   { _convenience_plot( 'line',   @_ ); }  
+*PDL::lines  = \&lines;
+
+sub points  { _convenience_plot( 'points', @_ ); }  
+*PDL::points = \&points;
+
+sub image   { _convenience_plot( 'image', @_ ); }   #  Don't PDL-class image since it's so different from imag.
+
+sub imag   { 
+    my $me;
+    if( UNIVERSAL::isa($_[0], 'PDL::Graphics::Simple') ) {
+	$me = shift;
+    } else {
+	$me = _global_or_new();
+    }
+    my $data = shift;
+    my $crange = [];
+    unless(ref($_[0]) eq 'HASH') {
+	$crange->[0] = shift;
+	
+	unless(ref($_[0]) eq 'HASH') {
+	    $crange->[1] = shift;
+	}
+    }
+    
+    # Try to put the crange into the plot options, if they are present
+    unless( ref($_[$#_]) eq 'HASH' ) {
+	push(@_, {} );
+    }
+    $_[$#_]->{crange} = $crange;
+
+    _convenience_plot( 'image',  $data, @_ );
+}
+*PDL::imag = \&imag;
+
+=head2 erase
+
+=for usage 
+
+ use PDL::Graphics::Simple;
+ line xvals(10), xvals(10)**2 ;
+ sleep 5;
+ erase;
+
+=for ref 
+
+C<erase> removes a global plot window.  It should not be called as a method.
+To remove a plot window contained in a variable, undefine it.
+
+=cut
+
+our $global_object;
+
+sub erase {
+    my $me = shift;
+    if(defined($me)) {
+	die "PDL::Graphics::Simple::erase: no arguments, please.";
+    }
+    if(defined($global_object)) {
+	undef $global_object;
+    }
+}
 
 ##############################
 # Utilities.
+
+
+sub _global_or_new {
+    unless(defined($global_object)) {
+	$global_object = pgswin();
+    }
+    return $global_object;
+}
+
 
 ### Units table - cheesy but also horrible.
 our $units = {
@@ -775,7 +874,7 @@ sub _regularize_size {
 }
 
 ##########
-# make_mod_abbrevs - generate abbrev hash for module list.  Cheesy but fast to code.
+# make_abbrevs - generate abbrev hash for module list.  Cheesy but fast to code.
 sub _make_abbrevs {
     my $hash = shift;
     my $abbrevs = {};
@@ -801,10 +900,11 @@ sub _make_abbrevs {
 
 =for ref
 
-This is the registration mechanism for new driver methods for C<PDL::Graphics::Simple>.
-Compliant drivers should announce themselves at compile time by calling C<register>.  
-At call time they should have already defined a package global hash ref, C<$mod>, containing
-the following keys:
+This is the registration mechanism for new driver methods for
+C<PDL::Graphics::Simple>.  Compliant drivers should announce
+themselves at compile time by calling C<register>.  When they do that,
+they should have already defined a package global hash ref, C<$mod>,
+containing the following keys:
 
 =over
 

@@ -4,7 +4,10 @@ BEGIN {
     our $tests_per_engine = 13;
     our @engines = qw/pgplot gnuplot/;
 }
-use Test::More tests=> (3 + (@engines)*($tests_per_engine));
+use Test::More tests=> ( + 3                              # up-front
+			 + (@engines)*($tests_per_engine) # in per-engine loop
+			 + 12                             # down-back
+    );
 
 use File::Temp q/tempfile/;
 use PDL;
@@ -133,7 +136,86 @@ $a = <STDIN>;
 
 
     }
+
+    undef $w;
 }
+
+##############################
+# Try the simple engine and convenience interfaces...
+
+print STDERR<<'FOO';
+
+##############################
+Convenience interface tests...
+FOO
+
+ok( !defined($PDL::Graphics::Simple::global_object), "Global convenience object not defined" );
+
+eval q: $a = xvals(50); lines $a sin($a/3) :;
+ok(!$@, "simple lines plot succeeded");
+
+ok( defined($PDL::Graphics::Simple::global_object), "Global convenience object got spontaneously set" );
+
+print STDERR <<'FOO';
+
+  test>  $a = xvals(50); lines $a sin($a/3); 
+You should see a sine wave... OK? (Y/n)
+FOO
+
+$a = <STDIN>;
+ok($a !~ m/^n/i, "convenience plot OK");
+
+eval q: erase :;
+ok(!$@, 'erase worked');
+ok(!defined($PDL::Graphics::Simple::global_object), 'erase erased the global object');
+
+##############################
+# Test imag 
+
+
+$im = 1000 * sin(rvals(100,100)/3) / (rvals(100,100)+30);
+
+eval q{ imag $im };
+ok(!$@, "imag worked with no additional arguments" );
+
+print STDERR <<'FOO';
+
+  test> $im = 1000 * sin(rvals(100,100)/3) / (rvals(100,100)+30);
+  test> imag $im;
+You should see a bullseye pattern with a brighter inner ring.  OK? (Y/n)
+FOO
+
+$a=<STDIN>;
+ok($a !~ m/^n/i, "bullseye OK");
+
+eval q{ imag $im, {wedge=>1, title=>"Bullseye!"} };
+ok(!$@, "imag worked with plot options");
+
+print STDERR <<'FOO';
+
+  test> imag $im, {wedge=>1, title=>"Bullseye!", j=>1};
+You should see the same image, but with a colorbar wedge on the right; a title
+up top; and a justified aspect ratio (circular rings).  Ok? (Y/n)
+FOO
+
+$a = <STDIN>;
+ok($a !~ m/^n/i, "justified bullseye and wedge OK");
+
+
+eval q{ imag $im, 0, 30, {wedge=>1, j=>1} };
+ok(!$@, "imag worked with bounds");
+
+print STDERR <<'FOO';
+  test> imag $im, 0, 30, {wedge=>1, j=>1};
+You should see the same image, but with no title and with a tighter 
+dynamic range that cuts off the low values (black rings instead of
+the fainter parts of the bullseye).  Ok? (Y/n)
+FOO
+
+$a = <STDIN>;
+ok($a !~ m/^n/i, "crange shortcut is OK");
+
+
 
 
 

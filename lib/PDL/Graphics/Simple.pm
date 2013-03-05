@@ -81,7 +81,7 @@ our $VERSION = '0.004';
 ##############################
 # Exporting
 use base 'Exporter';
-our @EXPORT_OK = qw(pgswin plot line points image imag hold release);
+our @EXPORT_OK = qw(pgswin plot line points imag hold release erase image );
 our @EXPORT = qw(pgswin line points imag hold release erase);
 
 
@@ -503,6 +503,7 @@ sub plot {
     }
 
     $po = $plot_options->options($po);
+    $po->{oplot} = 1 if(defined($obj->{held}) and $obj->{held});
 
 
     ##############################
@@ -791,7 +792,7 @@ sub imag   {
 
 =for usage 
 
- use PDL::Graphics::Simple;
+ use PDL::Graphics::Simple qw/erase hold release/;
  line xvals(10), xvals(10)**2 ;
  sleep 5;
  erase;
@@ -812,6 +813,62 @@ sub erase {
     }
     if(defined($global_object)) {
 	undef $global_object;
+    }
+}
+
+=head2 hold
+
+=for usage
+
+ use PDL::Graphics::Simple;
+ line xvals(10);
+ hold;
+ line xvals(10)**0.5;
+
+=for ref
+
+Causes subsequent plots to be overplotted on any existing one.  Called
+as a function with no arguments, C<hold> applies to the global object.
+Called as an object method, it applies to the object.
+
+=cut
+
+sub hold {
+    my $me = shift;
+    if(defined($me) and UNIVERSAL::isa($me,"PDL::Graphics::Simple")) {
+	$me->{held} =1;
+    } elsif(defined($global_object)) {
+	$global_object->{held}=1;
+    } else {
+	die "Can't hold a nonexistent window!\n";
+    }
+}
+
+=head2 release
+
+=for usage
+
+ use PDL::Graphics::Simple;
+ line xvals(10);
+ hold;
+ line xvals(10)**0.5;
+ release;
+ line xvals(10)**0.5;
+
+=for ref
+
+Releases a hold placed by C<hold>.
+
+=cut
+
+sub release {
+    my $me = shift;
+    if(defined($me) and UNIVERSAL::isa($me,"PDL::Graphics::Simple")) {
+	$me->{held} = 0;
+    } elsif(defined($global_object)) {
+	$global_object->{held} = 0;
+    } else {
+	die "Can't release a nonexistent window!\n";
     }
 }
 
@@ -1036,11 +1093,13 @@ types the atomicity is not well defined, since multiplot grids may
 be problematic, but the plot should be closed as soon as practical.
 
 The plot options hash contains the plot options listed under C<plot>,
-above.  All options are present in the hash. The C<title>, C<xlabel>,
-C<ylabel>, and C<legend> options default to undef, which indicates the
-corresponding plot feature should not be rendered.  The C<oplot>,
-C<xrange>, C<yrange>, C<crange>, C<wedge>, and C<justify> parameters
-are always both present and defined.
+above, plus one additional flag - C<oplot> - that indicates the new
+data is to be overplotted on top of whatever is already present in the
+plotting window.  All options are present in the hash. The C<title>,
+C<xlabel>, C<ylabel>, and C<legend> options default to undef, which
+indicates the corresponding plot feature should not be rendered.  The
+C<oplot>, C<xrange>, C<yrange>, C<crange>, C<wedge>, and C<justify>
+parameters are always both present and defined.
 
 If the C<oplot> plot option is set, then the plot should be overlain on 
 a previous plot - otherwise the module should display a fresh plot.

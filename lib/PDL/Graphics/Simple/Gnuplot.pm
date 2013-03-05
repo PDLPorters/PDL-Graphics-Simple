@@ -211,8 +211,14 @@ sub plot {
     }
 
     if($ipo->{oplot}) {
+	print "replotting\n";
+	delete $po->{xrange};
+	delete $po->{yrange};
+	delete $po->{cbrange};
+	delete $po->{justify};
 	$me->{obj}->replot(@arglist);
     } else {
+	print "plotting\n";
 	$me->{obj}->plot(@arglist);
     }
 

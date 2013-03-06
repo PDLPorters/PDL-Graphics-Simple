@@ -187,6 +187,7 @@ sub new {
     my $size = PDL::Graphics::Simple::_regularize_size($opt->{size},'px');
     push(@params, PAGESIZE => [ $size->[0], $size->[1] ]);
     
+    my $me = { opt=>$opt, conv_fn=>$conv_tempfile };
 
     if( defined($opt->{multi}) ) {
 	push(@params, SUBPAGES => [$opt->{multi}->[0], $opt->{multi}->[1]] );
@@ -202,7 +203,9 @@ sub new {
     $pgw = eval { &$creator };
     print STDERR $@ if($@);
     
-    my $me = { creator=>$creator, opt=>$opt, conv_fn=>$conv_tempfile, obj=>$pgw };
+    $me->{creator} = $creator;
+    $me->{obj} = $pgw;
+
     return bless($me, 'PDL::Graphics::Simple::PLplot');
 }
 
@@ -308,31 +311,31 @@ sub plot {
     my $ipo = shift;
     my $ppo = {};
 
-    $po->{TITLE}  = $ipo->{title}   if(defined($ipo->{title}));
-    $po->{XLAB}   = $ipo->{xtitle}  if(defined($ipo->{xtitle}));
-    $po->{YLAB}   = $ipo->{ytitle}  if(defined($ipo->{ytitle}));
-    $po->{ZRANGE} = $ipo->{crange}  if(defined($ipo->{crange}));
+    $ppo->{TITLE}  = $ipo->{title}   if(defined($ipo->{title}));
+    $ppo->{XLAB}   = $ipo->{xtitle}  if(defined($ipo->{xtitle}));
+    $ppo->{YLAB}   = $ipo->{ytitle}  if(defined($ipo->{ytitle}));
+    $ppo->{ZRANGE} = $ipo->{crange}  if(defined($ipo->{crange}));
 
     unless( $ipo->{oplot} ) {
 	$me->{style} = 0;
+
 	if($me->{opt}->{multi}) {
 	    $me->{multi_cur}++;
 	}
 
-	if(!defined($me->{multi_n}) or  !($me->{multi_n})   or  $me->{multi_cur} > $me->{multi_n} ) {
-	    $me->{multi_cur} = 1;
+	plsstrm($me->{obj}->{STREAMNUMBER});
+	pladv($me->{multi_cur} or 1);
+
+
+	if(!defined($me->{multi_n}) or  !($me->{multi_n})   or  $me->{multi_n}==1 ) {
+
 	    if($me->{opt}->{type}=~ m/^i/) {
 		plsstrm($me->{obj}->{STREAMNUMBER});
-		pladv($me->{multi_cur} or 1);
-		plclear;
-#		plbob();
+		pleop();
+		plclear();
+		plbop();
 	    }
 	}
-	
-	plsstrm($me->{obj}->{STREAMNUMBER});
-	pleop();
-	plclear();
-	plbop();
 
 	
 #	plenv( $ipo->{xrange}->[0], $ipo->{xrange}->[1], $ipo->{yrange}->[0],$ipo->{yrange}->[1], $ipo->{justify},  1);
@@ -341,7 +344,6 @@ sub plot {
 	$me->{obj}->{JUST} = !!$ipo->{justify};
 	
     }
-    print "Done with setup\n";
 
     warn "P::G::S::PLplot: key not implemented yet" if($ipo->{key});
 
@@ -356,18 +358,13 @@ sub plot {
 	$plpm = $plplot_methods->{$co->{with}};
 	die "Unknown curve option 'with $co->{with}'!" unless($plpm);
 
-	my %plplot_opts = (%$po, %$ppo);
+	my %plplot_opts = (%$ppo);
 	my $plplot_opts = \%plplot_opts;
 
 	if(ref($plpm) eq 'CODE') {
 	    &$plpm($me, $ipo, \@data, $plplot_opts);
 	} else {
 	    my $str= sprintf('$me->{obj}->xyplot(@data,PLOTTYPE=>"%s",%s);%s',$plpm,'%plplot_opts',"\n");
-	    print "plplot_opts:";
-	    for $k(sort keys %plplot_opts) {
-		printf("%12s - %s\n",$k, $plplot_opts{$k});
-	    }
-	    print $str;
 	    eval $str;
 	}
     }

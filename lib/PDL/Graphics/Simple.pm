@@ -96,7 +96,7 @@ our $global_plot = undef;
 
 # Attempt to load some default modules
 
-for my $submod(qw/ PGPLOT Gnuplot Prima PLPlot /) {
+for my $submod(qw/ PGPLOT Gnuplot PLplot Prima /) {
 eval "use PDL::Graphics::Simple::$submod;";
 }
 

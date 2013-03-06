@@ -2,7 +2,7 @@
 
 BEGIN {
     our $tests_per_engine = 13;
-    our @engines = qw/pgplot gnuplot/;
+    our @engines = qw/plplot gnuplot pgplot/;
 }
 use Test::More tests=> ( + 3                              # up-front
 			 + (@engines)*($tests_per_engine) # in per-engine loop
@@ -68,6 +68,7 @@ FOO
 		 );
       };
       ok(!$@, "plot succeeded\n");
+      print $@ if($@);
       print STDERR <<"FOO";
 Testing $engine engine: You should see a radial 11x11 "target" image
 and some superimposed "circles".  Since the plot is not justified, the

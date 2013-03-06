@@ -276,11 +276,13 @@ sub plot {
 	$me->{obj}->hold;
     }
     $me->{obj}->release;
-    $me->{obj}->close if($me->{opt}->{type} =~ m/^f/i);
+    $me->{obj}->close if($me->{opt}->{type} =~ m/^f/i  and !defined($me->{opt}->{multi}));
 
     my $file = ( ($me->{conv_fn}) ? $me->{conv_fn} : $me->{output} );
     if(defined($file) and $file =~ m/\.ps$/) {
-	print "Patching up  $file...\n";
+	## PGPLOT PS files are malformed - the BoundingBox notations break the spec, so the
+	## rim/wim technique doesn't work.  Patch up the PS file to have a correct BoundingBox.
+
 	open FOO, "<$file";
 	my @lines = <FOO>;
 	my $i;
@@ -306,6 +308,6 @@ sub plot {
     if($me->{conv_fn}) {
 	$a = rim($me->{conv_fn});
 	wim($a, $me->{opt}->{output});
-#	unlink($me->{conv_fn});
+	unlink($me->{conv_fn});
     } 
 }

@@ -49,17 +49,26 @@ When plotting to a file, the file output is not guaranteed to be present
 until the plot object is destroyed (e.g. by being undefed or going out of
 scope).
 
+=head1 STATE OF DEVELOPMENT
+
+PDL::Graphics::Simple currently supports a limited subset of the
+planned limited subset.  In particular, v0.004 was developed
+specifically to support the interactive plot demos in the PDL::Book,
+and to nucleate a full implementation at a later time.
+
 =head1 SUPPORTED GRAPHICS ENGINES
 
-PDL::Graphics::Simple supports the following graphics engines as
-distributed.  Additional modules can be loaded dynamically;
-see C<register>, below.
+PDL::Graphics::Simple includes support for the following graphics
+engines.  Additional driver modules can be loaded dynamically; see
+C<register>, below.
 
 =over 3
 
 =item Gnuplot (via PDL::Graphics::Gnuplot)
 
 =item PGPLOT  (via PDL::Graphics::PGPLOT::Window)
+
+=item PLplot (via PDL::Graphics::PLplot)
 
 =back
 

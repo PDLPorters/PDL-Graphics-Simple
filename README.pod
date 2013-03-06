@@ -57,17 +57,26 @@ When plotting to a file, the file output is not guaranteed to be present
 until the plot object is destroyed (e.g. by being undefed or going out of
 scope).
 
+=head1 STATE OF DEVELOPMENT
+
+PDL::Graphics::Simple currently supports a limited subset of the
+planned limited subset.  In particular, v0.004 was developed
+specifically to support the interactive plot demos in the PDL::Book,
+and to nucleate a full implementation at a later time.
+
 =head1 SUPPORTED GRAPHICS ENGINES
 
-PDL::Graphics::Simple supports the following graphics engines as
-distributed.  Additional modules can be loaded dynamically;
-see C<register>, below.
+PDL::Graphics::Simple includes support for the following graphics
+engines.  Additional driver modules can be loaded dynamically; see
+C<register>, below.
 
 =over 3
 
 =item Gnuplot (via PDL::Graphics::Gnuplot)
 
 =item PGPLOT  (via PDL::Graphics::PGPLOT::Window)
+
+=item PLplot (via PDL::Graphics::PLplot)
 
 =back
 
@@ -318,7 +327,7 @@ the C<crange> plot option.
 
 =for usage 
 
- use PDL::Graphics::Simple;
+ use PDL::Graphics::Simple qw/erase hold release/;
  line xvals(10), xvals(10)**2 ;
  sleep 5;
  erase;
@@ -327,6 +336,38 @@ the C<crange> plot option.
 
 C<erase> removes a global plot window.  It should not be called as a method.
 To remove a plot window contained in a variable, undefine it.
+
+=cut
+=head2 hold
+
+=for usage
+
+ use PDL::Graphics::Simple;
+ line xvals(10);
+ hold;
+ line xvals(10)**0.5;
+
+=for ref
+
+Causes subsequent plots to be overplotted on any existing one.  Called
+as a function with no arguments, C<hold> applies to the global object.
+Called as an object method, it applies to the object.
+
+=cut
+=head2 release
+
+=for usage
+
+ use PDL::Graphics::Simple;
+ line xvals(10);
+ hold;
+ line xvals(10)**0.5;
+ release;
+ line xvals(10)**0.5;
+
+=for ref
+
+Releases a hold placed by C<hold>.
 
 =cut
 =head2 register
@@ -430,11 +471,13 @@ types the atomicity is not well defined, since multiplot grids may
 be problematic, but the plot should be closed as soon as practical.
 
 The plot options hash contains the plot options listed under C<plot>,
-above.  All options are present in the hash. The C<title>, C<xlabel>,
-C<ylabel>, and C<legend> options default to undef, which indicates the
-corresponding plot feature should not be rendered.  The C<oplot>,
-C<xrange>, C<yrange>, C<crange>, C<wedge>, and C<justify> parameters
-are always both present and defined.
+above, plus one additional flag - C<oplot> - that indicates the new
+data is to be overplotted on top of whatever is already present in the
+plotting window.  All options are present in the hash. The C<title>,
+C<xlabel>, C<ylabel>, and C<legend> options default to undef, which
+indicates the corresponding plot feature should not be rendered.  The
+C<oplot>, C<xrange>, C<yrange>, C<crange>, C<wedge>, and C<justify>
+parameters are always both present and defined.
 
 If the C<oplot> plot option is set, then the plot should be overlain on 
 a previous plot - otherwise the module should display a fresh plot.

@@ -233,18 +233,15 @@ our $plplot_methods = {
     },
     'points' => 'POINTS',
     'errorbars' => sub {
-	die "ERRORBARS NOT IMPLEMENTED";
 	my ($me, $ipo, $data, $ppo) = @_;
-	$me->{obj}->points($data->[0],$data->[1],$ppo);
-	$me->{obj}->errb($data->[0],$data->[1],$data->[2]);
+	$me->{obj}->xyplot($data->[0], $data->[1], %{$ppo}, YERRORBAR=>$data->[2]);
     },
     'limitbars'=> sub {
-	die "LIMITBARS NOT IMPLEMENTED";
 	my ($me, $ipo, $data, $ppo) = @_;
-	# use XY absolute error form, but with X errorbars right on the point
-	$me->{obj}->points($data->[0],$data->[1],$ppo);
-	my $z = zeroes($data->[0]);
-	$me->{obj}->errb($data->[0],$data->[1], $z, $z, -($data->[2]-$data->[1]), $data->[3]-$data->[1], $ppo);
+	$me->{obj}->xyplot($data->[0], 0.5*($data->[2]+$data->[3]), %{$ppo}, 
+			   YERRORBAR=>($data->[3]-$data->[2])->abs, 
+			   PLOTTYPE=>'POINTS', SYMBOLSIZE=>0.0001, %$ppo);
+	$me->{obj}->xyplot($data->[0], $data->[1], PLOTTYPE=>'LINE', %$ppo);
     },
     'image'  => sub {
 	my ($me,$ipo,$data,$ppo) = @_;

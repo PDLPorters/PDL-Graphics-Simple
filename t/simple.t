@@ -128,7 +128,8 @@ FOO
       print STDERR << "FOO";
 Testing $engine engine: You should see two bullseyes across the top (one in 
 negative print), a gradient at bottom left, and an RGB blur (if supported
-by the engine - otherwise a modified gradient) at bottom right. 
+by the engine - otherwise a modified gradient) at bottom right.  The top two
+panels should have colorbar wedges to the right of the image.
 OK? (Y/n)
 FOO
 $a = <STDIN>;
@@ -172,8 +173,7 @@ ok(!defined($PDL::Graphics::Simple::global_object), 'erase erased the global obj
 
 ##############################
 # Test imag 
-
-
+$im = 0; # shut up the typo detector
 $im = 1000 * sin(rvals(100,100)/3) / (rvals(100,100)+30);
 
 eval q{ imag $im };

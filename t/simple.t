@@ -2,7 +2,7 @@
 
 BEGIN {
     our $tests_per_engine = 13;
-    our @engines = qw/plplot gnuplot pgplot/;
+    our @engines = qw/gnuplot pgplot plplot/;
 }
 use Test::More tests=> ( + 3                              # up-front
 			 + (@engines)*($tests_per_engine) # in per-engine loop
@@ -60,6 +60,25 @@ FOO
       ok( $a !~ m/^n/i, "line plot looks ok" );
 
 
+
+##############################
+# Error bars plot
+      eval { $w->plot( with=>'errorbars', xvals(37)*72/36, (xvals(37)/3)**2, xvals(37),
+		       with=>'limitbars', sin(xvals(90)*4*3.14159/90)*30 + 72, xvals(90)/2, ones(90)*110,
+		       {title=>"PDL Simple Graphics: $engine, error bars (rel.) & limit bars (abs.)"}
+		 ); };
+      ok(!$@, "errorbar plot succeeded"); print($@) if($@);
+      
+      print STDERR <<"FOO";
+Testing $engine engine: You should see error bars (symmetric relative to each
+plotted point) and limit bars (asymmetric about each plotted point).
+OK? (Y/n)
+FOO
+      $a = <STDIN>; 
+      ok( $a !~ m/^n/i,
+	  "errorbars / limitbars OK");
+
+
 ##############################
 # Image & circles plot
       eval { $w->plot(with=>'image', rvals(11,11), 
@@ -97,33 +116,14 @@ FOO
       ok( $a !~ m/^n/i,
 	  "justified image and circles plot looks ok");
 
-##############################
-# Error bars plot
-      eval { $w->plot( with=>'errorbars', xvals(37)*72/36, (xvals(37)/3)**2, xvals(37),
-		       with=>'limitbars', sin(xvals(90)*4*3.14159/90)*30 + 72, xvals(90)/2, ones(90)*110,
-		       {title=>"PDL Simple Graphics: $engine, error bars (rel.) & limit bars (abs.)"}
-		 ); };
-      ok(!$@, "errorbar plot succeeded"); print($@) if($@);
-      
-      print STDERR <<"FOO";
-Testing $engine engine: You should see error bars (symmetric relative to each
-plotted point) and limit bars (asymmetric about each plotted point).
-OK? (Y/n)
-FOO
-      $a = <STDIN>; 
-      ok( $a !~ m/^n/i,
-	  "errorbars / limitbars OK");
-
-
    
-
 ##############################
 # Multiplot
       eval { $w=new PDL::Graphics::Simple(engine=>$engine, multi=>[2,2]); };
       ok(!$@, "Multiplot declaration was OK");
       
-      $w->image(rvals(9,9));       $w->image(-rvals(9,9));;
-      $w->image(sequence(9,9));    $w->image( pdl(xvals(9,9),yvals(9,9),rvals(9,9)) );
+      $w->image( rvals(9,9),{wedge=>1} );       $w->image( -rvals(9,9),{wedge=>1} );
+      $w->image( sequence(9,9) );    $w->image( pdl(xvals(9,9),yvals(9,9),rvals(9,9)) );
       
       print STDERR << "FOO";
 Testing $engine engine: You should see two bullseyes across the top (one in 

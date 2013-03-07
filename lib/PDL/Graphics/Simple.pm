@@ -60,15 +60,32 @@ and to nucleate a full implementation at a later time.
 
 PDL::Graphics::Simple includes support for the following graphics
 engines.  Additional driver modules can be loaded dynamically; see
-C<register>, below.
+C<register>, below.  Each of the engines has unique capabilities and
+flavor that are not captured in PDL::Graphics::Simple - you are encouraged
+to look at the individual modules for more capability!
 
 =over 3
 
-=item Gnuplot (via PDL::Graphics::Gnuplot)
+=item * Gnuplot (via PDL::Graphics::Gnuplot)
 
-=item PGPLOT  (via PDL::Graphics::PGPLOT::Window)
+Gnuplot is an extremely richly featured plotting package that offers
+markup, rich text control, RGB color, and 2-D and 3-D plotting.  Its
+output is publication quality.  It is supported on POSIX systems, MacOS, 
+and Microsoft Windows, and is available from most package managers.
 
-=item PLplot (via PDL::Graphics::PLplot)
+=item * PGPLOT  (via PDL::Graphics::PGPLOT::Window)
+
+PGPLOT is venerable and nearly as fully featured as Gnuplot for 2-D
+plotting.  It lacks RGB color output. It does have rich text control,
+but uses simple plotter fonts that are generated internally.  It
+is supported on MacOS and POSIX, but is not as widely available as
+Gnuplot.
+
+=item * PLplot (via PDL::Graphics::PLplot)
+
+PLplot is a moderately full featured plotting package that 
+generates publication quality output with a simple high-level interface.
+It is supported on MacOS and POSIX.
 
 =back
 

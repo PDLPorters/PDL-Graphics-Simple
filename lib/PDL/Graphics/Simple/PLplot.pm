@@ -15,9 +15,9 @@ package PDL::Graphics::Simple::PLplot;
 
 use File::Temp qw/tempfile/;
 use PDL::Options q/iparse/;
-
 use PDL;
-use PDL::Graphics::PLplot;
+
+eval 'use PDL::Graphics::PLplot';
 
 our $mod = {
     shortname => 'plplot',
@@ -248,6 +248,12 @@ our $plplot_methods = {
     },
     'image'  => sub {
 	my ($me,$ipo,$data,$ppo) = @_;
+
+	# Hammer RGB into greyscale
+	if($data->[2]->dims>2) {
+	    $data->[2] = $data->[2]->mv(2,0)->average;
+	}
+
 	my $xmin = $data->[0]->min - 0.5 * ($data->[0]->max - $data->[0]->min) / $data->[0]->dim(0);
 	my $xmax = $data->[0]->max + 0.5 * ($data->[0]->max - $data->[0]->min) / $data->[0]->dim(0);
 	my $ymin = $data->[1]->min - 0.5 * ($data->[1]->max - $data->[1]->min) / $data->[1]->dim(1);
@@ -287,6 +293,10 @@ our $plplot_methods = {
 	plshades( $data->[2], $xmin, $xmax, $ymin, $ymax, $clevel, $fill_width, $cont_color, $cont_width, 0, 0, \&pltr2, $grid );
 	plFreeGrid($grid);
 	plflush();
+
+	if($ipo->{wedge}) {
+	    $obj->colorkey($data->[2], 'v', VIEWPORT=>[0.93,0.96,0.15,0.85]);
+	}
     },
     'circles'=> sub { 
 	my ($me,$ipo,$data,$ppo) = @_;

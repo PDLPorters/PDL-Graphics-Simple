@@ -155,6 +155,7 @@ object.
  line( $y, { log=>'xy' } );   # log-log
 
 =item * Image display
+
  $im = 10 * sin(rvals(101,101)) / (10 + rvals(101,101));
  imag $im;          # Display image
  imag $im, 0, 1;    # Set lower/upper color range

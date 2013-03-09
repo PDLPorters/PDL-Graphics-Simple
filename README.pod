@@ -24,7 +24,7 @@ PDL::Graphics::Simple - Simple backend-independent plotting for PDL
  release;                     # Release graphics
 
  # Object interface - simple plotting, to file or screen
- $w = pgswin( size=>[8,4], multi=>[2,2] ); # 2x2 plot grid on an 8"x4" window
+ an$w = pgswin( size=>[8,4], multi=>[2,2] ); # 2x2 plot grid on an 8"x4" window
  $w = pgswin( size=>[1000,1000,'px'], output=>'plot.png' ); # output to a PNG
 
  $w->plot( with=>'points', $rr, $sec, with=>'line', $rrr, $fit, 
@@ -68,15 +68,32 @@ and to nucleate a full implementation at a later time.
 
 PDL::Graphics::Simple includes support for the following graphics
 engines.  Additional driver modules can be loaded dynamically; see
-C<register>, below.
+C<register>, below.  Each of the engines has unique capabilities and
+flavor that are not captured in PDL::Graphics::Simple - you are encouraged
+to look at the individual modules for more capability!
 
 =over 3
 
-=item Gnuplot (via PDL::Graphics::Gnuplot)
+=item * Gnuplot (via PDL::Graphics::Gnuplot)
 
-=item PGPLOT  (via PDL::Graphics::PGPLOT::Window)
+Gnuplot is an extremely richly featured plotting package that offers
+markup, rich text control, RGB color, and 2-D and 3-D plotting.  Its
+output is publication quality.  It is supported on POSIX systems, MacOS, 
+and Microsoft Windows, and is available from most package managers.
 
-=item PLplot (via PDL::Graphics::PLplot)
+=item * PGPLOT  (via PDL::Graphics::PGPLOT::Window)
+
+PGPLOT is venerable and nearly as fully featured as Gnuplot for 2-D
+plotting.  It lacks RGB color output. It does have rich text control,
+but uses simple plotter fonts that are generated internally.  It
+is supported on MacOS and POSIX, but is not as widely available as
+Gnuplot.
+
+=item * PLplot (via PDL::Graphics::PLplot)
+
+PLplot is a moderately full featured plotting package that 
+generates publication quality output with a simple high-level interface.
+It is supported on MacOS and POSIX.
 
 =back
 
@@ -193,14 +210,17 @@ The words may be abbreviated.   [Note: legends are not yet implemented]
 =item xrange
 
 If this is set, it is a two-element ARRAY ref containing a range for
-the X axis.  If it is clear, the engine or plot module is responsible
-for setting the range.
+the X axis.  If it is clear, the axis is autoscaled.
 
 =item yrange
 
 If this is set, it is a two-element ARRAY ref containing a range for
-the Y axis.  If it is clear, the engine or plot module is responsible
-for setting the range.
+the Y axis.  If it is clear, the axis is autoscaled.
+
+=item logaxis
+
+This should be empty, "x", "y", or "xy" (case and order insensitive).
+Named axes are scaled logarithmically.
 
 =item crange 
 

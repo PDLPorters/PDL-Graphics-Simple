@@ -1274,7 +1274,7 @@ PDL::Graphics::Simple defines an object that represents a plotting
 window/interface.  When you construct the object, you can either
 specify a backend or allow PDL::Graphics::Simple to find a backend
 that seems to work on your system.  Subsequent plotting commands are
-translated and passed through to a working plotting module.
+translated and passed through to that working plotting module.
 
 PDL::Graphics::Simple calls are dispatched in a two-step process. The
 main module curries the arguments, parsing them into a regularized

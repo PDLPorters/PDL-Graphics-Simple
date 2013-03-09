@@ -202,9 +202,23 @@ sub plot {
 	die "The PGPLOT engine does not yet support oplot for files.  Instead, \nglom all your lines together into one call to plot.\n";
     }
 
-    $me->{obj}->release;
-    $me->{obj}->env(@{$ipo->{xrange}}, @{$ipo->{yrange}}, $po);
-    $me->{obj}->hold;
+    unless($ipo->{oplot}) {
+	$me->{logaxis} = $ipo->{logaxis};
+
+	$po->{axis} = 0;
+	if($ipo->{logaxis} =~ m/x/i) {
+	    $po->{axis} += 10;
+	    $ipo->{xrange} = [ log10($ipo->{xrange}->[0]), log10($ipo->{xrange}->[1]) ];
+	}
+	if($ipo->{logaxis} =~ m/y/i) {
+	    $po->{axis} += 20;
+	    $ipo->{yrange} = [ log10($ipo->{yrange}->[0]), log10($ipo->{yrange}->[1]) ];
+	}
+	
+	$me->{obj}->release;
+	$me->{obj}->env(@{$ipo->{xrange}}, @{$ipo->{yrange}}, $po);
+	$me->{obj}->hold;
+    }
 
     warn "P::G::S::PGPLOT: key not implemented yet" if($ipo->{key});
 
@@ -259,6 +273,13 @@ sub plot {
 		my $b = (xvals(256)/255)**2;
 		$me->{obj}->ctab($g, $r, $g, $b);
 	    }
+	}
+
+	if($me->{logaxis} =~ m/x/i) {
+	    $data[0] = $data[0]->log10;
+	}
+	if($me->{logaxis} =~ m/y/i) {
+	    $data[1] = $data[1]->log10;
 	}
 
 	if(ref($pgpm) eq 'CODE') {

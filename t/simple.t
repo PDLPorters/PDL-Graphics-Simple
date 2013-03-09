@@ -1,12 +1,12 @@
 #!perl
 
 BEGIN {
-    our $tests_per_engine = 13;
+    our $tests_per_engine = 15;
     our @engines = qw/gnuplot pgplot plplot/;
 }
 use Test::More tests=> ( + 3                              # up-front
 			 + (@engines)*($tests_per_engine) # in per-engine loop
-			 + 12                             # down-back
+			 + 14                             # down-back
     );
 
 use File::Temp q/tempfile/;
@@ -51,7 +51,9 @@ for $engine(@engines) {
 
       };
       ok(!$@, "plot succeeeded\n");
+      print $@ if($@);
       print STDERR <<"FOO";
+
 Testing $engine engine: You should see a superposed line plot and bin
 plot, with x range from 0 to 9 and yrange from 0 to 9. The two plots
 should have different line styles.  OK? (Y/n)
@@ -70,6 +72,7 @@ FOO
       ok(!$@, "errorbar plot succeeded"); print($@) if($@);
       
       print STDERR <<"FOO";
+
 Testing $engine engine: You should see error bars (symmetric relative to each
 plotted point) and limit bars (asymmetric about each plotted point).
 OK? (Y/n)
@@ -89,6 +92,7 @@ FOO
       ok(!$@, "plot succeeded\n");
       print $@ if($@);
       print STDERR <<"FOO";
+
 Testing $engine engine: You should see a radial 11x11 "target" image
 and some superimposed "circles".  Since the plot is not justified, the
 pixels in the target image should be oblong and the "circles" should
@@ -107,6 +111,7 @@ FOO
       };
       ok(!$@, "justified image and circles plot succeeded"); print($@) if($@);
       print STDERR <<"FOO";
+
 Testing $engine engine: You should see the same plot as before, but
 justified.  superimposed "circles".  Since the plot is justified,
 the pixels in the target image should be square and the "circles" should
@@ -115,6 +120,21 @@ FOO
       $a = <STDIN>; 
       ok( $a !~ m/^n/i,
 	  "justified image and circles plot looks ok");
+
+##############################
+# Log scaling
+
+      eval { $w->plot(with=>'line',xvals(500)+1,{log=>'y',title=>"Y=X (semilog)"}); };
+      ok(!$@, "log scaling succeeded");
+      print STDERR <<"FOO";
+
+Testing $engine engine: You should see a simple logarithmically scaled plot,
+with appropriate title.  OK? (Y/n)
+FOO
+      $a = <STDIN>;
+      ok( $1 !~ m/^n/i,
+	  "log scaled plot looks OK");
+
 
    
 ##############################
@@ -126,6 +146,7 @@ FOO
       $w->image( sequence(9,9) );    $w->image( pdl(xvals(9,9),yvals(9,9),rvals(9,9)) );
       
       print STDERR << "FOO";
+
 Testing $engine engine: You should see two bullseyes across the top (one in 
 negative print), a gradient at bottom left, and an RGB blur (if supported
 by the engine - otherwise a modified gradient) at bottom right.  The top two
@@ -207,6 +228,7 @@ eval q{ imag $im, 0, 30, {wedge=>1, j=>1} };
 ok(!$@, "imag worked with bounds");
 
 print STDERR <<'FOO';
+
   test> imag $im, 0, 30, {wedge=>1, j=>1};
 You should see the same image, but with no title and with a tighter 
 dynamic range that cuts off the low values (black rings instead of
@@ -216,6 +238,17 @@ FOO
 $a = <STDIN>;
 ok($a !~ m/^n/i, "crange shortcut is OK");
 
+eval q{ erase };
+ok(!$@, "erase executed");
+
+print STDERR <<'FOO';
+
+  test> erase
+The window should have disappeared.  Ok? (Y/n)
+FOO
+
+$a = <STDIN>;
+ok($a !~ m/^n/i, "erase worked");
 
 
 

@@ -87,12 +87,14 @@ sub new {
     if($opt->{type} =~ m/^i/i) {
 	push(@params, "title"=>$opt->{output}) if(defined($opt->{output}));
 
-	# Interactive - try WXT, Aqua, X11 in that order
+	# Interactive - try WXT, X11 in that order.
+	# (aqua doesn't have a "persist" option we can set to 0)
 	if($mod->{itype}) {
-	    $gpw = gpwin($mod->{itype}, @params);
+	    $gpw = gpwin($mod->{itype}, @params, persist=>0 );
+	    print $PDL::Graphics::Gnuplot::last_plotcmd;
 	} else {
-	    attempt:for my $try( 'wxt', 'aqua', 'x11' ) {
-		eval { $gpw = gpwin($try, @params); };
+	    attempt:for my $try( 'wxt', 'x11' ) {
+		eval { $gpw = gpwin($try, @params, persist=>0 ); };
 		last attempt if($gpw);
 	    }
 	    die "Couldn't start a gnuplot interactive window" unless($gpw);
@@ -185,8 +187,11 @@ sub plot {
 	cbrange  => $ipo->{crange},
 	colorbox => $ipo->{wedge},
 	justify  => $ipo->{justify} ? $ipo->{justify} : undef,
-	clut   => 'sepia'
+	clut   => 'sepia',
     };
+
+    $po->{logscale} = [$ipo->{logaxis}] if($ipo->{logaxis});
+
 
     my @arglist = ($po);
     for my $block(@_) {
@@ -212,6 +217,7 @@ sub plot {
 
     if($ipo->{oplot}) {
 	print "replotting\n";
+	delete $po->{logaxis};
 	delete $po->{xrange};
 	delete $po->{yrange};
 	delete $po->{cbrange};

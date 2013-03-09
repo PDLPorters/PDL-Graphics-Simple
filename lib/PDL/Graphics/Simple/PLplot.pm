@@ -328,6 +328,8 @@ sub plot {
 
     unless( $ipo->{oplot} ) {
 	$me->{style} = 0;
+	
+	$me->{logaxis} = $ipo->{logaxis};
 
 	if($me->{opt}->{multi}) {
 	    $me->{multi_cur}++;
@@ -347,11 +349,22 @@ sub plot {
 	    }
 	}
 
+	if($ipo->{logaxis} =~ m/x/i) {
+	    $me->{obj}->{XBOX} = 'bcnstl';
+	    $ipo->{xrange} = [ log10($ipo->{xrange}->[0]), log10($ipo->{xrange}->[1]) ];
+	}
+
+
+	if($ipo->{logaxis} =~ m/y/i) {
+	    $me->{obj}->{YBOX} = 'bcnstl';
+	    $ipo->{yrange} = [ log10($ipo->{yrange}->[0]), log10($ipo->{yrange}->[1]) ];
+	}
 	
 #	plenv( $ipo->{xrange}->[0], $ipo->{xrange}->[1], $ipo->{yrange}->[0],$ipo->{yrange}->[1], $ipo->{justify},  1);
 	$me->{obj}->{BOX} = [ $ipo->{xrange}->[0], $ipo->{xrange}->[1], $ipo->{yrange}->[0],$ipo->{yrange}->[1]  ];
 	$me->{obj}->{VIEWPORT} = [0.1,0.87,0.13,0.82]; # copied from defaults in PLplot.pm.  Blech.
 	$me->{obj}->{JUST} = !!$ipo->{justify};
+
 	
     }
 
@@ -370,6 +383,14 @@ sub plot {
 
 	my %plplot_opts = (%$ppo);
 	my $plplot_opts = \%plplot_opts;
+
+	if($me->{logaxis} =~ m/x/i) {
+	    $data[0] = $data[0]->log10;
+	}
+
+	if($me->{logaxis} =~ m/y/i) {
+	    $data[1] = $data[1]->log10;
+	}
 
 	if(ref($plpm) eq 'CODE') {
 	    &$plpm($me, $ipo, \@data, $plplot_opts);

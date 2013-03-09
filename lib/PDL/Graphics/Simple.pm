@@ -16,7 +16,7 @@ PDL::Graphics::Simple - Simple backend-independent plotting for PDL
  release;                     # Release graphics
 
  # Object interface - simple plotting, to file or screen
- $w = pgswin( size=>[8,4], multi=>[2,2] ); # 2x2 plot grid on an 8"x4" window
+ an$w = pgswin( size=>[8,4], multi=>[2,2] ); # 2x2 plot grid on an 8"x4" window
  $w = pgswin( size=>[1000,1000,'px'], output=>'plot.png' ); # output to a PNG
 
  $w->plot( with=>'points', $rr, $sec, with=>'line', $rrr, $fit, 
@@ -351,14 +351,17 @@ The words may be abbreviated.   [Note: legends are not yet implemented]
 =item xrange
 
 If this is set, it is a two-element ARRAY ref containing a range for
-the X axis.  If it is clear, the engine or plot module is responsible
-for setting the range.
+the X axis.  If it is clear, the axis is autoscaled.
 
 =item yrange
 
 If this is set, it is a two-element ARRAY ref containing a range for
-the Y axis.  If it is clear, the engine or plot module is responsible
-for setting the range.
+the Y axis.  If it is clear, the axis is autoscaled.
+
+=item logaxis
+
+This should be empty, "x", "y", or "xy" (case and order insensitive).
+Named axes are scaled logarithmically.
 
 =item crange 
 
@@ -450,6 +453,7 @@ our $plot_options = new PDL::Options( {
     key   => undef,
     xrange=> undef,
     yrange=> undef,
+    logaxis=> "",
     crange=> undef,
     bounds=> undef,
     wedge => 0,
@@ -464,7 +468,8 @@ $plot_options->synonyms( {
     legend=>'key',
     colorbar=>'wedge',
     colorbox=>'wedge',
-    cb=>'wedge'
+    cb=>'wedge',
+    logscale => 'logaxis'
     });
 
 our $plot_types = {
@@ -578,6 +583,13 @@ sub plot {
 	$po->{wedge} = !!$po->{wedge};
     }
 
+    if( length($po->{logaxis}) ) {
+	if($po->{logaxis} =~ m/[^xyXY]/) {
+	    die "logaxis must be X, Y, or XY (case insensitive)\n";
+	} 
+	$po->{logaxis} =~ tr/XY/xy/;
+	$po->{logaxis} =~ s/yx/xy/;
+    }
 
     ##############################
     # Parse out curve blocks and check each one for existence.
@@ -667,12 +679,36 @@ sub plot {
 	@minmax = $args[0]->minmax;
 	$minmax[0] -= $dcorner->at(0); 
 	$minmax[1] += $dcorner->at(0);
-	$xminmax->[0] = $minmax[0] if( !defined($xminmax->[0])  or  $minmax[0] < $xminmax->[0] );
-	$xminmax->[1] = $minmax[1] if( !defined($xminmax->[1])  or  $minmax[1] > $xminmax->[1] );
+
+	if($po->{logaxis} =~ m/x/) {
+	    if($minmax[1] > 0) {
+		if($minmax[0] <= 0) {
+		    $minmax[0] = $args[0]->where( ($args[0]>0) )->min;
+		}
+	    } else {
+		$minmax[0] = $minmax[1] = undef;
+	    }
+	}
+
+	$xminmax->[0] = $minmax[0] if( defined($minmax[0])   and   ( !defined($xminmax->[0])  or  $minmax[0] < $xminmax->[0] ));
+	$xminmax->[1] = $minmax[1] if( defined($minmax[1])   and   ( !defined($xminmax->[1])  or  $minmax[1] > $xminmax->[1] ));
+
+
 	
 	@minmax = $args[1]->minmax;
 	$minmax[0] -= $dcorner->at(1); 
 	$minmax[1] += $dcorner->at(1);
+
+	if($po->{logaxis} =~ m/y/) {
+	    if($minmax[1] > 0) {
+		if($minmax[0] <= 0) {
+		    $minmax[0] = $args[0]->where( ($args[0]>0) )->min;
+		}
+	    } else {
+		$minmax[0] = $minmax[1] = undef;
+	    }
+	}
+
 	$yminmax->[0] = $minmax[0] if( !defined($yminmax->[0])  or  $minmax[0] < $yminmax->[0] );
 	$yminmax->[1] = $minmax[1] if( !defined($yminmax->[1])  or  $minmax[1] > $yminmax->[1] );
 
@@ -682,10 +718,21 @@ sub plot {
 
     ##############################
     # Deal with context-dependent defaults.
+
+
     $po->{xrange}->[0] = $xminmax->[0] unless(defined($po->{xrange}->[0]));
     $po->{xrange}->[1] = $xminmax->[1] unless(defined($po->{xrange}->[1]));
     $po->{yrange}->[0] = $yminmax->[0] unless(defined($po->{yrange}->[0]));
     $po->{yrange}->[1] = $yminmax->[1] unless(defined($po->{yrange}->[1]));
+
+    if($po->{logaxis} =~ m/x/  and  ($po->{xrange}->[0] <= 0   or  $po->{xrange}->[1] <= 0) ) {
+	die "logarithmic X axis requires positive limits (xrange is [$po->{xrange}->[0],$po->{xrange}->[1]])";
+    }
+    if($po->{logaxis} =~ m/y/  and  ($po->{yrange}->[0] <= 0   or  $po->{yrange}->[1] <= 0) ) {
+	die "logarithmic Y axis requires positive limits";
+    }
+
+    print "xrange is [$po->{xrange}->[0],$po->{xrange}->[1]]; yrange is [$po->{yrange}->[0],$po->{yrange}->[1]]\n";
 
     ##############################
     # At long last, the parsing is over.  Dispatch the call.

@@ -111,6 +111,18 @@ It is supported on MacOS and POSIX.
 C<show> lists the supported engines and a one-line synopsis of each.
 
 =cut
+=head2 pgswin - exported constructor
+
+=for usage
+
+ $w = pgswin( %opts );
+
+=for ref
+
+C<pgswin> is a constructor that is exported by default into the using package. Calling
+C<pgswin(%opts)> is exactly the same as calling C<PDL::Graphics::Simple->new(%opts)>.
+
+
 =head2 new 
 
 =for usage
@@ -119,7 +131,7 @@ C<show> lists the supported engines and a one-line synopsis of each.
 
 =for ref
 
-c<new> is the main constructor for PDL::Graphics::Simple.  It accepts a list of options
+C<new> is the main constructor for PDL::Graphics::Simple.  It accepts a list of options
 about the type of window you want:
 
 =over 3

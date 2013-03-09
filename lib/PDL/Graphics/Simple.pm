@@ -150,6 +150,18 @@ sub show {
 ##############################
 # Constructor - scan through registered subclasses and generate the correct one.
 
+=head2 pgswin - exported constructor
+
+=for usage
+
+ $w = pgswin( %opts );
+
+=for ref
+
+C<pgswin> is a constructor that is exported by default into the using package. Calling
+C<pgswin(%opts)> is exactly the same as calling C<PDL::Graphics::Simple->new(%opts)>.
+
+
 =head2 new 
 
 =for usage
@@ -158,7 +170,7 @@ sub show {
 
 =for ref
 
-c<new> is the main constructor for PDL::Graphics::Simple.  It accepts a list of options
+C<new> is the main constructor for PDL::Graphics::Simple.  It accepts a list of options
 about the type of window you want:
 
 =over 3

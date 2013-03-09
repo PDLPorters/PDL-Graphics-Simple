@@ -39,38 +39,39 @@ require an additional step or two to install.  For simple applications
 have a subset of all plotting capability available in a backend-independent
 layer.  PDL::Graphics::Simple provides that capability.
 
-PDL::Graphics::Simple defines an object that represents a plotting
-window/interface.  When you construct the object, you can either specify a 
-backend or allow PDL::Graphics::Simple to find a backend that seems to work 
-on your system.  Subsequent plotting commands are translated and passed
-through to your chosen plotting module.
+PDL::Graphics::Simple implements all the functionality used in the
+PDL::Book examples, with identical syntax.  It also generalizes that
+syntax - you can use ::Simple graphics, with slight syntactical
+differences, in the same manner that you would use any of the engine
+modules.  See the Examples below for details.
 
-Only a small subset of PDL's complete graphics functionality is supported --
-PDL::Graphics::Simple is intended for quick monkeying around with data 
-or for demos or other applications where platform independence is more
-important than configurability or plot quality.
+The plot you get will always be what you asked for, regardless of
+which plotting engine you have installed on your system.
 
-Only 2-D plotting is supported.  For 3-D plotting, use PDL::Graphics::Gnuplot
-or PDL::Graphics::Trid directly.
+Only a small subset of PDL's complete graphics functionality is
+supported -- each individual plotting module has unique advantages and
+functionality that are beyond what PDL::Graphics::Simple can do.  Only
+2-D plotting is supported.  For 3-D plotting, use
+PDL::Graphics::Gnuplot or PDL::Graphics::Trid directly.
 
-When plotting to a file, the file output is not guaranteed to be present
-until the plot object is destroyed (e.g. by being undefed or going out of
-scope).
+When plotting to a file, the file output is not guaranteed to be
+present until the plot object is destroyed (e.g. by being undefed or
+going out of scope).
 
 =head1 STATE OF DEVELOPMENT
 
-PDL::Graphics::Simple currently supports a limited subset of the
-planned limited subset.  In particular, v0.004 was developed
-specifically to support the interactive plot demos in the PDL::Book,
-and to nucleate a full implementation at a later time.
+PDL::Graphics::Simple currently supports most of the
+planned functionality.  It is being released as a beta
+test to determine if it meets users' needs and gain feedback on
+the API -- so please give feedback!
 
 =head1 SUPPORTED GRAPHICS ENGINES
 
 PDL::Graphics::Simple includes support for the following graphics
 engines.  Additional driver modules can be loaded dynamically; see
 C<register>, below.  Each of the engines has unique capabilities and
-flavor that are not captured in PDL::Graphics::Simple - you are encouraged
-to look at the individual modules for more capability!
+flavor that are not captured in PDL::Graphics::Simple - you are
+encouraged to look at the individual modules for more capability!
 
 =over 3
 
@@ -78,8 +79,9 @@ to look at the individual modules for more capability!
 
 Gnuplot is an extremely richly featured plotting package that offers
 markup, rich text control, RGB color, and 2-D and 3-D plotting.  Its
-output is publication quality.  It is supported on POSIX systems, MacOS, 
-and Microsoft Windows, and is available from most package managers.
+output is publication quality.  It is supported on POSIX systems,
+MacOS, and Microsoft Windows, and is available from most package
+managers.
 
 =item * PGPLOT  (via PDL::Graphics::PGPLOT::Window)
 
@@ -96,6 +98,155 @@ generates publication quality output with a simple high-level interface.
 It is supported on MacOS and POSIX.
 
 =back
+
+The following modules are intended for future support:
+
+=over 3
+
+=item * Prima (via PDL::Graphics::Prima)
+
+Prima is based around a widget paradigm that enables complex
+interaction with data in real-time.  It is not as mature as the other
+platforms, particularly for static plot generation to files.  The
+static plotting API is still under development - but has many
+advantages including speed and fewer external dependencies than the
+other modules.
+
+=back
+
+=head1 EXAMPLES
+
+PDL::Graphics::Simple can be called using plot-atomic or curve-atomic
+plotting styles, using a pidgin form of calls to any of the main
+modules.  The examples are divided into Book-like (very simple), 
+PGPLOT-like (curve-atomic), and Gnuplot-like (plot-atomic) cases.
+
+There are three main styles of interaction with plot objects that 
+PDL::Graphics::Simple supports, reflective of the pre-existing
+modules' styles of interaction.  You can mix-and-match them to match
+your particular needs and coding style.  Here are examples showing 
+convenient ways to call the code.
+
+=head2 First steps (non-object-oriented)
+
+For the very simplest actions there are non-object-oriented shortcuts.
+Here are some examples of simple tasks, including axis labels and plot
+titles.  These non-object-oriented shortcuts are useful for display
+with the default window size.  They make use of a package-global plot
+object.
+
+=over 3
+
+=item * Load module and create line plots
+
+ use PDL::Graphics::Simple;
+ $x = xvals(51)/5; 
+ $y = $x**3;
+
+ $y->line;
+ line( $x, $y );   
+ line( $x, $y, {title=>"My plot", ylabel=> "Ordinate", xlabel=>"Abscissa"} );
+
+=item * Bin plots
+
+ $y->bins;
+ bins($y, {title=>"Bin plot", xl=>"Bin number", yl=>"Count"} );
+
+=item * Point plots
+
+ $y->points;
+ points($y, {title=>"Points plot"});
+
+=item * Logarithmic scaling
+
+ line( $y, { log=>'y' } );    # semilog
+ line( $y, { log=>'xy' } );   # log-log
+
+=item * Image display
+ $im = 10 * sin(rvals(101,101)) / (10 + rvals(101,101));
+ imag $im;          # Display image
+ imag $im, 0, 1;    # Set lower/upper color range
+
+=item * Overlays
+
+ points($x, $y, {logx=>1});
+ hold;
+ line($x, sqrt($y)*10);
+ release;
+
+
+=item * Justify aspect ratio
+
+ imag $im, {justify=>1}
+ points($x, $y, {justify=>1});
+
+=item * Erase/delete the plot window
+ 
+ erase();
+
+=back
+
+=head2 Simple object-oriented plotting
+ 
+More functionality is accessible through direct use of the PDL::Graphics::Simple
+object.  You can set plot size, direct plots to files, and set up multi-panel plots.
+
+The constructor accepts window configuration options that set the plotting
+environment, including size, driving plot engine, output, and multiple
+panels in a single window. 
+
+For interactive/display plots, the plot is rendered immediately, and lasts until
+the object is destroyed.  For file plots, the file is not guaranteed to exist
+and be correct until the object is destroyed.
+
+The basic plotting method is C<plot>.  C<plot> accepts a collection of
+arguments that describe one or more "curves" (or datasets) to plot,
+followed by an optional plot option hash that affects the entire plot.
+Overplotting is implemented via plot option, via a held/released state
+(as in PGPLOT), and via a convenience method C<oplot> that causes the
+current plot to be overplotted on the previous one.
+
+Plot style (line/points/bins/etc.) is selected via the C<with> curve option.  
+Several convenience methods exist to create plots in the various styles.
+
+=over 3
+
+=item * Load module and create basic objects
+
+ use PDL::Graphics::Simple;
+ $x = xvals(51)/5;
+ $y = $x**3;
+ 
+ $win = pgswin();                       # plot to a default-shape window
+ $win = pgswin( size=>[4,3] );          # size is given in inches by default
+ $win = pgswin( size=>[10,5,'cm'] );    # You can feed in other units too
+ $win = pgswin( out=>'plot.ps' );       # Plot to a file (type is via suffix)
+ $win = pgswin( engine=>'gnuplot' );    # Pick a particular plotting engine
+ $win = pgswin( multi=>[2,2] );         # Set up for a 2x2 4-panel plot
+ 
+=item * Simple plots with C<plot>
+
+ $win->plot( with=>'line', $x, $y, {title=>"Simple line plot"} );
+ $win->plot( with=>'errorbars', $x, $y, sqrt($y), {title=>"Error bars"} );
+ $win->plot( with=>'circles', $x, $y, sin($x)**2 );
+
+=item * Plot overlays
+
+ # All at once
+ $win->plot( with=>'line', $x, $y,   with=>'circles', $x, $y/2, sqrt($y)  );
+
+ # Using oplot (IDL-style; PLplot-style)
+ $win->plot(  with=>'line', $x, $y );
+ $win->oplot( with=>'circles', $x, $y/2, sqrt($y) );
+
+ # Using object state (PGPLOT-style)
+ $win->line(  $x, $y );
+ $win->hold;
+ $win->circles( $x, $y/2, sqrt($y) );
+ $win->release;
+
+=back
+
 
 =head1 FUNCTIONS
 
@@ -443,19 +594,32 @@ same as C<$PDL::Graphics::Simple::VERSION>.
 =back
 
 =cut
-=head1 Internals
+=head1 IMPLEMENTATION
 
-PDL::Graphics::Simple defines several subclasses that implement the
-individual interfaces.  The subclasses are very simple and inherit
-only a collection of stubroutines that die with a "not implemented"
-message -- i.e. they are expected to contain a minimum set of methods
-on their own.
+PDL::Graphics::Simple defines an object that represents a plotting
+window/interface.  When you construct the object, you can either
+specify a backend or allow PDL::Graphics::Simple to find a backend
+that seems to work on your system.  Subsequent plotting commands are
+translated and passed through to a working plotting module.
 
-Argument parsing and defaults are handled by the main
-PDL::Graphics::Simple class; actual plot commands are dispatched in a
-regularized form to the appropriate subclasses.  The subclasses are
-responsible for converting the regularized parameters to plot calls 
-in the form expected by their corresponding plot modules.
+PDL::Graphics::Simple calls are dispatched in a two-step process. The
+main module curries the arguments, parsing them into a regularized
+form and carrying out DWIM optimizations. The regularized arguments
+are passed to subclasses that translate them into the APIs of their
+respective plot engines.  The subclasses are very simple and implement
+only a few methods, outlined below.  They are intended only to be
+called by the PDL::Graphics::Simple driver, which limits the need for
+argument processing, currying, and parsing. The subclasses are thus
+responsible only for converting the regularized parameters to plot
+calls in the form expected by their corresponding plot modules.
+
+PDL::Graphics::Simple works through a call-and-dispatch system rather
+than taking full advantage of inheritance.  That is for two reasons:
+(1) it makes central control mildly easier going forward, since calls
+are dispatched through the main module; and (2) it makes the
+non-object-oriented interface easier to implement since the main
+interface modules are in one place and can access the global object
+easily.
 
 =head2 Interface subclass methods
 
@@ -529,16 +693,6 @@ C<lines>, C<bins>, C<errorbars>, C<limitbars>, C<circles>, or
 C<image>.
 
 =cut
-=head1 ARCHITECTURE
-
-PDL::Graphics::Simple works through a central object-and-dispatch
-system rather than taking full advantage of inheritance.  That is for
-two reasons: (1) it makes central control mildly easier going forward,
-since calls are dispatched through the main module; and (2) it makes
-the non-object-oriented interface easier to implement since the main
-interface modules are in one place and can access the global object
-easily.
-
 =head1 REPOSITORY
 
 L<https:/github.com/drzowie/PDL-Graphics-Simple>

@@ -1,7 +1,7 @@
 #!perl
 
 BEGIN {
-    our $tests_per_engine = 15;
+    our $tests_per_engine = 17;
     our @engines = qw/gnuplot pgplot plplot/;
 }
 use Test::More tests=> ( + 3                              # up-front
@@ -132,11 +132,32 @@ Testing $engine engine: You should see a simple logarithmically scaled plot,
 with appropriate title.  OK? (Y/n)
 FOO
       $a = <STDIN>;
-      ok( $1 !~ m/^n/i,
+      ok( $a !~ m/^n/i,
 	  "log scaled plot looks OK");
 
 
-   
+##############################
+# Text
+
+      eval { $w->plot(with=>'labels', 
+		      xvals(5), xvals(5), 
+		      ["<left-justified","<    left-with-spaces", "|centered","|>start with '>'",">right-justified"],
+		      {title=>"$engine: text placement on graph", yrange=>[-1,5] }
+		 );
+      };
+      ok( !$@, "labels plot succeeded" );
+      print STDERR <<"FOO";
+
+Testing $engine engine: You should see "left-justified" text left
+aligned on x=0, "left-with-spaces" just right of x=1, "centered"
+centered on x=2, ">start with '>'" centered on x=3, and
+"right-justified" right-aligned on x=4.  OK? (Y/n)
+FOO
+      $a = <STDIN>;
+      ok( $a !~ m/^n/i,
+	  "labels plot looks OK");
+      
+
 ##############################
 # Multiplot
       eval { $w=new PDL::Graphics::Simple(engine=>$engine, multi=>[2,2]); };

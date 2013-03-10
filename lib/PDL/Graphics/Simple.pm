@@ -585,22 +585,33 @@ is centered on the data point).
 
 =item limitbars
 
-Simple points-with-errorbar plot, with asymmetric errorbars.  It takes 3 or 4
-columns, and the last two columns are the absolute low and high values of the 
-errorbar around each point (specified relative to the origin, not relative to the
-data point value).
+Simple points-with-errorbar plot, with asymmetric errorbars.  It takes
+3 or 4 columns, and the last two columns are the absolute low and high
+values of the errorbar around each point (specified relative to the
+origin, not relative to the data point value).
 
 =item circles
 
 Plot unfilled circles.  Requires 2 or 3 columns of data; the last
-column is the radius of each circle.  The circles are circular in scientific coordinates,
-not necessarily in screen coordinates (unless you specify the "justify" plot option).
+column is the radius of each circle.  The circles are circular in
+scientific coordinates, not necessarily in screen coordinates (unless
+you specify the "justify" plot option).
 
 =item image
 
-This is a monochrome or RGB image.  It takes a 2-D or 3-D array of values, as
-(width x height x color-index).  There is no interface for pseudocolor images - 
-monochrome may be greyscale or a fixed color table depending on implementation.
+This is a monochrome or RGB image.  It takes a 2-D or 3-D array of
+values, as (width x height x color-index).  There is no interface for
+pseudocolor images - monochrome may be greyscale or a fixed color
+table depending on implementation.
+
+=item labels
+
+This places text annotations on the plot.  It requires three input
+arguments: the X and Y location(s) as PDLs, and the label(s) as a list
+ref.  The labels are normally left-justified, but you can explicitly
+set the alignment for each one by beginning the label with "<" for
+left "|" for center, and ">" for right justification, or a single " "
+to denote default justification (left).
 
 =back
 
@@ -644,6 +655,7 @@ our $plot_types = {
     errorbars => { args=>[2,3], ndims=>[1]   },
     limitbars => { args=>[3,4], ndims=>[1]   },
     image     => { args=>[1,3], ndims=>[2,3] },
+    labels    => { args=>[3],   ndims=>[1]   }
 };
 
 our $plot_type_abbrevs = _make_abbrevs($plot_types);
@@ -777,13 +789,9 @@ sub plot {
 		$co->{$a} = $b;
 	    }
 	}
-
-	while( @_ and  (  UNIVERSAL::isa($_[0], 'PDL') or looks_like_number($_[0]) ) )  {
-	    push(@args, pdl(shift));
-	}
-
+	
 	##############################
-	# Now check options
+	# Parse curve options and expand into standard form so we can find "with".
 	$curve_options->options({legend=>undef});
 	my %co2 = %{$curve_options->options( $co )};
 	my $co2 = \%co2;
@@ -794,22 +802,58 @@ sub plot {
 	}
 	my $pt = $plot_types->{$ptn};
 	$co2->{with} = $ptn;
-	
+
+	##############################
+	# Snarf up the other arguments.
+
+	while( @_ and  (  UNIVERSAL::isa($_[0], 'PDL') or 
+			  looks_like_number($_[0])  or
+			  ref $_[0] eq 'ARRAY'
+			  )
+	    )  {
+	    push(@args, shift );
+	}
+
+
+	##############################
+	# Most array refs get immediately converted to 
+	# PDLs.  But the last argument to a "with=labels" curve
+	# needs to be left as an array ref. If it's a PDL we throw
+	# an error, since that's a common mistake case.
+	if( $ptn eq 'labels' ) {
+	    for my $i(0..$#args-1) {
+		$args[$i] = pdl($args[$i]) unless(UNIVERSAL::isa($args[$i],'PDL'));
+	    }
+	    if( ref($args[$#args]) ne 'ARRAY' ) {
+		die "Last argument to 'labels' plot type must be an array ref!";
+	    }
+	} else {
+	    for my $i(0..$#args) {
+		$args[$i] = pdl($args[$i]) unless(UNIVERSAL::isa($args[$i],'PDL'));
+	    }
+	}
+	    
+	##############################
+	# Now check options	
 	unless(@args == $pt->{args}->[0]  or  @args == $pt->{args}->[1]) {
 	    die sprintf("plot style %s requires %d or %d columns; you gave %d\n",$ptn,$pt->{args}->[0],$pt->{args}->[1],0+@args);
 	}
 	
 	# Add an index variable if needed
-	if( $pt->{args}->[1] - @args == 2 ) {
-	    my @dims = ($args[0]->slice(":,:")->dims)[0,1];
-	    unshift(@args, xvals(@dims), yvals(@dims)); 
-	}
-	if( $pt->{args}->[1] - @args == 1 ) {
-	    unshift(@args, xvals($args[0]) );
+	if(defined($pt->{args}->[1])) {
+	    if( $pt->{args}->[1] - @args == 2 ) {
+		my @dims = ($args[0]->slice(":,:")->dims)[0,1];
+		unshift(@args, xvals(@dims), yvals(@dims)); 
+	    }
+	    if( $pt->{args}->[1] - @args == 1 ) {
+		unshift(@args, xvals($args[0]) );
+	    }
 	}
 
-	# Check that the PDL arguments all agree in a threading sense...
-	my @dims = map { [$_->dims] } @args;
+	# Check that the PDL arguments all agree in a threading sense.
+	# Since at least one type of args has an array ref in there, we have to 
+	# consider that case as a pseudo-PDL.
+	my @dims = map { ref($_) eq 'ARRAY' ? [ 0+@{$_} ] : [$_->dims] } @args;
 	my $dims;
 	{
 	    local $PDL::undefval = 1;
@@ -889,14 +933,22 @@ sub plot {
     $po->{yrange}->[0] = $yminmax->[0] unless(defined($po->{yrange}->[0]));
     $po->{yrange}->[1] = $yminmax->[1] unless(defined($po->{yrange}->[1]));
 
+    if($po->{xrange}->[0] == $po->{xrange}->[1]) {
+	$po->{xrange}->[0] -= 0.5; 
+	$po->{xrange}->[1] += 0.5;
+    }
+
+    if($po->{yrange}->[0] == $po->{yrange}->[1]) {
+	$po->{yrange}->[0] -= 0.5;
+	$po->{yrange}->[1] += 0.5;
+    }
+
     if($po->{logaxis} =~ m/x/  and  ($po->{xrange}->[0] <= 0   or  $po->{xrange}->[1] <= 0) ) {
 	die "logarithmic X axis requires positive limits (xrange is [$po->{xrange}->[0],$po->{xrange}->[1]])";
     }
     if($po->{logaxis} =~ m/y/  and  ($po->{yrange}->[0] <= 0   or  $po->{yrange}->[1] <= 0) ) {
 	die "logarithmic Y axis requires positive limits";
     }
-
-    print "xrange is [$po->{xrange}->[0],$po->{xrange}->[1]]; yrange is [$po->{yrange}->[0],$po->{yrange}->[1]]\n";
 
     ##############################
     # At long last, the parsing is over.  Dispatch the call.

@@ -90,11 +90,11 @@ sub new {
 	# Interactive - try WXT, X11 in that order.
 	# (aqua doesn't have a "persist" option we can set to 0)
 	if($mod->{itype}) {
-	    $gpw = gpwin($mod->{itype}, @params, persist=>0 );
+	    $gpw = gpwin($mod->{itype}, @params, persist=>0, font=>"=16" );
 	    print $PDL::Graphics::Gnuplot::last_plotcmd;
 	} else {
 	    attempt:for my $try( 'wxt', 'x11' ) {
-		eval { $gpw = gpwin($try, @params, persist=>0 ); };
+		eval { $gpw = gpwin($try, @params, persist=>0, font=>"=16" ); };
 		last attempt if($gpw);
 	    }
 	    die "Couldn't start a gnuplot interactive window" unless($gpw);
@@ -169,6 +169,27 @@ our $curve_types = {
 	my $dy = ($data[1]->flat->slice("*1") + $dr->slice("*1") * $s)->flat;
 	$co->{with} = "lines";
 	return [ $co, $dx, $dy ];
+    },
+    labels => sub {
+	my($me, $po, $co, @data) = @_;
+	my $label_list = $po->{label} or [];
+	
+	for my $i(0..$data[0]->dim(0)-1) {
+	    my $j = "";
+	    my $s = $data[2]->[$i];
+	    if( $s =~ s/^([\<\>\| ])// ) {
+		$j = $1;
+	    }
+	    
+	    my @spec = ("$s", at=>[$data[0]->at($i), $data[1]->at($i)]);
+	    push(@spec,"left") if($j eq '<');
+	    push(@spec,"center") if($j eq '|');
+	    push(@spec,"right") if($j eq '>');
+	    push( @{$label_list}, \@spec );
+	}
+	$po->{label} = $label_list;
+	$co->{with} = "labels";
+	return [ $co, [$po->{xrange}->[0]], [$po->{yrange}->[0]], [""] ];
     }
 
 };
@@ -224,7 +245,6 @@ sub plot {
 	delete $po->{justify};
 	$me->{obj}->replot(@arglist);
     } else {
-	print "plotting\n";
 	$me->{obj}->plot(@arglist);
     }
 

@@ -308,6 +308,26 @@ our $plplot_methods = {
 	my $dx = ($data->[0]->flat->slice("*1") + $dr->slice("*1") * $c)->flat;
 	my $dy = ($data->[1]->flat->slice("*1") + $dr->slice("*1") * $s)->flat;
 	$me->{obj}->xyplot( $dx, $dy, PLOTTYPE=>'LINE',%{$ppo});
+    },
+    'labels'=>sub {
+	my ($me, $ipo, $data, $ppo) = @_;
+
+	# Call xyplot to make sure the axes get set up.
+	$me->{obj}->xyplot( pdl(1.1)->asin, pdl(1.1)->asin, %{$ppo} );
+
+	for $i(0..$data->[0]->dim(0)-1) {
+	    my $j = 0;
+	    $s = $data->[2]->[$i];
+	    if ($s =~ s/^([\<\|\> ])//) {
+		$j = 1   if($1 eq '>');
+		$j = 0.5 if($1 eq '|');
+	    }
+	    $me->{obj}->text($s, TEXTPOSITION=>[ $data->[0]->at($i),   $data->[1]->at($i), 
+						 1,0,
+						 $j 
+			     ], 
+		);
+	}
     }
 };
 

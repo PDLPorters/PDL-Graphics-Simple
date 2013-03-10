@@ -175,7 +175,20 @@ our $pgplot_methods = {
 	my ($me,$ipo,$data,$ppo) = @_;
 	$ppo->{filltype}='outline';
 	$me->{obj}->tcircle(@$data, $ppo);
+    },
+    'labels'=> sub {
+	my ($me,$ipo,$data,$ppo) = @_;
+	for my $i(0..$data->[0]->dim(0)-1) {
+	    $s = $data->[2]->[$i];
+	    my $j = 0.0;
+	    if( $s =~ s/^([\<\|\>\ ])// ) {
+		$j = 0.5 if($1 eq '|');
+		$j = 1.0 if($1 eq '>');
+	    }
+	    $me->{obj}->text( $s, $data->[0]->at($i), $data->[1]->at($i), {JUSTIFICATION=>$j} );
+	}
     }
+	
 };
 
 ##############################

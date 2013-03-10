@@ -388,7 +388,7 @@ sub plot {
 	
     }
 
-    warn "P::G::S::PLplot: key not implemented yet" if($ipo->{key});
+    warn "P::G::S::PLplot: legends not implemented yet for PLplot" if($ipo->{legend});
 
     while(@_) {
 	my ($co, @data) = @{shift()};

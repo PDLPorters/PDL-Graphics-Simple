@@ -1460,7 +1460,7 @@ Craig DeForest, C<< <craig@deforest.org> >>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2012 Craig DeForest
+Copyright 2013 Craig DeForest
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of either: the Gnu General Public License v2 as

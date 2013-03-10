@@ -1430,16 +1430,23 @@ PDLs must be 1D.  For image plot types the lone PDL must be 2D
 
 The hash in the curve block contains the curve options for that
 particular curve.  They are all set to have reasonable default values.
-The values passed in are C<with> and C<legend>.  If the C<legend>
+The values passed in are C<with> and C<key>.  If the C<legend>
 option is undefined, then the curve should not be placed into a plot
 legend (if present).  The C<with> option will be one of C<points>,
-C<lines>, C<bins>, C<errorbars>, C<limitbars>, C<circles>, or
-C<image>.
+C<lines>, C<bins>, C<errorbars>, C<limitbars>, C<circles>
+C<image>, or C<labels>.
 
 =cut
 	
 
 1;
+
+
+=head1 TO-DO
+
+Deal with legend generation.  In particular: adding legends with multi-call
+protocols is awkward and leads to many edge cases in the internal protocol.
+This needs more thought.
 
 
 =head1 REPOSITORY

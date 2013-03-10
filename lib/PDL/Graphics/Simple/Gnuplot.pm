@@ -94,7 +94,7 @@ sub new {
 	    print $PDL::Graphics::Gnuplot::last_plotcmd;
 	} else {
 	    attempt:for my $try( 'wxt', 'x11' ) {
-		eval { $gpw = gpwin($try, @params, persist=>0, font=>"=16",dash=>1); };
+		eval { $gpw = gpwin($try, @params, persist=>0, font=>"=16",dashed=>1); };
 		last attempt if($gpw);
 	    }
 	    die "Couldn't start a gnuplot interactive window" unless($gpw);
@@ -172,7 +172,7 @@ our $curve_types = {
     },
     labels => sub {
 	my($me, $po, $co, @data) = @_;
-	my $label_list = $po->{label} or [];
+	my $label_list = ($po->{label} or []);
 	
 	for my $i(0..$data[0]->dim(0)-1) {
 	    my $j = "";

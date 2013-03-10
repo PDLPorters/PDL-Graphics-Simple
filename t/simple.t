@@ -50,7 +50,7 @@ for $engine(@engines) {
 		 {title=>"PDL Simple Graphics: $engine engine, line & bin plots"}),
 
       };
-      ok(!$@, "plot succeeeded\n");
+      ok(!$@, "plot succeeded\n");
       print $@ if($@);
       print STDERR <<"FOO";
 
@@ -183,6 +183,7 @@ $a = <STDIN>;
 
     undef $w;
 }
+
 
 ##############################
 # Try the simple engine and convenience interfaces...

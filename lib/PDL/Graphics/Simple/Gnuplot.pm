@@ -265,17 +265,12 @@ sub plot {
     }
 
     if($me->{nplots}) {
-	print "nplots...\n";
 	unless($me->{plot_no}) {
-	    print "issue multiplot...\n";
 	    $me->{obj}->multiplot( layout=>[$me->{opt}->{multi}->[0], $me->{opt}->{multi}->[1]] );
 	}
     }
 
-    use PDL::IO::Dumper;
-    print "arglist is ",sdump(\@arglist);
     if($ipo->{oplot}) {
-	print "replotting\n";
 	delete $po->{logaxis};
 	delete $po->{xrange};
 	delete $po->{yrange};

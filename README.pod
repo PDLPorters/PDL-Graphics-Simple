@@ -365,12 +365,6 @@ If this is set, it is a title for the X axis.
 
 If this is set, it is a title for the Y axis.
 
-=item legend
-
-If this is set, it should be a string containing two words: either
-"top", "center", or "bottom" followed by "left", "center", or "right".
-The words may be abbreviated.   [Note: legends are not yet implemented]
-
 =item xrange
 
 If this is set, it is a two-element ARRAY ref containing a range for
@@ -404,6 +398,19 @@ If this is set to a true value, then the screen aspect ratio is adjusted
 to keep the Y axis and X axis scales equal -- so circles appear circular, and
 squares appear square.
 
+=item legend
+
+This controls whether and where a plot legend should be placed.  If
+you set it, you supply a combination of 't','b','c','l', and 'r':
+indicating top, bottom, center, left, right position for the plot
+legend.  For example, 'tl' for top left, 'tc' for center top, 'c' or
+'cc' for dead center.  If left unset, no legend will be plotted.  If
+you set it but don't specify a position (or part of one), it defaults
+to top and left.  
+
+If you supply even one 'key' curve option in the curves, legend defaults
+to the value 'tl' if it isn't specified.
+
 =back
 
 =head3 Curve options:
@@ -414,9 +421,11 @@ squares appear square.
 
 This names the type of curve to be plotted.  See below for supported curve types.
 
-=item legend
+=item key
 
 This gives a name for the following curve, to be placed in a master plot legend.
+If you don't specify a name but do call for a legend, the curve will be named
+with the plot type and number (e.g. "line 3" or "points 4").
 
 =back
 

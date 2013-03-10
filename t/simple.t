@@ -36,7 +36,7 @@ for $engine(@engines) {
       ok(!$@, "${module}::check() ran OK");
 
       unless($check_ok) {
-	  skip "Skipping tests for engine $engine (not working)", 10;
+	  skip "Skipping tests for engine $engine (not working)", $tests_per_engine - 2;
       }
 
       eval { $w = new PDL::Graphics::Simple(engine=>$engine) };

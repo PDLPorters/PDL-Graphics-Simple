@@ -47,6 +47,14 @@ sub check {
 	die "PDL::Graphics::Simple: PDL::Graphics::Gnuplot didn't construct properly.\n\t$@";
     }
     $mod->{valid_terms} = $gpw->{valid_terms};
+
+    unless( $mod->{valid_terms}->{'x11'}  or  $mod->{valid_terms}->{'wxt'} ) {
+	$mod->{ok} = 0;
+	$s =  "Gnuplot exists but doesn't support either the x11 or wxt terminal\n";
+	$mod->{msg} = $s;
+	die "PDL::Graphics::SImple: $s";
+    }
+
     $mod->{ok} = 1;
     return 1;
 }

@@ -1259,15 +1259,6 @@ sub register {
 }
 
 
-##############################
-# Methods.
-# 
-# We subclass each plotting backend, and as a belt-and-suspenders check
-# we inherit stub functions that throw errors
-
-# The "new" method should check that its module loads properly and the constructor
-# succeeded, and should die if it failed.
-
 =head1 IMPLEMENTATION
 
 PDL::Graphics::Simple defines an object that represents a plotting

@@ -1,8 +1,8 @@
 =head1 OVERVIEW
 
-This is a graphics plotting front-end for PDL.  It is intended to
-implement minimal plotting functionality by dispatching plot calls to
-a relevant, working plot library. 
+PDL::Graphics::Simple is a unified plotting interface for PDL.  The
+main distribution site is CPAN; the development repository is on
+github.com.
 
 =cut
 
@@ -272,7 +272,7 @@ C<show> lists the supported engines and a one-line synopsis of each.
 =for ref
 
 C<pgswin> is a constructor that is exported by default into the using package. Calling
-C<pgswin(%opts)> is exactly the same as calling C<PDL::Graphics::Simple->new(%opts)>.
+C<pgswin(%opts)> is exactly the same as calling C<<PDL::Graphics::Simple->new(%opts)>>.
 
 
 =head2 new 
@@ -444,22 +444,33 @@ is centered on the data point).
 
 =item limitbars
 
-Simple points-with-errorbar plot, with asymmetric errorbars.  It takes 3 or 4
-columns, and the last two columns are the absolute low and high values of the 
-errorbar around each point (specified relative to the origin, not relative to the
-data point value).
+Simple points-with-errorbar plot, with asymmetric errorbars.  It takes
+3 or 4 columns, and the last two columns are the absolute low and high
+values of the errorbar around each point (specified relative to the
+origin, not relative to the data point value).
 
 =item circles
 
 Plot unfilled circles.  Requires 2 or 3 columns of data; the last
-column is the radius of each circle.  The circles are circular in scientific coordinates,
-not necessarily in screen coordinates (unless you specify the "justify" plot option).
+column is the radius of each circle.  The circles are circular in
+scientific coordinates, not necessarily in screen coordinates (unless
+you specify the "justify" plot option).
 
 =item image
 
-This is a monochrome or RGB image.  It takes a 2-D or 3-D array of values, as
-(width x height x color-index).  There is no interface for pseudocolor images - 
-monochrome may be greyscale or a fixed color table depending on implementation.
+This is a monochrome or RGB image.  It takes a 2-D or 3-D array of
+values, as (width x height x color-index).  There is no interface for
+pseudocolor images - monochrome may be greyscale or a fixed color
+table depending on implementation.
+
+=item labels
+
+This places text annotations on the plot.  It requires three input
+arguments: the X and Y location(s) as PDLs, and the label(s) as a list
+ref.  The labels are normally left-justified, but you can explicitly
+set the alignment for each one by beginning the label with "<" for
+left "|" for center, and ">" for right justification, or a single " "
+to denote default justification (left).
 
 =back
 
@@ -601,7 +612,7 @@ PDL::Graphics::Simple defines an object that represents a plotting
 window/interface.  When you construct the object, you can either
 specify a backend or allow PDL::Graphics::Simple to find a backend
 that seems to work on your system.  Subsequent plotting commands are
-translated and passed through to a working plotting module.
+translated and passed through to that working plotting module.
 
 PDL::Graphics::Simple calls are dispatched in a two-step process. The
 main module curries the arguments, parsing them into a regularized

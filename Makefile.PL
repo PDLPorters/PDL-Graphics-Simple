@@ -64,9 +64,9 @@ WriteMakefile(
 my $POD_header = <<EOF;
 =head1 OVERVIEW
 
-This is a graphics plotting front-end for PDL.  It is intended to
-implement minimal plotting functionality by dispatching plot calls to
-a relevant, working plot library. 
+PDL::Graphics::Simple is a unified plotting interface for PDL.  The
+main distribution site is CPAN; the development repository is on
+github.com.
 
 =cut
 

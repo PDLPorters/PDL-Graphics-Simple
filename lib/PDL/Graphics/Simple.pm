@@ -506,12 +506,6 @@ If this is set, it is a title for the X axis.
 
 If this is set, it is a title for the Y axis.
 
-=item legend
-
-If this is set, it should be a string containing two words: either
-"top", "center", or "bottom" followed by "left", "center", or "right".
-The words may be abbreviated.   [Note: legends are not yet implemented]
-
 =item xrange
 
 If this is set, it is a two-element ARRAY ref containing a range for
@@ -545,6 +539,19 @@ If this is set to a true value, then the screen aspect ratio is adjusted
 to keep the Y axis and X axis scales equal -- so circles appear circular, and
 squares appear square.
 
+=item legend
+
+This controls whether and where a plot legend should be placed.  If
+you set it, you supply a combination of 't','b','c','l', and 'r':
+indicating top, bottom, center, left, right position for the plot
+legend.  For example, 'tl' for top left, 'tc' for center top, 'c' or
+'cc' for dead center.  If left unset, no legend will be plotted.  If
+you set it but don't specify a position (or part of one), it defaults
+to top and left.  
+
+If you supply even one 'key' curve option in the curves, legend defaults
+to the value 'tl' if it isn't specified.
+
 =back
 
 =head3 Curve options:
@@ -555,9 +562,11 @@ squares appear square.
 
 This names the type of curve to be plotted.  See below for supported curve types.
 
-=item legend
+=item key
 
 This gives a name for the following curve, to be placed in a master plot legend.
+If you don't specify a name but do call for a legend, the curve will be named
+with the plot type and number (e.g. "line 3" or "points 4").
 
 =back
 
@@ -625,7 +634,7 @@ our $plot_options = new PDL::Options( {
     title => undef,
     xlabel=> undef,
     ylabel=> undef,
-    key   => undef,
+    legend => undef,
     xrange=> undef,
     yrange=> undef,
     logaxis=> "",
@@ -640,7 +649,7 @@ $plot_options->synonyms( {
     replot=>'oplot',
     xtitle=>'xlabel',
     ytitle=>'ylabel',
-    legend=>'key',
+    'key'=>'legend',
     colorbar=>'wedge',
     colorbox=>'wedge',
     cb=>'wedge',
@@ -670,11 +679,11 @@ sub plot {
 
     my $curve_options = new PDL::Options( {
 	with => 'lines',
-	legend => undef
+	key  => undef
 					  });
     $curve_options->synonyms( {
-	key =>'legend',
-	name=>'legend'
+	legend =>'key',
+	name=>'key'
 			      });
     $curve_options->incremental(1);
 
@@ -767,12 +776,15 @@ sub plot {
 	$po->{logaxis} =~ s/yx/xy/;
     }
 
+    unless($po->{oplot}) {
+	$obj->{keys} = [];
+    }
+
     ##############################
     # Parse out curve blocks and check each one for existence.
     my @blocks = ();
     my $xminmax = [undef,undef];
     my $yminmax = [undef,undef];
-
 
     while( @_ ) {
 	my $co = {};
@@ -792,7 +804,7 @@ sub plot {
 	
 	##############################
 	# Parse curve options and expand into standard form so we can find "with".
-	$curve_options->options({legend=>undef});
+	$curve_options->options({key=>undef});
 	my %co2 = %{$curve_options->options( $co )};
 	my $co2 = \%co2;
 
@@ -800,6 +812,17 @@ sub plot {
 	unless( defined($ptn) and defined($plot_types->{$ptn}) ) {
 	    die "Unknown plot type $ptn\n";
 	}
+
+	if($co2->{key} and !defined($po->{legend})) {
+	    $po->{legend} = 'tl';
+	}
+
+	unless( $ptn eq 'labels' ) {
+	    my $ptns = $ptn;
+	    $ptns=~s/s$//;
+	    push( @{$obj->{keys}}, ( defined($co2->{key}) ? $co2->{key} : sprintf("%s %d",$ptns,1+@{$obj->{keys}})));
+	}
+
 	my $pt = $plot_types->{$ptn};
 	$co2->{with} = $ptn;
 
@@ -952,7 +975,7 @@ sub plot {
 
     ##############################
     # At long last, the parsing is over.  Dispatch the call.
-    our @plot_args = ($po,@blocks);
+    $obj->{obj}->{keys} = $obj->{keys};
     $obj->{obj}->plot( $po, @blocks );
 }
 

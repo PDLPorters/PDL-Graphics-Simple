@@ -198,11 +198,11 @@ sub plot {
     my $me = shift;
     my $ipo = shift;
     my $po = {};
-    $po->{title} = $ipo->{title}   if(defined($ipo->{title}));
-    $po->{xtitle}= $ipo->{xtitle}  if(defined($ipo->{xtitle}));
-    $po->{ytitle}= $ipo->{ytitle}  if(defined($ipo->{ytitle}));
-    $po->{justify}=$ipo->{justify} if(defined($ipo->{justify})); 
-
+    $po->{title} =  $ipo->{title}   if(defined($ipo->{title}));
+    $po->{xtitle}=  $ipo->{xtitle}  if(defined($ipo->{xtitle}));
+    $po->{ytitle}=  $ipo->{ytitle}  if(defined($ipo->{ytitle}));
+    $po->{justify}= $ipo->{justify} if(defined($ipo->{justify})); 
+   
     my %color_opts = ();
     if(defined($ipo->{crange})) {
 	$color_opts{'MIN'} = $ipo->{crange}->[0] if(defined($ipo->{crange}->[0]));
@@ -216,6 +216,9 @@ sub plot {
     }
 
     unless($ipo->{oplot}) {
+
+	$me->{curvestyle} = 0;
+
 	$me->{logaxis} = $ipo->{logaxis};
 
 	$po->{axis} = 0;
@@ -231,10 +234,10 @@ sub plot {
 	$me->{obj}->release;
 	$me->{obj}->env(@{$ipo->{xrange}}, @{$ipo->{yrange}}, $po);
 	$me->{obj}->hold;
+    } else {
+	# Force a hold if we are held.
+	$me->{obj}->hold;
     }
-
-    warn "P::G::S::PGPLOT: key not implemented yet" if($ipo->{key});
-
 
     # ppo is "post-plot options", which are really a mix of plot and curve options.  
     # Currently we don't parse any plot options into it (they're handled by the "env"
@@ -243,12 +246,13 @@ sub plot {
     my %ppo = ();
     my $ppo = \%ppo;
     
-    $ppo->{linestyle} = 1;
-    $ppo->{color}=1;
-    
     while(@_) {
 	my ($co, @data) = @{shift()};
 	my @extra_opts = ();
+
+	$me->{curvestyle}++;
+	$ppo->{ color } = ($me->{curvestyle}-1) % 7 + 1;
+	$ppo->{ linestyle } = ($me->{curvestyle}-1) % 5 + 1;
 
 	our $pgplot_methods;
 	my $pgpm = $pgplot_methods->{$co->{with}};
@@ -309,6 +313,41 @@ sub plot {
 
 	$me->{obj}->hold;
     }
+
+    ##############################
+    # End of curve plotting.
+    # Now place the legend if necessary.
+    if($ipo->{legend}) {
+	my $xp;
+	my $xrdiff = $ipo->{xrange}->[1] - $ipo->{xrange}->[0];
+	if( $ipo->{legend}=~ m/l/i ) {
+	    $xp  = 0.03 * $xrdiff + $ipo->{xrange}->[0];
+	} elsif($ipo->{legend} =~ m/r/i) {
+	    $xp = 0.8 * $xrdiff + $ipo->{xrange}->[0];
+	} else {
+	    $xp = 0.4 * $xrdiff + $ipo->{xrange}->[0];
+	}
+
+	my $yp;
+	my $yrdiff = $ipo->{yrange}->[1] - $ipo->{yrange}->[0];
+	if( $ipo->{legend}=~ m/t/i ) {
+	    $yp  = 0.95 * $yrdiff + $ipo->{yrange}->[0];
+	} elsif($ipo->{legend} =~ m/b/i) {
+	    $yp = 0.2 * $yrdiff + $ipo->{yrange}->[0];
+	} else {
+	    $yp = 0.6 * $yrdiff + $ipo->{yrange}->[0];
+	}
+
+	print "keys is [".join(",",@{$me->{keys}})."]; xp is $xp; yp is $yp\n";
+	$me->{obj}->legend( 
+	    $me->{keys},
+	    $xp, $yp,
+	    { Color     => [ (xvals(0+@{$me->{keys}}) % 7 + 1)->list ],
+	      LineStyle => [ (xvals(0+@{$me->{keys}}) % 5 + 1)->list ]
+	    }
+	    );
+    }
+
     $me->{obj}->release;
     $me->{obj}->close if($me->{opt}->{type} =~ m/^f/i  and !defined($me->{opt}->{multi}));
 

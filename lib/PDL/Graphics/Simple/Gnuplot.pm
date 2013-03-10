@@ -94,7 +94,7 @@ sub new {
 	    print $PDL::Graphics::Gnuplot::last_plotcmd;
 	} else {
 	    attempt:for my $try( 'wxt', 'x11' ) {
-		eval { $gpw = gpwin($try, @params, persist=>0, font=>"=16" ); };
+		eval { $gpw = gpwin($try, @params, persist=>0, font=>"=16",dash=>1); };
 		last attempt if($gpw);
 	    }
 	    die "Couldn't start a gnuplot interactive window" unless($gpw);
@@ -213,6 +213,9 @@ sub plot {
 
     $po->{logscale} = [$ipo->{logaxis}] if($ipo->{logaxis});
 
+    unless($ipo->{oplot}) {
+	$me->{curvestyle} = 0;
+    }
 
     my @arglist = ($po);
     for my $block(@_) {
@@ -225,6 +228,12 @@ sub plot {
 	} else {
 	    $block->[0]->{with} = $ct;
 	}
+
+	unless($block->[0]->{with} eq 'labels') {
+	    $me->{curvestyle}++;
+	    $block->[0]->{with} .= " linetype $me->{curvestyle}";
+	}
+
 	push(@arglist, (@$block));
     }
 

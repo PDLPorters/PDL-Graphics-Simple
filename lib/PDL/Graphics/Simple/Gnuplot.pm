@@ -210,6 +210,25 @@ sub plot {
 	justify  => $ipo->{justify} ? $ipo->{justify} : undef,
 	clut   => 'sepia',
     };
+    if( defined($ipo->{legend}) ) {
+	my $legend = "";
+	if( $ipo->{legend} =~ m/l/i ) {
+	    $legend .= ' left ';
+	} elsif($ipo->{legend} =~ m/r/i) {
+	    $legend .= ' right ';
+	} else {
+	    $legend .= ' center ';
+	}
+	if( $ipo->{legend} =~ m/t/i) {
+	    $legend .= ' top ';
+	} elsif( $ipo->{legend} =~ m/b/i) {
+	    $legend .= ' bottom ';
+	} else {
+	    $legend .= ' center ';
+	}
+	$po->{key} = $legend;
+    }
+
 
     $po->{logscale} = [$ipo->{logaxis}] if($ipo->{logaxis});
 
@@ -218,6 +237,7 @@ sub plot {
     }
 
     my @arglist = ($po);
+
     for my $block(@_) {
 	my $ct = $curve_types->{  $block->[0]->{with}  };
 	unless(defined($ct)) {
@@ -230,9 +250,16 @@ sub plot {
 	}
 
 	unless($block->[0]->{with} eq 'labels') {
+
 	    $me->{curvestyle}++;
 	    $block->[0]->{with} .= " linetype $me->{curvestyle}";
+
+	    if( defined($ipo->{legend}) ) {
+		$block->[0]->{legend} = $me->{keys}->[$me->{curvestyle}-1];
+	    }
 	}
+
+	delete $block->[0]->{key};
 
 	push(@arglist, (@$block));
     }
@@ -245,6 +272,8 @@ sub plot {
 	}
     }
 
+    use PDL::IO::Dumper;
+    print "arglist is ",sdump(\@arglist);
     if($ipo->{oplot}) {
 	print "replotting\n";
 	delete $po->{logaxis};

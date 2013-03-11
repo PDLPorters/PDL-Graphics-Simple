@@ -13,6 +13,7 @@ package PDL::Graphics::Simple::Gnuplot;
 
 use File::Temp qw/tempfile/;
 use PDL::Options q/iparse/;
+our $required_PGG_version = 1.4;
 
 our $mod = {
     shortname => 'gnuplot',
@@ -33,12 +34,24 @@ sub check {
 
     return $mod->{ok} unless( $force or !defined($mod->{ok}) );
 
+    # Eval PDL::Graphics::Gnuplot.  Require relatively recent version.  
+    # We don't specify the version in the 'use', so we can issue a 
+    # warning on an older version.
     eval 'use PDL::Graphics::Gnuplot;';
     if($@) {
 	$mod->{ok} = 0;
 	$mod->{msg} = $@;
 	return 0;
     }
+    if($PDL::Graphics::Gnuplot::VERSION < $required_PGG_version) {
+	$mod->{msg} = sprintf("PDL::Graphics::Gnuplot was found, but is too old (v%s < v%s).  Ignoring it.\n",
+			      $PDL::Graphics::Gnuplot::VERSION,
+			      $required_PGG_version
+	    );
+	$mod->{ok} = 0;
+	return 0;
+    }
+
     my $gpw;
     eval '$gpw = gpwin();';
     if($@) {

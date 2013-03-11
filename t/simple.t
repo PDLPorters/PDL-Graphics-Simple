@@ -1,4 +1,5 @@
 #!perl
+local($|) = 1;
 
 BEGIN {
     our $tests_per_engine = 17;
@@ -52,12 +53,11 @@ for $engine(@engines) {
       };
       ok(!$@, "plot succeeded\n");
       print $@ if($@);
-      print STDERR <<"FOO";
-
+      print STDERR qq{
 Testing $engine engine: You should see a superposed line plot and bin
 plot, with x range from 0 to 9 and yrange from 0 to 9. The two plots
-should have different line styles.  OK? (Y/n)
-FOO
+should have different line styles.  OK? (Y/n) > };
+
       $a = <STDIN>;
       ok( $a !~ m/^n/i, "line plot looks ok" );
 
@@ -71,12 +71,11 @@ FOO
 		 ); };
       ok(!$@, "errorbar plot succeeded"); print($@) if($@);
       
-      print STDERR <<"FOO";
-
+      print STDERR qq{
 Testing $engine engine: You should see error bars (symmetric relative to each
 plotted point) and limit bars (asymmetric about each plotted point).
-OK? (Y/n)
-FOO
+OK? (Y/n) > };
+
       $a = <STDIN>; 
       ok( $a !~ m/^n/i,
 	  "errorbars / limitbars OK");
@@ -91,13 +90,11 @@ FOO
       };
       ok(!$@, "plot succeeded\n");
       print $@ if($@);
-      print STDERR <<"FOO";
-
+      print STDERR qq{
 Testing $engine engine: You should see a radial 11x11 "target" image
 and some superimposed "circles".  Since the plot is not justified, the
 pixels in the target image should be oblong and the "circles" should
-be ellipses.  OK? (Y/n) 
-FOO
+be ellipses.  OK? (Y/n) > };
       $a = <STDIN>; 
       ok( $a !~ m/^n/i,
 	  "image and circles plot looks ok");
@@ -110,13 +107,12 @@ FOO
 		 );
       };
       ok(!$@, "justified image and circles plot succeeded"); print($@) if($@);
-      print STDERR <<"FOO";
-
+      print STDERR qq{
 Testing $engine engine: You should see the same plot as before, but
 justified.  superimposed "circles".  Since the plot is justified,
 the pixels in the target image should be square and the "circles" should
-really be circles.  OK? (Y/n) 
-FOO
+really be circles.  OK? (Y/n) > };
+
       $a = <STDIN>; 
       ok( $a !~ m/^n/i,
 	  "justified image and circles plot looks ok");
@@ -126,11 +122,10 @@ FOO
 
       eval { $w->plot(with=>'line',xvals(500)+1,{log=>'y',title=>"Y=X (semilog)"}); };
       ok(!$@, "log scaling succeeded");
-      print STDERR <<"FOO";
-
+      print STDERR qq{
 Testing $engine engine: You should see a simple logarithmically scaled plot,
-with appropriate title.  OK? (Y/n)
-FOO
+with appropriate title.  OK? (Y/n) > };
+
       $a = <STDIN>;
       ok( $a !~ m/^n/i,
 	  "log scaled plot looks OK");
@@ -146,13 +141,11 @@ FOO
 		 );
       };
       ok( !$@, "labels plot succeeded" );
-      print STDERR <<"FOO";
-
+      print STDERR qq{
 Testing $engine engine: You should see "left-justified" text left
 aligned on x=0, "left-with-spaces" just right of x=1, "centered"
 centered on x=2, ">start with '>'" centered on x=3, and
-"right-justified" right-aligned on x=4.  OK? (Y/n)
-FOO
+"right-justified" right-aligned on x=4.  OK? (Y/n) > };
       $a = <STDIN>;
       ok( $a !~ m/^n/i,
 	  "labels plot looks OK");
@@ -166,14 +159,13 @@ FOO
       $w->image( rvals(9,9),{wedge=>1} );       $w->image( -rvals(9,9),{wedge=>1} );
       $w->image( sequence(9,9) );    $w->image( pdl(xvals(9,9),yvals(9,9),rvals(9,9)) );
       
-      print STDERR << "FOO";
-
+      print STDERR qq{
 Testing $engine engine: You should see two bullseyes across the top (one in 
 negative print), a gradient at bottom left, and an RGB blur (if supported
 by the engine - otherwise a modified gradient) at bottom right.  The top two
 panels should have colorbar wedges to the right of the image.
-OK? (Y/n)
-FOO
+OK? (Y/n) > };
+
 $a = <STDIN>;
       ok($a !~ m/^n/i,
 	 "multiplot OK");
@@ -201,11 +193,10 @@ ok(!$@, "simple lines plot succeeded");
 
 ok( defined($PDL::Graphics::Simple::global_object), "Global convenience object got spontaneously set" );
 
-print STDERR <<'FOO';
-
+print STDERR q{
   test>  $a = xvals(50); lines $a sin($a/3); 
-You should see a sine wave... OK? (Y/n)
-FOO
+You should see a sine wave... OK? (Y/n) > };
+
 
 $a = <STDIN>;
 ok($a !~ m/^n/i, "convenience plot OK");
@@ -222,12 +213,11 @@ $im = 1000 * sin(rvals(100,100)/3) / (rvals(100,100)+30);
 eval q{ imag $im };
 ok(!$@, "imag worked with no additional arguments" );
 
-print STDERR <<'FOO';
-
+print STDERR q{
   test> $im = 1000 * sin(rvals(100,100)/3) / (rvals(100,100)+30);
   test> imag $im;
-You should see a bullseye pattern with a brighter inner ring.  OK? (Y/n)
-FOO
+You should see a bullseye pattern with a brighter inner ring.  OK? (Y/n) > };
+
 
 $a=<STDIN>;
 ok($a !~ m/^n/i, "bullseye OK");
@@ -235,12 +225,10 @@ ok($a !~ m/^n/i, "bullseye OK");
 eval q{ imag $im, {wedge=>1, title=>"Bullseye!"} };
 ok(!$@, "imag worked with plot options");
 
-print STDERR <<'FOO';
-
+print STDERR q{
   test> imag $im, {wedge=>1, title=>"Bullseye!", j=>1};
 You should see the same image, but with a colorbar wedge on the right; a title
-up top; and a justified aspect ratio (circular rings).  Ok? (Y/n)
-FOO
+up top; and a justified aspect ratio (circular rings).  Ok? (Y/n) > };
 
 $a = <STDIN>;
 ok($a !~ m/^n/i, "justified bullseye and wedge OK");
@@ -249,13 +237,11 @@ ok($a !~ m/^n/i, "justified bullseye and wedge OK");
 eval q{ imag $im, 0, 30, {wedge=>1, j=>1} };
 ok(!$@, "imag worked with bounds");
 
-print STDERR <<'FOO';
-
+print STDERR q{
   test> imag $im, 0, 30, {wedge=>1, j=>1};
 You should see the same image, but with no title and with a tighter 
 dynamic range that cuts off the low values (black rings instead of
-the fainter parts of the bullseye).  Ok? (Y/n)
-FOO
+the fainter parts of the bullseye).  Ok? (Y/n) > };
 
 $a = <STDIN>;
 ok($a !~ m/^n/i, "crange shortcut is OK");
@@ -263,18 +249,11 @@ ok($a !~ m/^n/i, "crange shortcut is OK");
 eval q{ erase };
 ok(!$@, "erase executed");
 
-print STDERR <<'FOO';
-
+print STDERR qq{
   test> erase
-The window should have disappeared.  Ok? (Y/n)
-FOO
+The window should have disappeared.  Ok? (Y/n) > };
 
 $a = <STDIN>;
 ok($a !~ m/^n/i, "erase worked");
 
-
-
-
-
-
-
+print "End of tests\n";

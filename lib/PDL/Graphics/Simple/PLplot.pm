@@ -58,7 +58,6 @@ sub check {
 	close STDIN;
 	PDL::Graphics::PLplot->new(DEV=>'?');
 	exit(0);
-
     }
 
     unless( defined($pid) ) {

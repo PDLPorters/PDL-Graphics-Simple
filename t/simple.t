@@ -228,7 +228,9 @@ ok(!$@, "imag worked with plot options");
 print STDERR q{
   test> imag $im, {wedge=>1, title=>"Bullseye!", j=>1};
 You should see the same image, but with a colorbar wedge on the right; a title
-up top; and a justified aspect ratio (circular rings).  Ok? (Y/n) > };
+up top; and a justified aspect ratio (circular rings). The color scale may be 
+slightly less contrasty than the last frame, because some engines extend the 
+colorbar wedge to round numbers.   Ok? (Y/n) > };
 
 $a = <STDIN>;
 ok($a !~ m/^n/i, "justified bullseye and wedge OK");

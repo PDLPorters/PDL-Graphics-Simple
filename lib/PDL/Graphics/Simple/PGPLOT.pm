@@ -198,10 +198,10 @@ sub plot {
     my $me = shift;
     my $ipo = shift;
     my $po = {};
-    $po->{title} =  $ipo->{title}   if(defined($ipo->{title}));
-    $po->{xtitle}=  $ipo->{xtitle}  if(defined($ipo->{xtitle}));
-    $po->{ytitle}=  $ipo->{ytitle}  if(defined($ipo->{ytitle}));
-    $po->{justify}= $ipo->{justify} if(defined($ipo->{justify})); 
+    $po->{title} =  $ipo->{title}    if(defined($ipo->{title}));
+    $po->{xtitle}=  $ipo->{xtitle}   if(defined($ipo->{xtitle}));
+    $po->{ytitle}=  $ipo->{ytitle}   if(defined($ipo->{ytitle}));
+    $po->{justify}= $ipo->{justify}  if(defined($ipo->{justify})); 
    
     my %color_opts = ();
     if(defined($ipo->{crange})) {
@@ -254,15 +254,17 @@ sub plot {
 	$ppo->{ color } = ($me->{curvestyle}-1) % 7 + 1;
 	$ppo->{ linestyle } = ($me->{curvestyle}-1) % 5 + 1;
 
+
 	our $pgplot_methods;
 	my $pgpm = $pgplot_methods->{$co->{with}};
 	die "Unknown curve option 'with $co->{with}'!" unless($pgpm);
-
 
 	if($pgpm eq 'imag') {
 	    for my $k(keys %color_opts) {
 		$po->{$k} = $color_opts{$k};
 	    }
+
+	    $ppo->{ drawwedge } = ($ipo->{wedge} != 0);
 
 	    # Extract transform parameters from the corners of the image...
 	    my $xcoords = shift(@data);

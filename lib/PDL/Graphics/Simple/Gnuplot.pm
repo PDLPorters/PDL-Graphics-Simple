@@ -286,7 +286,6 @@ sub plot {
 	$po->{key} = $legend;
     }
 
-
     $po->{logscale} = [$ipo->{logaxis}] if($ipo->{logaxis});
 
     unless($ipo->{oplot}) {
@@ -297,6 +296,7 @@ sub plot {
 
     for my $block(@_) {
 	my $ct = $curve_types->{  $block->[0]->{with}  };
+
 	unless(defined($ct)) {
 	    die "PDL::Graphics::Simple::Gnuplot: undefined curve type $ct";
 	}
@@ -306,19 +306,35 @@ sub plot {
 	    $block->[0]->{with} = $ct;
 	}
 
-	unless($block->[0]->{with} eq 'labels') {
+	# Now parse out curve options and deal with line styles...
+	my $co = shift @$block;
 
-	    $me->{curvestyle}++;
-	    $block->[0]->{with} .= " linetype $me->{curvestyle}";
+	unless($co->{with} eq 'labels') {
+
+	    if(defined($co->{style})  and  $co->{style}) {
+		$me->{curvestyle} = $co->{style};
+	    } else {
+		$me->{curvestyle}++;
+	    }
+
+	    $co->{with} .= " linetype $me->{curvestyle}";
 
 	    if( defined($ipo->{legend}) ) {
-		$block->[0]->{legend} = $me->{keys}->[$me->{curvestyle}-1];
+		$co->{legend} = $me->{keys}->[$me->{curvestyle}-1];
 	    }
 	}
 
-	delete $block->[0]->{key};
+	if( defined($co->{width}) and $co->{width} and $co->{with} !~ m/^label/ ) {
+	    my $s;
+	    if($co->{with} =~ m/^points/) {
+		$s = "pointsize";
+	    } else {
+		$s = "linewidth";
+	    }
+	    $co->{with} .= " linewidth ".$co->{width} 
+	}
 
-	push(@arglist, (@$block));
+	push(@arglist, ({with=>$co->{with}, legend=>$co->{key}},@$block));
     }
 
     if($me->{nplots}) {

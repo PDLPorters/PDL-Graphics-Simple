@@ -401,9 +401,18 @@ sub plot {
 	my ($co, @data) = @{shift()};
 	my @extra_opts = ();
 
-	$me->{style}++;
+	if( defined($co->{style}) and $co->{style}) {
+	    $me->{style} = $co->{style};
+	} else {
+	    $me->{style}++;
+	}
+
 	$ppo->{COLOR}     = $colors[$me->{style}%(@colors)];
 	$ppo->{LINESTYLE} = (($me->{style}-1) % 8) + 1;
+
+	if( defined($co->{width}) and $co->{width} ) {
+	    $ppo->{LINEWIDTH} = $co->{width};
+	}
 
 	$plpm = $plplot_methods->{$co->{with}};
 	die "Unknown curve option 'with $co->{with}'!" unless($plpm);

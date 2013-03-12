@@ -251,10 +251,19 @@ sub plot {
 	my ($co, @data) = @{shift()};
 	my @extra_opts = ();
 
-	$me->{curvestyle}++;
+	if( defined($co->{style}) and $co->{style} ) {
+	    $me->{curvestyle} = int($co->{style});
+	} else {
+	    $me->{curvestyle}++;
+	}
+
 	$ppo->{ color } = ($me->{curvestyle}-1) % 7 + 1;
 	$ppo->{ linestyle } = ($me->{curvestyle}-1) % 5 + 1;
 
+
+	if( defined($co->{width}) and $co->{width} ) {
+	    $ppo->{ linewidth } = int($co->{width});
+	}
 
 	our $pgplot_methods;
 	my $pgpm = $pgplot_methods->{$co->{with}};

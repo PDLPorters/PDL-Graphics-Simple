@@ -568,6 +568,21 @@ This gives a name for the following curve, to be placed in a master plot legend.
 If you don't specify a name but do call for a legend, the curve will be named
 with the plot type and number (e.g. "line 3" or "points 4").
 
+=item width
+
+This lets you specify the width of the line, as a multiplier on the standard
+width the engine uses.  That lets you pick normal-width or extra-bold lines
+for any given curve.  The option takes a single positive natural number.
+
+=item style
+
+You can specify the line style in a very limited way -- as a style
+number supported by the backend.  The styles are generally defined by
+a mix of color and dash pattern, but the particular color and dash
+pattern depend on the engine in use. The first 30 styles are
+guaranteed to be distinguishable. This is useful to produce, e.g.,
+multiple traces with the same style.
+
 =back
 
 =head3 Curve types supported
@@ -679,13 +694,15 @@ sub plot {
 
     my $curve_options = new PDL::Options( {
 	with => 'lines',
-	key  => undef
+	key  => undef,
+	style => undef,
+	width => undef
 					  });
     $curve_options->synonyms( {
 	legend =>'key',
 	name=>'key'
 			      });
-    $curve_options->incremental(1);
+    $curve_options->incremental(0);
 
 
     ##############################

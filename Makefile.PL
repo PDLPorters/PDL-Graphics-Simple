@@ -30,7 +30,7 @@ sub MY::postamble {
     my $text = <<'FOO';
 install ::
 	@echo "Updating PDL documentation database...";
-	@$(PERL) -e "use PDL::Doc; PDL::Doc::add_module(q[PDL::Graphics::Simple] ); "
+	@$(PERL) -e 'sub PDL::Doc::add_module {print STDERR "legacy PDL detected.  Cannot install docs.\n"}; eval q{use PDL::Doc; PDL::Doc::add_module(q[PDL::Graphics::Simple];}' 
 
 FOO
     return $text;

@@ -175,7 +175,7 @@ sub new {
 	    push(@params, FILE=>$conv_tempfile);
 
 	} else {
-	    $dev = "$opt->{output}/$filetypes->{$ext}";
+	    $dev = "$filetypes->{$ext}";
 	    push(@params, FILE=>$opt->{output});
 	}
 
@@ -425,7 +425,7 @@ sub plot {
 
     if($me->{conv_fn}) {
 	$a = rim($me->{conv_fn});
-	wim($a, $me->{opt}->{output});
-#	unlink($me->{conv_fn});
+	wim($a->mv(1,0)->slice(':,-1:0:-1'), $me->{opt}->{output});
+	unlink($me->{conv_fn});
     } 
 }

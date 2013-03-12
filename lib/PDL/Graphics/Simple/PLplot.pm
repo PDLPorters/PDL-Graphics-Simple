@@ -45,30 +45,38 @@ sub check {
 	return 0;
     }
     
-    # Module loaded OK, now try to extract valid devices from it
-    pipe READH, WRITEH;
+    # Module loaded OK, now try to extract valid devices from it.
+    # We would use a pipe, but Microsoft Windows doesn't play nice
+    # with them - so we use a temp file instead.
+    my ($fh1, $gzinta) = tempfile('pgs_gzinta_XXXX');
+    close $fh1;
+    my ($fh2, $gzouta) = tempfile('pgs_gzouta_XXXX');
+    close $fh2;
+    
+    open FOO, ">$gzinta" or die "Couldn't write to temp file";
+    print FOO "\n"; # just one line
+    close FOO;
 
-    my $pid;
     if( ($pid = fork())==0 ) {   # assignment
-
+	
 	# Daughter: try to create a PLplot window with a bogus device, to stimulate a driver listing
-	close READH;
-	open STDOUT,">&WRITEH";
-	open STDERR,">&WRITEH";
-	close STDIN;
+	open STDOUT,">$gzouta";
+	open STDERR,">&STDOUT";
+	open STDIN, "<$gzinta";
 	PDL::Graphics::PLplot->new(DEV=>'?');
 	exit(0);
-    }
-
-    unless( defined($pid) ) {
+    } elsif(!defined($pid) ) {
 	die "Couldn't fork to probe PLplot\n";
     }
+    waitpid($pid,0); # Wait for the daughter to finish up.
 
-    close WRITEH;
-    my @lines = <READH>;
-    close READH;
-    kill 9,$pid;
-    waitpid($pid,0);
+    # Snarf up the file.
+    open FOO, "<$gzouta";
+    @lines = <FOO>;
+    close FOO;
+
+    unlink $gzinta;
+    unlink $gzouta;
 
     $mod->{devices} = {};
     for my $l(@lines) {

@@ -22,7 +22,7 @@ our $mod = {
     shortname => 'pgplot',
     module=>'PDL::Graphics::Simple::PGPLOT',
     engine => 'PDL::Graphics::PGPLOT::Window',
-    synopsis=> 'PGPLOT (old but trusted)',
+    synopsis=> 'PGPLOT (venerable but trusted)',
     pgs_version=> '0.004'
 };
 PDL::Graphics::Simple::register( 'PDL::Graphics::Simple::PGPLOT' );

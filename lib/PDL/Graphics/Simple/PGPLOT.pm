@@ -113,6 +113,10 @@ sub new {
     } else {
 	my $ext;
 
+	if($PDL::VERSION < 3  and ($PDL::VERSION > 2.1  or  $PDL::VERSION < 2.005)) {
+	    print STDERR "WARNING - file output shapes vary under PDL < 2.005 (early version: $PDL::VERSION)\n";
+	}
+
 	if( $opt->{output} =~ m/\.(\w{2,4})$/ ) {
 	    $ext = $1;
 	} else {
@@ -132,9 +136,6 @@ sub new {
 	    $dev = "$opt->{output}/$filetypes->{$ext}";
 	}
     }
-
-    print "dev='$dev'\n";
-    print "opt->size is ".join(",",@{$opt->{size}})."\n";
 
     ($ENV{'PGPLOT_PS_WIDTH'}) = $opt->{size}->[0] * 1000;
     ($ENV{'PGPLOT_PS_HEIGHT'}) = $opt->{size}->[1] * 1000;
@@ -351,38 +352,21 @@ sub plot {
     }
 
     $me->{obj}->release;
-    $me->{obj}->close if($me->{opt}->{type} =~ m/^f/i  and !defined($me->{opt}->{multi}));
+
+}
+
+
+sub DESTROY {
+    my $me = shift;
+
+    eval q{ $me->{obj}->close; };
+    undef $@;
 
     my $file = ( ($me->{conv_fn}) ? $me->{conv_fn} : $me->{output} );
-    if(defined($file) and $file =~ m/\.ps$/) {
-	## PGPLOT PS files are malformed - the BoundingBox notations break the spec, so the
-	## rim/wim technique doesn't work.  Patch up the PS file to have a correct BoundingBox.
-
-	open FOO, "<$file";
-	my @lines = <FOO>;
-	my $i;
-	
-	for($i=0; $i<@lines; $i++) {
-
-	    if($lines[$i] =~ m/^\%\%BoundingBox: \(atend\)/) {
-		$lines[$i] = sprintf("%%%%BoundingBox: 35 35 %d %d\n", 
-				     35 + 72 * $me->{opt}->{size}->[0], 
-				     35 + 72 * $me->{opt}->{size}->[1]);
-	    } elsif( $lines[$i] =~ m/^\%\%BoundingBox:/ ) {
-		$lines[$i] = "%%\n";
-	    } elsif( $lines[$i] =~ m/^\%\%PageBoundingBox:/) {
-		$lines[$i] = sprintf("%%%%PageBoundingBox: 35 35 %d %d\n", 
-				     35 + 72 * $me->{opt}->{size}->[0], 
-				     35 + 72 * $me->{opt}->{size}->[1]);
-	    }
-	}
-	open FOO,">$file";
-	print FOO join("",@lines);
-    };
-
     if($me->{conv_fn}) {
-	$a = rim($me->{conv_fn});
-	wim($a, $me->{opt}->{output});
+	my $a;
+	$a = rim($me->{conv_fn}) ;
+	wim($a, $me->{opt}->{output}); 
 	unlink($me->{conv_fn});
-    } 
+    }
 }

@@ -13,6 +13,7 @@ package PDL::Graphics::Simple::Gnuplot;
 
 use File::Temp qw/tempfile/;
 use PDL::Options q/iparse/;
+use PDL;
 our $required_PGG_version = 1.4;
 
 our $mod = {
@@ -24,6 +25,18 @@ our $mod = {
 };
 PDL::Graphics::Simple::register( 'PDL::Graphics::Simple::Gnuplot' );
 
+our $filetypes = {
+    ps => ['pscairo','postscript'],
+    dxf => 'dxf',
+    png => ['pngcairo','png'],
+    pdf => ['pdfcairo','pdf'],
+    txt => 'dumb',
+    jpg => 'jpeg',
+    svg => 'svg',
+    gif => 'gif'
+};
+
+    
 
 ##########
 # PDL::Graphics::Simple::Gnuplot::check
@@ -63,7 +76,7 @@ sub check {
 
     unless( $mod->{valid_terms}->{'x11'}  or  $mod->{valid_terms}->{'wxt'} ) {
 	$mod->{ok} = 0;
-	$s =  "Gnuplot exists but doesn't support either the x11 or wxt terminal\n";
+	$s =  "Gnuplot exists but yours doesn't support either the x11 or wxt terminal\n";
 	$mod->{msg} = $s;
 	die "PDL::Graphics::SImple: $s";
     }
@@ -135,11 +148,31 @@ sub new {
 	}
 	$opt->{ext} = $ext;
 
+	##########
+	# Scan through the supported file types.  Gnuplot has several drivers for some 
+	# of the types, so we search until we find a valid one.
+	# At the end, $ft has either a valid terminal name from the table (at top),
+	# or undef.
+	my $ft = $filetypes->{$ext};
+	if(ref $ft eq ARRAY) {
+	  try:for my $try(@$ft) {
+	      if($mod->{valid_terms}->{$try}) {
+		  $ft = $try;
+		  last try;
+	      }
+	  }
+	    if(ref($ft)) {
+		$ft = undef;
+	    }
+	} elsif(!defined($mod->{valid_terms}->{$ft})) {
+	    $ft = undef;
+	}
+
 	# Now $ext has the file type - check if its a supported type.  If not, make a 
 	# tempfilename to hold gnuplot's output.
-	unless($mod->{valid_terms}->{$ext}) {
-	    unless($gpw->{valid_terms}->{'png'}) {
-		die "PDL::Graphics::Simple: $ext isn't a valid output file type for your gnuplot,\n\tand it doesn't support .png either.  Sorry, I give up.\n";
+	unless( defined($ft) ) {
+	    unless($mod->{valid_terms}->{'pscairo'}  or  $mod->{valid_terms}->{'postscript'}) {
+		die "PDL::Graphics::Simple: $ext isn't a valid output file type for your gnuplot,\n\tand it doesn't support .ps either.  Sorry, I give up.\n";
 	    }
 
 	    # Term is invalid but png is supported - set up a tempfile for conversion.
@@ -147,10 +180,13 @@ sub new {
 	    ($fh,$conv_tempfile) = tempfile('pgs_gnuplot_XXXX');
 	    close $fh;
 	    unlink($conv_tempfile); # just to be sure;
-	    $conv_tempfile .= ".png";
+	    $conv_tempfile .= ".ps";
+	    $ft = $mod->{valid_terms}->{'pscairo'} ? 'pscairo' : 'postscript';
 	}
-	push( @params, "output" => ($conv_tempfile || $opt->{output}) );
-	$gpw = gpwin( $conv_tempfile ? 'png' : $ext,  @params );
+	push(@params, "output" => ($conv_tempfile || $opt->{output}) );
+	push(@params, "color"  => 1 )  if( $PDL::Graphics::Gnuplot::termTab->{$ft}->{'color'} );
+	push(@params, "dashed" => 1 )  if( $PDL::Graphics::Gnuplot::termTab->{$ft}->{'dashed'} );
+	$gpw = gpwin( $ft,  @params );
     }
 
 
@@ -302,18 +338,24 @@ sub plot {
 	$me->{obj}->plot(@arglist);
     }
 
-    if($me->{conv_fn}) {
-	print "converting $me->{conv_fn} to $me->{opt}->{output}...";
-	$a = rim($me->{conv_fn});
-	wim($a, $me->{opt}->{output});
-	unlink($me->{conv_fn});
-    }
 
     if($me->{nplots}) {
 	$me->{plot_no}++;
 	if($me->{plot_no} >= $me->{nplots}) {
 	    $me->{obj}->end_multi();
 	    $me->{plot_no} = 0;
+	    
+	    $me->{obj}->close()    if($me->{opt}->{type} =~ m/^f/i);
+	    
 	}
+    } else {
+	$me->{obj}->close() if($me->{opt}->{type} =~ m/^f/i);
+    }
+    
+    if($me->{opt}->{type} =~ m/^f/i  and  $me->{conv_fn}) {
+	print "converting $me->{conv_fn} to $me->{opt}->{output}...";
+	$a = rim($me->{conv_fn});
+	wim($a->slice('-1:0:-1')->mv(1,0), $me->{opt}->{output});
+	unlink($me->{conv_fn});
     }
 }

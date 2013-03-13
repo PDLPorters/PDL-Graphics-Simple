@@ -58,8 +58,10 @@ sub check {
     close FOO;
 
     my $pid = fork();
-    print STDERR "Fork failed in PLplot probe -- returning 0\n"
-	unless(defined($pid));
+    unless(defined($pid)) {
+	print STDERR "Fork failed in PLplot probe -- returning 0\n";
+	return 0;
+    }
     
     if( $pid==0 ) {   # assignment
 	

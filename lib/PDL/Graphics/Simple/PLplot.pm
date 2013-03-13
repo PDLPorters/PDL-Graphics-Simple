@@ -57,7 +57,11 @@ sub check {
     print FOO "\n"; # just one line
     close FOO;
 
-    if( ($pid = fork())==0 ) {   # assignment
+    my $pid = fork();
+    print STDERR "Fork failed in PLplot probe -- returning 0\n"
+	unless(defined($pid));
+    
+    if( $pid==0 ) {   # assignment
 	
 	# Daughter: try to create a PLplot window with a bogus device, to stimulate a driver listing
 	open STDOUT,">$gzouta";
@@ -65,9 +69,11 @@ sub check {
 	open STDIN, "<$gzinta";
 	PDL::Graphics::PLplot->new(DEV=>'?');
 	exit(0);
-    } elsif(!defined($pid) ) {
-	die "Couldn't fork to probe PLplot\n";
     }
+
+
+    # Parent - snarf up the results from the daughter
+
     waitpid($pid,0); # Wait for the daughter to finish up.
 
     # Snarf up the file.

@@ -319,9 +319,6 @@ sub plot {
 
 	    $co->{with} .= " linetype $me->{curvestyle}";
 
-	    if( defined($ipo->{legend}) ) {
-		$co->{legend} = $me->{keys}->[$me->{curvestyle}-1];
-	    }
 	}
 
 	if( defined($co->{width}) and $co->{width} and $co->{with} !~ m/^label/ ) {

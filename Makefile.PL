@@ -46,6 +46,8 @@ WriteMakefile(
      : ()),
     PREREQ_PM => { 'Test::More'  => 0,
                    'PDL'         => 0,
+		   'File::Temp'  => 0,
+		   'Time::HiRes' => 0
     },
     META_ADD => {
 	resources => {

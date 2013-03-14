@@ -14,6 +14,7 @@
 package PDL::Graphics::Simple::PLplot;
 
 use File::Temp qw/tempfile/;
+use Time::HiRes qw/usleep/;
 use PDL::Options q/iparse/;
 use PDL;
 
@@ -54,7 +55,7 @@ sub check {
     close $fh2;
     
     open FOO, ">$gzinta" or die "Couldn't write to temp file";
-    print FOO "\n"; # just one line
+    print FOO "?\n1\n"; #One line, then select a terminal.
     close FOO;
 
     my $pid = fork();
@@ -73,10 +74,10 @@ sub check {
 	exit(0);
     }
 
-
     # Parent - snarf up the results from the daughter
-
-    waitpid($pid,0); # Wait for the daughter to finish up.
+    usleep(2e5);          # hang around for 0.2 seconds
+    eval {kill 9,$pid;};  # kill it dead, just in case it buzzed or hung (I'm looking at you, Microsoft Windows)
+    waitpid($pid,0);      # Clean up.
 
     # Snarf up the file.
     open FOO, "<$gzouta";

@@ -254,7 +254,7 @@ use PDL::Options q/iparse/;
 use File::Temp qw/tempfile tempdir/;
 use Scalar::Util q/looks_like_number/;
 
-our $VERSION = '0.005';
+our $VERSION = '1.000';
 
 ##############################
 # Exporting

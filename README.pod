@@ -272,7 +272,7 @@ C<show> lists the supported engines and a one-line synopsis of each.
 =for ref
 
 C<pgswin> is a constructor that is exported by default into the using package. Calling
-C<pgswin(%opts)> is exactly the same as calling C<<PDL::Graphics::Simple->new(%opts)>>.
+C<pgswin(%opts)> is exactly the same as calling C<< PDL::Graphics::Simple->new(%opts) >>.
 
 
 =head2 new 
@@ -426,6 +426,21 @@ This names the type of curve to be plotted.  See below for supported curve types
 This gives a name for the following curve, to be placed in a master plot legend.
 If you don't specify a name but do call for a legend, the curve will be named
 with the plot type and number (e.g. "line 3" or "points 4").
+
+=item width
+
+This lets you specify the width of the line, as a multiplier on the standard
+width the engine uses.  That lets you pick normal-width or extra-bold lines
+for any given curve.  The option takes a single positive natural number.
+
+=item style
+
+You can specify the line style in a very limited way -- as a style
+number supported by the backend.  The styles are generally defined by
+a mix of color and dash pattern, but the particular color and dash
+pattern depend on the engine in use. The first 30 styles are
+guaranteed to be distinguishable. This is useful to produce, e.g.,
+multiple traces with the same style.
 
 =back
 

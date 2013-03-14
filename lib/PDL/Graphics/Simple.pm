@@ -311,7 +311,7 @@ sub show {
 =for ref
 
 C<pgswin> is a constructor that is exported by default into the using package. Calling
-C<pgswin(%opts)> is exactly the same as calling C<<PDL::Graphics::Simple->new(%opts)>>.
+C<pgswin(%opts)> is exactly the same as calling C<< PDL::Graphics::Simple->new(%opts) >>.
 
 
 =head2 new 

@@ -25,7 +25,7 @@ our $mod = {
     module=>'PDL::Graphics::Simple::PLplot',
     engine => 'PDL::Graphics::PLplot',
     synopsis=> 'PLplot (nice plotting, sloooow images)',
-    pgs_version=> '0.004'
+    pgs_version=> '0.005'
 };
 PDL::Graphics::Simple::register( 'PDL::Graphics::Simple::PLplot' );
 
@@ -55,7 +55,7 @@ sub check {
     close $fh2;
     
     open FOO, ">$gzinta" or die "Couldn't write to temp file";
-    print FOO "?\n1\n"; #One line, then select a terminal.
+    print FOO "1\n"; #Just one line
     close FOO;
 
     my $pid = fork();

@@ -95,8 +95,6 @@ our $new_defaults = {
 
 ## Much of this boilerplate is stolen from PDL::Graphics::Prima::Simple...
 our $N_windows = 0;
-our $is_twiddling = 0;
-our $auto_twiddling = 1;
 
 sub new {
     my $class = shift;
@@ -113,10 +111,10 @@ sub new {
     my $size = PDL::Graphics::Simple::_regularize_size($opt->{size},'px');
     
     my $pw = Prima::Window->create( text => $opt->{output} || "PDL/Prima Plot",
-				    size => [$size->[0], $size->[1]],
-				    onCreate => sub { $N_windows++; },
-				    onDestroy => sub { $N_windows--;}
-	);
+				    size => [$size->[0], $size->[1]]
+				    onCreate => sub { $N_windows++; },  
+				    onDestroy => sub { $N_windows--;}   # Should maybe do something smarter here --like 
+	);                                                              # auto-deallocate from the widgets list...
 
     my $me = { obj => $pw, widgets => [] };
     return bless($me, "PDL::Graphics::Simple::Prima");
@@ -128,11 +126,19 @@ sub DESTROY {
     $me->{obj}->destroy;
 }
 
-
+# List of point-style types.  We'll iterate over these to get values for 
+# the {style} curve option.  
 @pointstylenames = qw/Blobs Triangles Squares Crosses Xs Asterisks/;
+
+# [Need to implement colors too.]
+@colors = ();   # What goes in here?  I don't know yet.
  
 ##############################
-# Plot
+# Plot types
+#
+# This probably needs a little more smarts.  
+# Currently each entry is either a ppair::<foo> return or a sub that implements
+# the plot type in terms of others. 
 our $types = {
     lines => ppair::Lines,
     points => [ map { eval q{ppair::$_()} } @pointstylenames ],
@@ -144,9 +150,15 @@ our $types = {
     labels => undef
 };
 
-    
-	       
 
+##############################
+# Plot subroutine
+#
+# Skeletal just now.
+#
+# Need to figure out how to handle overplotting.
+# Also need to figure out how to control layout.
+#
 sub plot {
     my $me = shift;
     my $ipo = shift;
@@ -189,9 +201,13 @@ sub plot {
 		    $pt = $types->{$co->{with}};
 		}
 
-		print "Making prima call...\n";
+		##############################
+		# This isn't quite right yet -- it just stacks up plots in the window 
+		# if multiple argument blocks are passed in.
+
 		my %plot_args = (-data    => ds::Pair(@$block),
 				 plotType => $pt);
+
 		push(@{$me->{widgets}}, 
 		     $me->{obj}->insert('Plot',
 					pack=>{fill=>'both',expand=>1},

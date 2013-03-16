@@ -111,7 +111,7 @@ sub new {
     my $size = PDL::Graphics::Simple::_regularize_size($opt->{size},'px');
     
     my $pw = Prima::Window->create( text => $opt->{output} || "PDL/Prima Plot",
-				    size => [$size->[0], $size->[1]]
+				    size => [$size->[0], $size->[1]],
 				    onCreate => sub { $N_windows++; },  
 				    onDestroy => sub { $N_windows--;}   # Should maybe do something smarter here --like 
 	);                                                              # auto-deallocate from the widgets list...
@@ -126,12 +126,9 @@ sub DESTROY {
     $me->{obj}->destroy;
 }
 
-# List of point-style types.  We'll iterate over these to get values for 
-# the {style} curve option.  
-@pointstylenames = qw/Blobs Triangles Squares Crosses Xs Asterisks/;
 
 # [Need to implement colors too.]
-@colors = ();   # What goes in here?  I don't know yet.
+our @colors = ();   # What goes in here?  I don't know yet.
  
 ##############################
 # Plot types
@@ -141,7 +138,7 @@ sub DESTROY {
 # the plot type in terms of others. 
 our $types = {
     lines => ppair::Lines,
-    points => [ map { eval q{ppair::$_()} } @pointstylenames ],
+    points => [ map { 'ppair::'.$_ } qw/Blobs Triangles Squares Crosses Xs Asterisks/ ],
     bins => undef,
     errorbars => undef,
     limitbars => undef,
@@ -174,6 +171,14 @@ sub plot {
     
     if(!defined($ipo->{multi})) {
 
+	my @plot_args = ();
+
+	my $plot = $me->{obj}->insert('Plot',
+				      pack=>{fill=>'both',expand=>1}
+	    );
+	push(@{$me->{widgets}}, $plot);
+
+
 	for my $block(@_) {
 	    my $co = shift @$block;
 
@@ -190,39 +195,30 @@ sub plot {
 	    }
 	    
 	    my %plot_args;
-	    
-	    if( ref $types->{$co->{with}} eq 'CODE' ) {
-		&{$types->{$co->{with}}}($me, $block);
+
+	    my $type = $types->{$co->{with}};
+	    if( ref($type) eq 'CODE' ) {
+		&{$type}($me, $block);
 	    } else {
 		my $pt;
-		if(ref $types->{$co->{with}} eq 'ARRAY') {
-		    $pt = $types->{$co->{with}}->[ $me->{curvestyle} % @{$types->{$co->{with}}} ];
+		if(ref($type) eq 'ARRAY') {
+		    $pt = eval sprintf("%s",$type->[ ($me->{curvestyle}-1) % (0+@{$type}) ] );
 		} else {
-		    $pt = $types->{$co->{with}};
+
+		    $pt = eval qq{$type};
 		}
 
-		##############################
-		# This isn't quite right yet -- it just stacks up plots in the window 
-		# if multiple argument blocks are passed in.
-
-		my %plot_args = (-data    => ds::Pair(@$block),
-				 plotType => $pt);
-
-		push(@{$me->{widgets}}, 
-		     $me->{obj}->insert('Plot',
-					pack=>{fill=>'both',expand=>1},
-					%plot_args
-		     )
-		    );
-
-		Prima::Timer->create(
-		    onTick=>sub{$_[0]->stop; die "done with event loop\n"},
-		    timeout=>50
-		    )->start;
-		eval { $::application->go };
-		die unless $@ =~ /^done with event loop/;
+		$plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } = ds::Pair(@$block, plotType => $pt);
 	    }
 	}
+	
+	Prima::Timer->create(
+	    onTick=>sub{$_[0]->stop; die "done with event loop\n"},
+	    timeout=>50
+	    )->start;
+	eval { $::application->go };
+	die unless $@ =~ /^done with event loop/;
+
     } else {
 	die "Multiplots not yet supported by P::G::S::Prima -- coming soon...\n";
     }   

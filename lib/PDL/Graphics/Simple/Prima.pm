@@ -115,9 +115,7 @@ sub new {
     my $pw = Prima::Window->create( text => $opt->{output} || "PDL/Prima Plot",
 				    size => [$size->[0], $size->[1]],
 				    onCreate => sub { $N_windows++; },
-				    onDestroy => sub { $N_windows--;
-						       $is_twiddling = 0 if $N_windows==0;
-				    }
+				    onDestroy => sub { $N_windows--;}
 	);
 
     my $me = { obj => $pw, widgets => [] };

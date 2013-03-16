@@ -7,6 +7,8 @@
 ###
 ### See the PDL::Graphics::Simple docs for details
 ###
+### Prima setup is borrowed from D. Mertens' PDL::Graphics::Prima::Simple 
+###  
 ##
 #
 package PDL::Graphics::Simple::Prima;
@@ -101,6 +103,14 @@ sub new {
     my $opt_in = shift;
     $opt_in = {} unless(defined($opt_in));
     my $opt = { iparse($new_defaults, $opt_in) };
+
+    if($opt->{type} =~ m/^f/) {
+	die "PDL::Graphics::Simple doesn't support Prima file output (yet) -- coming soon!\n";
+    }
+
+    if(defined($opt->{multi})) {
+	die "PDL::Graphics::Simple doesn't support multiplots on Prima yet -- coming soon!\n";
+    }
     
     my $pw;
 
@@ -109,6 +119,7 @@ sub new {
     }
 
     my $size = PDL::Graphics::Simple::_regularize_size($opt->{size},'px');
+
     
     my $pw = Prima::Window->create( text => $opt->{output} || "PDL/Prima Plot",
 				    size => [$size->[0], $size->[1]],
@@ -159,14 +170,14 @@ our $types = {
 sub plot {
     my $me = shift;
     my $ipo = shift;
-    print "P::G::S::Plot\n";
     if(defined($ipo->{legend})) {
 	printf(STDERR "WARNING: Ignoring 'legend' option (Legends not yet supported by PDL::Graphics::Simple::Prima v%s)",$PDL::Graphics::Simple::VERSION);
     }
     
     # If not overplotting, erase everything in the window...
     unless($ipo->{oplot}) {
-	map { $_->{destroy} } @{$me->{widgets}};
+	map { $_->destroy } @{$me->{widgets}};
+	$me->{curvestyle} = 0;
     }
     
     if(!defined($ipo->{multi})) {
@@ -177,7 +188,6 @@ sub plot {
 				      pack=>{fill=>'both',expand=>1}
 	    );
 	push(@{$me->{widgets}}, $plot);
-
 
 	for my $block(@_) {
 	    my $co = shift @$block;
@@ -211,6 +221,20 @@ sub plot {
 		$plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } = ds::Pair(@$block, plotType => $pt);
 	    }
 	}
+
+
+	## Set global plot options like title
+	$plot->title($ipo->{title})     if(defined($ipo->{title}));
+	$plot->x->label($ipo->{xlabel}) if(defined($ipo->{xlabel}));
+	$plot->y->label($ipo->{ylabel}) if(defined($ipo->{ylabel}));
+
+	$plot->x->min($ipo->{xrange}->[0]) if(defined($ipo->{xrange}) and defined($ipo->{xrange}->[0]));
+	$plot->x->max($ipo->{xrange}->[1]) if(defined($ipo->{xrange}) and defined($ipo->{xrange}->[1]));
+
+	$plot->y->min($ipo->{yrange}->[0]) if(defined($ipo->{yrange}) and defined($ipo->{yrange}->[0]));
+	$plot->y->max($ipo->{yrange}->[1]) if(defined($ipo->{yrange}) and defined($ipo->{yrange}->[1]));
+
+
 	
 	Prima::Timer->create(
 	    onTick=>sub{$_[0]->stop; die "done with event loop\n"},
@@ -218,6 +242,7 @@ sub plot {
 	    )->start;
 	eval { $::application->go };
 	die unless $@ =~ /^done with event loop/;
+	undef $@;
 
     } else {
 	die "Multiplots not yet supported by P::G::S::Prima -- coming soon...\n";

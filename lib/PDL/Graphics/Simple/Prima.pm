@@ -13,11 +13,9 @@
 #
 
 # Still to do:
-#	- error bar plots
-#	- limit bar plots
 #	- label style plots
 #	- images
-#	- line style adjustment (if possible)
+#	- line dashes (if possible)
 #	- multiplots
 #	- file output
 

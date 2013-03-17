@@ -11,7 +11,19 @@
 ###  
 ##
 #
+
+# Still to do:
+#	- error bar plots
+#	- limit bar plots
+#	- label style plots
+#	- images
+#	- line style adjustment (if possible)
+#	- multiplots
+#	- file output
+
+
 package PDL::Graphics::Simple::Prima;
+use strict;
 
 use PDL;
 use PDL::Options q/iparse/;
@@ -111,15 +123,12 @@ sub new {
 	die "PDL::Graphics::Simple doesn't support multiplots on Prima yet -- coming soon!\n";
     }
     
-    my $pw;
-
     unless( check() ) {
 	die "$mod->{shortname} appears nonfunctional\n" unless(check(1));
     }
 
     my $size = PDL::Graphics::Simple::_regularize_size($opt->{size},'px');
 
-    
     my $pw = Prima::Window->create( text => $opt->{output} || "PDL/Prima Plot",
 				    size => [$size->[0], $size->[1]],
 				    onCreate => sub { $N_windows++; },  
@@ -148,10 +157,10 @@ our @colors =qw/
 # the plot type in terms of others. 
 
 our $types = {
-    lines => ppair::Lines,
+    lines => q{ppair::Lines},
     points => [ map { 'ppair::'.$_ } qw/Blobs Triangles Squares Crosses Xs Asterisks/ ],
     bins => sub {
-	my ($me, $plot, $block) = @_;
+	my ($me, $plot, $block, $cprops) = @_;
 	my $x = $block->[0];
 	my $x1 = $x->range( [[0],[-1]], [$x->dim(0)], 'e' )->average;
 	my $x2 = $x->range( [[1],[0]],  [$x->dim(0)], 'e' )->average;
@@ -161,13 +170,13 @@ our $types = {
 	my $newy = $y->dummy(0,2)->clump(2)->sever;
 	
 	$plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } = 
-	    ds::Pair($newx,$newy,plotType=>eval q{ppair::Lines}, color=> eval $colors[$me->{curvestyle} % @colors]);
+	    ds::Pair($newx,$newy,plotType=>eval q{ppair::Lines}, @$cprops);
     },
     errorbars=> undef,
     limitbars => undef,
     image => undef,
     circles => sub {
-	my($me, $plot, $data) = @_;
+	my($me, $plot, $data, $cprops) = @_;
 	our $cstash;
 	unless(defined($cstash)) {
 	    my $ang = PDL->xvals(362)*3.14159/180;
@@ -179,7 +188,8 @@ our $types = {
 	my $dr = $data->[2]->flat;
 	my $dx = ($data->[0]->flat->dummy(0,1) + $dr->dummy(0,1)*$cstash->{c})->flat;
 	my $dy = ($data->[1]->flat->dummy(0,1) + $dr->dummy(0,1)*$cstash->{s})->flat;
-	$plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } = ds::Pair($dx, $dy, plotType=>eval q{ppair::Lines}, color=> eval $colors[$me->{curvestyle}%@colors]);
+	$plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } = 
+	    ds::Pair($dx, $dy, plotType=>eval q{ppair::Lines}, @$cprops);
     },
     labels => undef
 };
@@ -221,6 +231,24 @@ sub plot {
 	push(@{$me->{widgets}}, $plot);
 	$me->{last_plot} = $plot;
 
+
+	## Set global plot options: titles, axis labels, and ranges.
+	$plot->hide;
+	$plot->title(     $ipo->{title}   )  if(defined($ipo->{title}));
+	$plot->x->label(  $ipo->{xlabel}  )  if(defined($ipo->{xlabel}));
+	$plot->y->label(  $ipo->{ylabel}  )  if(defined($ipo->{ylabel}));
+
+	$plot->x->scaling(eval q{sc::Log}) if($ipo->{logaxis}=~ m/x/i);
+	$plot->y->scaling(eval q{sc::Log}) if($ipo->{logaxis}=~ m/y/i);
+
+	$plot->x->min($ipo->{xrange}->[0]) if(defined($ipo->{xrange}) and defined($ipo->{xrange}->[0]));
+	$plot->x->max($ipo->{xrange}->[1]) if(defined($ipo->{xrange}) and defined($ipo->{xrange}->[1]));
+	$plot->y->min($ipo->{yrange}->[0]) if(defined($ipo->{yrange}) and defined($ipo->{yrange}->[0]));
+	$plot->y->max($ipo->{yrange}->[1]) if(defined($ipo->{yrange}) and defined($ipo->{yrange}->[1]));
+
+	$plot->show;
+
+
 	for my $block(@_) {
 	    my $co = shift @$block;
 
@@ -230,34 +258,34 @@ sub plot {
 	    } else {
 		$me->{curvestyle}++;
 	    }
-	    
+
+	    my $cprops = [
+		color     => eval $colors[ ($me->{curvestyle}-1) % @colors ],
+		lineWidth => $co->{width} || 1
+		];
+
 	    my $type = $types->{$co->{with}};
 	    if( ref($type) eq 'CODE' ) {
-		&{$type}($me, $plot, $block);
+		&{$type}($me, $plot, $block, $cprops);
 	    } else {
 		my $pt;
 		if(ref($type) eq 'ARRAY') {
 		    $pt = eval sprintf("%s",$type->[ ($me->{curvestyle}-1) % (0+@{$type}) ] );
+		} elsif(!defined($type)) {
+		    die "$type is not yet implemented in PDL::Graphics::Simple for Prima.\n";
 		} else {
-
 		    $pt = eval qq{$type};
 		}
-
-		$plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } = ds::Pair(@$block, plotType => $pt, color=>eval $colors[$me->{curvestyle}%@colors]);
+		
+		$plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } = ds::Pair(@$block, plotType => $pt, @$cprops);
 	    }
 	}
 
-
-	## Set global plot options: titles, axis labels, and ranges.
-	$plot->title(     $ipo->{title}   )  if(defined($ipo->{title}));
-	$plot->x->label(  $ipo->{xlabel}  )  if(defined($ipo->{xlabel}));
-	$plot->y->label(  $ipo->{ylabel}  )  if(defined($ipo->{ylabel}));
-
 	$plot->x->min($ipo->{xrange}->[0]) if(defined($ipo->{xrange}) and defined($ipo->{xrange}->[0]));
 	$plot->x->max($ipo->{xrange}->[1]) if(defined($ipo->{xrange}) and defined($ipo->{xrange}->[1]));
-
 	$plot->y->min($ipo->{yrange}->[0]) if(defined($ipo->{yrange}) and defined($ipo->{yrange}->[0]));
 	$plot->y->max($ipo->{yrange}->[1]) if(defined($ipo->{yrange}) and defined($ipo->{yrange}->[1]));
+
 	
 	Prima::Timer->create(
 	    onTick=>sub{$_[0]->stop; die "done with event loop\n"},

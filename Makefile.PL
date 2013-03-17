@@ -30,11 +30,18 @@ sub MY::postamble {
     my $text = <<'FOO';
 install ::
 	@echo "Updating PDL documentation database...";
-	@$(PERL) -e 'sub PDL::Doc::add_module {print STDERR "legacy PDL detected.  Cannot install docs.\n"}; eval q{use PDL::Doc; PDL::Doc::add_module(q[PDL::Graphics::Simple];}' 
+	@$(PERL) -e 'sub PDL::Doc::add_module {print STDERR "legacy PDL detected.  Cannot install docs.\n"}; eval q{use PDL::Doc; PDL::Doc::add_module(q[PDL::Graphics::Simple];}'
 
 FOO
     return $text;
 }
+
+my %prereq = ( 'Test::More'  => 0,
+               'PDL'         => 0,
+	       'File::Temp'  => 0,
+	       'Time::HiRes' => 0);
+
+$prereq{'Win32::Process'} = 0.14 if $^O =~ /MSWin32/i;
 
 WriteMakefile(
     NAME                => 'PDL::Graphics::Simple',
@@ -44,23 +51,19 @@ WriteMakefile(
     ($ExtUtils::MakeMaker::VERSION >= 6.3002
      ? ('LICENSE'=> 'perl')
      : ()),
-    PREREQ_PM => { 'Test::More'  => 0,
-                   'PDL'         => 0,
-		   'File::Temp'  => 0,
-		   'Time::HiRes' => 0
-    },
+    PREREQ_PM => \%prereq,
     META_ADD => {
 	resources => {
 	    homepage => 'http://github.com/drzowie/PDL-Graphics-Simple',
 	    repository => 'git://github.com/drzowie/PDL-Graphics-Simple.git',
 	    bugtracker => 'craig@deforest.org'
 	}
-    },		  
+    },
 
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'PDL-Graphics-Simple-*' },
 	);
-	
+
 # reroute the main POD into a separate README.pod if requested. This is here
 # purely to generate a README.pod for the github front page
 my $POD_header = <<EOF;

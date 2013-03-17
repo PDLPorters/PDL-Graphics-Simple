@@ -38,14 +38,14 @@ sub check {
     $force = 0 unless(defined($force));
 
     return $mod->{ok} unless( $force or !defined($mod->{ok}) );
-    
+
     eval 'use PDL::Graphics::PLplot';
     if($@) {
 	$mod->{ok} = 0;
 	$mod->{msg} = $@;
 	return 0;
     }
-    
+
     # Module loaded OK, now try to extract valid devices from it.
     # We would use a pipe, but Microsoft Windows doesn't play nice
     # with them - so we use a temp file instead.
@@ -53,31 +53,52 @@ sub check {
     close $fh1;
     my ($fh2, $gzouta) = tempfile('pgs_gzouta_XXXX');
     close $fh2;
-    
+
     open FOO, ">$gzinta" or die "Couldn't write to temp file";
     print FOO "1\n"; #Just one line
     close FOO;
 
-    my $pid = fork();
-    unless(defined($pid)) {
-	print STDERR "Fork failed in PLplot probe -- returning 0\n";
-	return 0;
+    if($^O =~ /MSWin32/i) {
+      eval {require Win32::Process};
+      die "Win32::Process didn't load: $@"
+        if $@;
+
+      my $cmd_location = -e "\\Windows\\system32\\cmd.exe"
+                            ? "\\Windows\\system32\\cmd.exe"
+                            : cmd_location();
+
+      Win32::Process::Create(
+        $ProcessObj,
+        $cmd_location,
+        "cmd /c \"$^X -MPDL -MPDL::Graphics::PLplot -e \"PDL::Graphics::PLplot->new() \" <$gzinta >$gzouta\"",
+        0,
+        32, #NORMAL_PRIORITY_CLASS
+        ".")|| die ErrorReport();
     }
-    
-    if( $pid==0 ) {   # assignment
-	
+    else {
+      my $pid = fork();
+      unless(defined($pid)) {
+ 	print STDERR "Fork failed in PLplot probe -- returning 0\n";
+	return 0;
+      }
+
+      if( $pid==0 ) {   # assignment
+
 	# Daughter: try to create a PLplot window with a bogus device, to stimulate a driver listing
 	open STDOUT,">$gzouta";
 	open STDERR,">&STDOUT";
 	open STDIN, "<$gzinta";
 	PDL::Graphics::PLplot->new(DEV=>'?');
 	exit(0);
+      }
+
+      # Parent - snarf up the results from the daughter
+      usleep(2e5);          # hang around for 0.2 seconds
+      eval {kill 9,$pid;};  # kill it dead, just in case it buzzed or hung (I'm looking at you, Microsoft Windows)
+      waitpid($pid,0);      # Clean up.
     }
 
-    # Parent - snarf up the results from the daughter
-    usleep(2e5);          # hang around for 0.2 seconds
-    eval {kill 9,$pid;};  # kill it dead, just in case it buzzed or hung (I'm looking at you, Microsoft Windows)
-    waitpid($pid,0);      # Clean up.
+    sleep 1 if $^O =~ /MSWin32/i; # Don't read $gzouta before it's written
 
     # Snarf up the file.
     open FOO, "<$gzouta";
@@ -98,6 +119,8 @@ sub check {
 	$mod->{disp_dev} = 'xcairo';
     } elsif( $mod->{devices}->{'xwin'} ) {
 	$mod->{disp_dev} = 'xwin';
+    } elsif( $mod->{devices}->{'wingcc'} ) {
+	$mod->{disp_dev} = 'wingcc';
     } else {
 	$mod->{ok} = 0;
 	return 0;
@@ -112,7 +135,7 @@ sub check {
 
     our $filetypes;
     $filetypes = {};
-    
+
     for $k(keys %{$guess_filetypes}) {
 	VAL:for $v( @{$guess_filetypes->{$k}} ) {
 	    if($mod->{devices}->{$v}) {
@@ -145,9 +168,9 @@ sub new {
     my $pkg = shift;
     my $opt_in = shift;
     my $opt = { iparse( $new_defaults, $opt_in ) };
-    
+
     my $pgw;
-    
+
     # Force a recheck on failure, in case the user fixed PLplot.
     unless(check()) {
 	die "$mod->{shortname} appears nonfunctional\n" unless(check(1));
@@ -202,7 +225,7 @@ sub new {
 
     my $size = PDL::Graphics::Simple::_regularize_size($opt->{size},'px');
     push(@params, PAGESIZE => [ $size->[0], $size->[1] ]);
-    
+
     my $me = { opt=>$opt, conv_fn=>$conv_tempfile };
 
     if( defined($opt->{multi}) ) {
@@ -218,7 +241,7 @@ sub new {
     };
     $pgw = eval { &$creator };
     print STDERR $@ if($@);
-    
+
     $me->{creator} = $creator;
     $me->{obj} = $pgw;
 
@@ -244,10 +267,10 @@ our $plplot_methods = {
 	my $x1 = $x->range(  [[0],[-1]], [$x->dim(0)],  'e'  )->average;
 	my $x2 = $x->range(  [[1],[0]],  [$x->dim(0)],  'e'  )->average;
 	my $newx = pdl($x1,$x2)->mv(-1,0)->clump(2)->sever;
-	
+
 	my $y = $data->[1];
 	my $newy = $y->dummy(0,2)->clump(2)->sever;
-	
+
 	$me->{obj}->xyplot($newx, $newy, PLOTTYPE=>'LINE', %{$ppo});
     },
     'points' => 'POINTS',
@@ -257,8 +280,8 @@ our $plplot_methods = {
     },
     'limitbars'=> sub {
 	my ($me, $ipo, $data, $ppo) = @_;
-	$me->{obj}->xyplot($data->[0], 0.5*($data->[2]+$data->[3]), %{$ppo}, 
-			   YERRORBAR=>($data->[3]-$data->[2])->abs, 
+	$me->{obj}->xyplot($data->[0], 0.5*($data->[2]+$data->[3]), %{$ppo},
+			   YERRORBAR=>($data->[3]-$data->[2])->abs,
 			   PLOTTYPE=>'POINTS', SYMBOLSIZE=>0.0001, %$ppo);
 	$me->{obj}->xyplot($data->[0], $data->[1], PLOTTYPE=>'LINE', %$ppo);
     },
@@ -276,17 +299,17 @@ our $plplot_methods = {
 	my $ymax = $data->[1]->max + 0.5 * ($data->[1]->max - $data->[1]->min) / $data->[1]->dim(1);
 	my $min = defined($ipo->{crange}) ? $ipo->{crange}->[0] : $data->[2]->min;
 	my $max = defined($ipo->{crange}) ? $ipo->{crange}->[1] : $data->[2]->max;
-	    
+
 	my $nsteps = 128;
 
 	my $obj = $me->{obj};
 	plsstrm($obj->{STREAMNUMBER});
 	$obj->setparm(%$ppo);
 	my($nx,$ny) = $data->[0]->dims;
-	
+
 	$obj->_setwindow;
 	$obj->_drawlabels;
-	
+
 	plcol0(1);
 	plbox ($obj->{XTICK}, $obj->{NXSUB}, $obj->{YTICK}, $obj->{NYSUB},
 	       $obj->{XBOX}, $obj->{YBOX}); # !!! note out of order call
@@ -298,14 +321,14 @@ our $plplot_methods = {
 	plscmap1l( 1, xvals(128)/127, $r, $g, $b, ones(128));
 
 
-	
+
 	my $fill_width = 2;
 	my $cont_color = 0;
 	my $cont_width = 0;
-	
+
 	my $clevel = ((PDL->sequence($nsteps)*(($max - $min)/($nsteps-1))) + $min);
 	my $grid = plAlloc2dGrid($data->[0], $data->[1]);
-	
+
 	plshades( $data->[2], $xmin, $xmax, $ymin, $ymax, $clevel, $fill_width, $cont_color, $cont_width, 0, 0, \&pltr2, $grid );
 	plFreeGrid($grid);
 	plflush();
@@ -314,7 +337,7 @@ our $plplot_methods = {
 	    $obj->colorkey($data->[2], 'v', VIEWPORT=>[0.93,0.96,0.15,0.85]);
 	}
     },
-    'circles'=> sub { 
+    'circles'=> sub {
 	my ($me,$ipo,$data,$ppo) = @_;
 	my $ang = PDL->xvals(362)*3.14159/180;
 	my $c = $ang->cos;
@@ -338,10 +361,10 @@ our $plplot_methods = {
 		$j = 1   if($1 eq '>');
 		$j = 0.5 if($1 eq '|');
 	    }
-	    $me->{obj}->text($s, TEXTPOSITION=>[ $data->[0]->at($i),   $data->[1]->at($i), 
+	    $me->{obj}->text($s, TEXTPOSITION=>[ $data->[0]->at($i),   $data->[1]->at($i),
 						 1,0,
-						 $j 
-			     ], 
+						 $j
+			     ],
 		);
 	}
     }
@@ -364,7 +387,7 @@ sub plot {
 
     unless( $ipo->{oplot} ) {
 	$me->{style} = 0;
-	
+
 	$me->{logaxis} = $ipo->{logaxis};
 
 	if($me->{opt}->{multi}) {
@@ -395,13 +418,13 @@ sub plot {
 	    $me->{obj}->{YBOX} = 'bcnstl';
 	    $ipo->{yrange} = [ log10($ipo->{yrange}->[0]), log10($ipo->{yrange}->[1]) ];
 	}
-	
+
 #	plenv( $ipo->{xrange}->[0], $ipo->{xrange}->[1], $ipo->{yrange}->[0],$ipo->{yrange}->[1], $ipo->{justify},  1);
 	$me->{obj}->{BOX} = [ $ipo->{xrange}->[0], $ipo->{xrange}->[1], $ipo->{yrange}->[0],$ipo->{yrange}->[1]  ];
 	$me->{obj}->{VIEWPORT} = [0.1,0.87,0.13,0.82]; # copied from defaults in PLplot.pm.  Blech.
 	$me->{obj}->{JUST} = !!$ipo->{justify};
 
-	
+
     }
 
     warn "P::G::S::PLplot: legends not implemented yet for PLplot" if($ipo->{legend});
@@ -453,5 +476,19 @@ sub plot {
 	$a = rim($me->{conv_fn});
 	wim($a->mv(1,0)->slice(':,-1:0:-1'), $me->{opt}->{output});
 	unlink($me->{conv_fn});
-    } 
+    }
+}
+
+sub ErrorReport{
+  print Win32::FormatMessage( Win32::GetLastError() );
+}
+
+sub cmd_location {
+  use File::Spec;
+  my @path = File::Spec->path();
+
+  for my $p(@path) {
+    if(-e "${p}\\cmd.exe") {return "${p}\\cmd.exe"}
+  }
+  die "Can't locate cmd.exe";
 }

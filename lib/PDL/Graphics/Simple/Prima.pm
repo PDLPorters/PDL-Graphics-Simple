@@ -173,30 +173,6 @@ our $types = {
 	    ds::Pair($newx,$newy,plotType=>eval q{ppair::Lines}, @$cprops);
     },
 
-    limitbars => sub {
-	# Strategy: make T-errorbars out of the x/y/height data and generate a Line
-	# plot.  The T-errorbar width is 4x the LineWidth (+/- 2x).
-	my($me, $plot, $block, $cprops, $co) = @_;
-	my $x = $block->[0]->flat;
-	my $y = $block->[1]->flat;
-	my $width = $block->[2]->flat;
-	
-	# Bottom values
-	my $ylo = $y - $width/2;
-	my $yhi = $y + $width/2;
-
-	# Calculate T bar X ranges
-	my $of = ($co->{width}||1) * 2;
-	my $xp = $plot->x->reals_to_pixels($x);
-	my $xlo = $plot->x->pixels_to_reals(  $xp - $of );
-	my $xhi = $plot->x->pixels_to_reals(  $xp + $of );
-	my $nan = PDL->new_from_specification($x->dim(0));  $nan .= asin(pdl(1.1));
-
-	my $xdraw = pdl($xlo,$xhi,$x,  $x,  $xlo,$xhi,$nan)->mv(1,0)->flat; 
-	my $ydraw = pdl($ylo,$ylo,$ylo,$yhi,$yhi,$yhi,$nan)->mv(1,0)->flat;
-	$plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } = 
-	    ds::Pair($xdraw,$ydraw,plotType=>eval q{ppair::Lines}, @$cprops);
-    },	
     image => undef,
     circles => sub {
 	my($me, $plot, $data, $cprops) = @_;
@@ -225,8 +201,8 @@ $types->{errorbars} = sub {
     my $width = $block->[2]->flat;
     
     # Bottom values
-    my $ylo = $y - $width/2;
-    my $yhi = $y + $width/2;
+    my $ylo = $y - $width;
+    my $yhi = $y + $width;
     
     # Calculate T bar X ranges
     my $of = ($co->{width}||1) * 2;
@@ -241,7 +217,30 @@ $types->{errorbars} = sub {
 	ds::Pair($xdraw,$ydraw,plotType=>eval q{ppair::Lines}, @$cprops);
     $plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } =
 	ds::Pair($x,$y,plotType=>eval ($types->{points}->[ ($me->{curvestyle}-1) %(0+@{$types->{points}}) ]), @$cprops);
-};		 
+};	  
+$types->{limitbars} = sub {
+    # Strategy: make T-errorbars out of the x/y/height data and generate a Line
+    # plot.  The T-errorbar width is 4x the LineWidth (+/- 2x).
+    my($me, $plot, $block, $cprops, $co) = @_;
+    my $x = $block->[0]->flat;
+    my $y = $block->[1]->flat;
+    my $ylo = $block->[2]->flat;
+    my $yhi = $block->[3]->flat;
+    
+    # Calculate T bar X ranges
+    my $of = ($co->{width}||1) * 2;
+    my $xp = $plot->x->reals_to_pixels($x);
+    my $xlo = $plot->x->pixels_to_reals(  $xp - $of );
+    my $xhi = $plot->x->pixels_to_reals(  $xp + $of );
+    my $nan = PDL->new_from_specification($x->dim(0));  $nan .= asin(pdl(1.1));
+    
+    my $xdraw = pdl($xlo,$xhi,$x,  $x,  $xlo,$xhi,$nan)->mv(1,0)->flat; 
+    my $ydraw = pdl($ylo,$ylo,$ylo,$yhi,$yhi,$yhi,$nan)->mv(1,0)->flat;
+    $plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } = 
+	ds::Pair($xdraw,$ydraw,plotType=>eval q{ppair::Lines}, @$cprops);
+    $plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } =
+	ds::Pair($x,$y,plotType=>eval ($types->{points}->[ ($me->{curvestyle}-1) %(0+@{$types->{points}}) ]), @$cprops);
+};	  
 
 
 ##############################

@@ -3,7 +3,7 @@ local($|) = 1;
 
 BEGIN {
     our $tests_per_engine = 17;
-    our @engines = qw/gnuplot pgplot plplot/;
+    our @engines = qw/gnuplot prima pgplot plplot/;
 }
 use Test::More tests=> ( + 3                              # up-front
 			 + (@engines)*($tests_per_engine) # in per-engine loop

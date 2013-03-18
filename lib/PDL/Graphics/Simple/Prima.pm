@@ -13,8 +13,8 @@
 #
 
 # Still to do:
+#       - plot justification
 #	- label style plots
-#	- images
 #	- line dashes (if possible)
 #	- multiplots
 #	- file output
@@ -146,6 +146,31 @@ sub DESTROY {
 
 our @colors =qw/
     cl::Black cl::Red cl::Green cl::Blue cl::Cyan cl::Magenta cl::Yellow cl::Brown cl::LighttRed cl::LightGreen cl::LightBlue cl::Gray/;
+
+##############################
+# Fake-o apply method makes sepiatone values for input data.
+# We have to mock up an object method to match the style of PDL::Graphics::Prima::Palette,
+# in order to make the Matrix plot type happy (for 'with=>image').
+@PDL::Graphics::Simple::Prima::Bogus_palette::ISA = 'PDL::Graphics::Prima::Palette';
+sub PDL::Graphics::Simple::Prima::Bogus_palette::apply {
+    my $h = shift;
+    my $data = shift;
+
+    my $me = $h->{me};
+    my($min, $max);
+    if(defined($me->{ipo}->{crange})) {
+	($min,$max) = @{$me->{ipo}->{crange}};
+    } else {
+	($min,$max) = $data->minmax;
+    }
+    my $g = ($min==$max)?$ data->zeroes : (($data->double - $min)/($max-$min))->clip(0,1);
+    print "min=$min; max=$max, g minmax is ".$g->min.",".$g->max."\n";
+    my $r = $g->sqrt;
+    my $b = $g*$g;
+    
+    return (pdl($r,$g,$b)*255.999)->floor->mv(-1,0)->rgb_to_color;
+}
+
  
 ##############################
 # Plot types
@@ -171,7 +196,30 @@ our $types = {
 	    ds::Pair($newx,$newy,plotType=>eval q{ppair::Lines}, @$cprops);
     },
 
-    image => undef,
+
+
+    image => sub {
+	my($me, $plot, $data, $cprops, $co) = @_;
+
+	my ($xmin, $xmax) = $data->[0]->minmax;
+	my $dx = 0.5 * ($xmax-$xmin) / ($data->[0]->dim(0) - (($data->[0]->dim(0)==1) ? 0 : 1));
+	$xmin -= $dx;
+	$xmax += $dx;
+
+	my ($ymin, $ymax) = $data->[1]->minmax;
+	my $dy = 0.5 * ($ymax-$ymin) / ($data->[0]->dim(1) - (($data->[1]->dim(1)==1) ? 0 : 1));
+	$ymin -= $dy;
+	$ymax += $dy;
+
+	$plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } = 
+	  ds::Grid($data->[2], 
+		   x_bounds=>[ $xmin, $xmax ],
+		   y_bounds=>[ $ymin, $ymax ],
+		   plotType=>pgrid::Matrix( palette => bless({me=>$me,data=>$data,co=>$co},'PDL::Graphics::Simple::Prima::Bogus_palette')),
+	  );
+    },
+
+
     circles => sub {
 	my($me, $plot, $data, $cprops) = @_;
 	our $cstash;
@@ -188,34 +236,14 @@ our $types = {
 	$plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } = 
 	    ds::Pair($dx, $dy, plotType=>eval q{ppair::Lines}, @$cprops);
     },
-    labels => undef
+
+
+    labels => sub {
+	print STDERR "\nlabels type is not yet implemented\n";
+    }
+
 };
-$types->{errorbars} = sub {
-    # Strategy: make T-errorbars out of the x/y/height data and generate a Line
-    # plot.  The T-errorbar width is 4x the LineWidth (+/- 2x).
-    my($me, $plot, $block, $cprops, $co) = @_;
-    my $x = $block->[0]->flat;
-    my $y = $block->[1]->flat;
-    my $width = $block->[2]->flat;
-    
-    # Bottom values
-    my $ylo = $y - $width;
-    my $yhi = $y + $width;
-    
-    # Calculate T bar X ranges
-    my $of = ($co->{width}||1) * 2;
-    my $xp = $plot->x->reals_to_pixels($x);
-    my $xlo = $plot->x->pixels_to_reals(  $xp - $of );
-    my $xhi = $plot->x->pixels_to_reals(  $xp + $of );
-    my $nan = PDL->new_from_specification($x->dim(0));  $nan .= asin(pdl(1.1));
-    
-    my $xdraw = pdl($xlo,$xhi,$x,  $x,  $xlo,$xhi,$nan)->mv(1,0)->flat; 
-    my $ydraw = pdl($ylo,$ylo,$ylo,$yhi,$yhi,$yhi,$nan)->mv(1,0)->flat;
-    $plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } = 
-	ds::Pair($xdraw,$ydraw,plotType=>eval q{ppair::Lines}, @$cprops);
-    $plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } =
-	ds::Pair($x,$y,plotType=>eval ($types->{points}->[ ($me->{curvestyle}-1) %(0+@{$types->{points}}) ]), @$cprops);
-};	  
+
 $types->{limitbars} = sub {
     # Strategy: make T-errorbars out of the x/y/height data and generate a Line
     # plot.  The T-errorbar width is 4x the LineWidth (+/- 2x).
@@ -238,6 +266,16 @@ $types->{limitbars} = sub {
 	ds::Pair($xdraw,$ydraw,plotType=>eval q{ppair::Lines}, @$cprops);
     $plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } =
 	ds::Pair($x,$y,plotType=>eval ($types->{points}->[ ($me->{curvestyle}-1) %(0+@{$types->{points}}) ]), @$cprops);
+};
+
+$types->{errorbars} = sub {
+    # Strategy: make T-errorbars out of the x/y/height data and generate a Line
+    # plot.  The T-errorbar width is 4x the LineWidth (+/- 2x).
+    my($me, $plot, $block, $cprops, $co) = @_;
+    my $width = $block->[2]->flat;
+    $block->[2] = $block->[1] - $width;
+    $block->[3] = $block->[1] + $width;
+    &{$types->{limitbars}}($me, $plot, $block, $cprops, $co);
 };	  
 
 
@@ -252,6 +290,9 @@ $types->{limitbars} = sub {
 sub plot {
     my $me = shift;
     my $ipo = shift;
+
+    $me->{ipo} = $ipo;
+
     if(defined($ipo->{legend})) {
 	printf(STDERR "WARNING: Ignoring 'legend' option (Legends not yet supported by PDL::Graphics::Simple::Prima v%s)",$PDL::Graphics::Simple::VERSION);
     }
@@ -318,7 +359,7 @@ sub plot {
 		if(ref($type) eq 'ARRAY') {
 		    $pt = eval sprintf("%s",$type->[ ($me->{curvestyle}-1) % (0+@{$type}) ] );
 		} elsif(!defined($type)) {
-		    die "$type is not yet implemented in PDL::Graphics::Simple for Prima.\n";
+		    die "$co->{with} is not yet implemented in PDL::Graphics::Simple for Prima.\n";
 		} else {
 		    $pt = eval qq{$type};
 		}

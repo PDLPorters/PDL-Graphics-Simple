@@ -129,9 +129,12 @@ sub new {
 
     my $pw = Prima::Window->create( text => $opt->{output} || "PDL/Prima Plot",
 				    size => [$size->[0], $size->[1]],
-				    onCreate => sub { $N_windows++; },  
-				    onDestroy => sub { $N_windows--;}   # Should maybe do something smarter here --like 
-	);                                                              # auto-deallocate from the widgets list...
+				    onCreate  => sub { $PDL::Graphics::Prima::Simple::N_windows++; },  
+				    onDestroy => sub { $PDL::Graphics::Prima::Simple::N_windows--; 
+						       $PDL::Graphics::Prima::Simple::is_twiddling = 0 if($PDL::Graphics::Prima::Simple::N_windows==0);
+				    } 	
+	);                         
+    die "Couldn't create a Prima window!" unless(defined($pw));
 
     my $me = { obj => $pw, widgets => [] };
     return bless($me, "PDL::Graphics::Simple::Prima");
@@ -141,6 +144,8 @@ sub DESTROY {
     my $me = shift;
     $me->{obj}->hide;
     $me->{obj}->destroy;
+    $PDL::Graphics::Prima::Simple::N_windows--;
+    $PDL::Graphics::Prima::Simple::is_twiddling = 0 if($PDL::Graphics::Prima::Simple::N_windows == 0);
 }
 
 
@@ -181,7 +186,9 @@ sub PDL::Graphics::Simple::Prima::Bogus_palette::apply {
 
 our $types = {
     lines => q{ppair::Lines},
+
     points => [ map { 'ppair::'.$_ } qw/Blobs Triangles Squares Crosses Xs Asterisks/ ],
+
     bins => sub {
 	my ($me, $plot, $block, $cprops) = @_;
 	my $x = $block->[0];
@@ -234,14 +241,22 @@ our $types = {
 	my $dx = ($data->[0]->flat->dummy(0,1) + $dr->dummy(0,1)*$cstash->{c})->flat;
 	my $dy = ($data->[1]->flat->dummy(0,1) + $dr->dummy(0,1)*$cstash->{s})->flat;
 	$plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } = 
-	    ds::Pair($dx, $dy, plotType=>eval q{ppair::Lines}, @$cprops);
+	    ds::Pair( $dx, $dy, plotType=>eval q{ppair::Lines}, @$cprops);
     },
 
 
     labels => sub {
-	print STDERR "\nlabels type is not yet implemented\n";
-    }
+	my($me,$plot,$block,$cprops,$co) = @_;
 
+	my $x = $block->[0]->flat;
+	my $y = $block->[1]->flat;
+	my @labels = @{$block->[2]};
+	
+	$plot->dataSets()->{1+keys(%{$plot->dataSets()})} = 
+	  ds::Note(
+	      map { eval q{pnote::Text($labels[$_],x=>$x->slice("($_)"),y=>$y->slice("($_)"))}; } (0..$#labels)
+	  );
+    }
 };
 
 $types->{limitbars} = sub {
@@ -268,6 +283,7 @@ $types->{limitbars} = sub {
 	ds::Pair($x,$y,plotType=>eval ($types->{points}->[ ($me->{curvestyle}-1) %(0+@{$types->{points}}) ]), @$cprops);
 };
 
+
 $types->{errorbars} = sub {
     # Strategy: make T-errorbars out of the x/y/height data and generate a Line
     # plot.  The T-errorbar width is 4x the LineWidth (+/- 2x).
@@ -277,6 +293,8 @@ $types->{errorbars} = sub {
     $block->[3] = $block->[1] + $width;
     &{$types->{limitbars}}($me, $plot, $block, $cprops, $co);
 };	  
+
+ 
 
 
 ##############################

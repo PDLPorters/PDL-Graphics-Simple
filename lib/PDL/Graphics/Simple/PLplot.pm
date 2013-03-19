@@ -293,16 +293,22 @@ our $plplot_methods = {
 	    $data->[2] = $data->[2]->mv(2,0)->average;
 	}
 
+	my ($immin,$immax) = $data->[2]->minmax;
+	$ppo->{ZRANGE} = [] unless defined($ppo->{ZRANGE});
+	$ppo->{ZRANGE}->[0] = $immin unless defined($ppo->{ZRANGE}->[0]);
+	$ppo->{ZRANGE}->[1] = $immax unless defined($ppo->{ZRANGE}->[1]);
+
 	my $xmin = $data->[0]->min - 0.5 * ($data->[0]->max - $data->[0]->min) / $data->[0]->dim(0);
 	my $xmax = $data->[0]->max + 0.5 * ($data->[0]->max - $data->[0]->min) / $data->[0]->dim(0);
 	my $ymin = $data->[1]->min - 0.5 * ($data->[1]->max - $data->[1]->min) / $data->[1]->dim(1);
 	my $ymax = $data->[1]->max + 0.5 * ($data->[1]->max - $data->[1]->min) / $data->[1]->dim(1);
-	my $min = defined($ipo->{crange}) ? $ipo->{crange}->[0] : $data->[2]->min;
-	my $max = defined($ipo->{crange}) ? $ipo->{crange}->[1] : $data->[2]->max;
+	my $min = ($ipo->{crange} and defined($ipo->{crange}->[0])) ? $ipo->{crange}->[0] : $data->[2]->min;
+	my $max = ($ipo->{crange} and defined($ipo->{crange}->[1])) ? $ipo->{crange}->[1] : $data->[2]->max;
 
 	my $nsteps = 128;
 
 	my $obj = $me->{obj};
+
 	plsstrm($obj->{STREAMNUMBER});
 	$obj->setparm(%$ppo);
 	my($nx,$ny) = $data->[0]->dims;
@@ -328,13 +334,13 @@ our $plplot_methods = {
 
 	my $clevel = ((PDL->sequence($nsteps)*(($max - $min)/($nsteps-1))) + $min);
 	my $grid = plAlloc2dGrid($data->[0], $data->[1]);
-
+	
 	plshades( $data->[2], $xmin, $xmax, $ymin, $ymax, $clevel, $fill_width, $cont_color, $cont_width, 0, 0, \&pltr2, $grid );
 	plFreeGrid($grid);
 	plflush();
 
 	if($ipo->{wedge}) {
-	    $obj->colorkey($data->[2], 'v', VIEWPORT=>[0.93,0.96,0.15,0.85]);
+	    $obj->colorkey($data->[2], 'v', VIEWPORT=>[0.93,0.96,0.15,0.85], TITLE=>"");
 	}
     },
     'circles'=> sub {

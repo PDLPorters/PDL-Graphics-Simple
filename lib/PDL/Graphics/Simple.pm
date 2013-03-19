@@ -89,20 +89,16 @@ PLplot is a moderately full featured plotting package that
 generates publication quality output with a simple high-level interface.
 It is supported on MacOS and POSIX.
 
-=back
-
-The following modules are intended for future support:
-
-=over 3
-
 =item * Prima (via PDL::Graphics::Prima)
 
 Prima is based around a widget paradigm that enables complex
-interaction with data in real-time.  It is not as mature as the other
-platforms, particularly for static plot generation to files.  The
-static plotting API is still under development - but has many
-advantages including speed and fewer external dependencies than the
-other modules.
+interaction with data in real-time, and it is highly optimized for
+that application.  It is not as mature as the other platforms,
+particularly for static plot generation to files.  This means that
+PDL::Graphics::Simple does not play to its considerable strengths,
+although Prima is serviceable and fast in this application.  Please
+run the Prima demo in the perldl shell for a better sample of Prima's
+capabilities.
 
 =back
 
@@ -540,7 +536,12 @@ If this is set to a true value, then the screen aspect ratio is adjusted
 to keep the Y axis and X axis scales equal -- so circles appear circular, and
 squares appear square.
 
-=item legend
+=item legend (EXPERIMENTAL)
+
+The "legend" plot option is intended for full support but it is currently
+experimental:  it is not fully implemented in all the engines, and 
+implementation is more variable than one would like in the engines that
+do support it.
 
 This controls whether and where a plot legend should be placed.  If
 you set it, you supply a combination of 't','b','c','l', and 'r':

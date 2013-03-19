@@ -21,6 +21,8 @@ use strict;
 
 use PDL;
 use PDL::Options q/iparse/;
+use File::Temp qw/tempfile/;
+
 our $mod = {
     shortname => 'prima',
     module => 'PDL::Graphics::Simple::Prima',
@@ -109,9 +111,6 @@ sub new {
     $opt_in = {} unless(defined($opt_in));
     my $opt = { iparse($new_defaults, $opt_in) };
 
-    if($opt->{type} =~ m/^f/) {
-	die "PDL::Graphics::Simple doesn't support Prima file output (yet) -- coming soon!\n";
-    }
     
     unless( check() ) {
 	die "$mod->{shortname} appears nonfunctional\n" unless(check(1));
@@ -128,13 +127,107 @@ sub new {
 	);                         
     die "Couldn't create a Prima window!" unless(defined($pw));
 
-
-    my $me = { obj => $pw, widgets => [], next_plotno=>0, multi=>$opt_in->{multi} };
+    if($opt_in->{type} =~ m/^f/i) {
+	$pw->hide;
+    }
+    my $me = { obj => $pw,
+	       widgets => [], 
+	       next_plotno=>0, 
+	       multi=>$opt_in->{multi}, 
+	       type=>$opt->{type}, 
+	       output=>$opt->{output} 
+    };
     return bless($me, "PDL::Graphics::Simple::Prima");
 }
 
 sub DESTROY {
     my $me = shift;
+
+
+    if($me->{type} =~ m/f/i) {
+	##############################
+	# File-saving code...
+	unless( $me->{multi} ) {
+
+	    ##############################
+	    # Save plot to file
+
+	    if($me->{widgets}->[0]) {
+		eval q{$me->{widgets}->[0]->save_to_file($me->{output})};
+		if($@) {
+		    print $@;
+		    undef $@;
+		} 
+	    } else {
+		print STDERR "No plot was sent to $me->{output}\n";
+	    }
+	} else {
+
+	    ##############################
+	    # Multiplot - save the plots individually, then splice them together.
+	    # Lame, lame - I think this can be done in memory with Prima.
+	    # But it gets us to a place where we are supporting stuff.
+
+	    if(@{$me->{widgets}} < 1) {
+		print STDERR "No plot was sent to $me->{output}\n";
+	    } else {
+		print STDERR "WARNING - multiplot support is experimental for the Prima engine\n";
+		
+		my ($h,$tmpfile) = tempfile('PDL-Graphics-Simple-XXXX');
+		close $h;
+		unlink($tmpfile);
+		
+		my $suffix;
+		if($me->{output}=~ s/(\.\w{2,4})$//) {
+		    $suffix = $1;
+		} else {
+		    $suffix = ".png";
+		}
+		$tmpfile .= $suffix;
+		
+		my $widget_dex = 0;
+		my $im = undef;
+		my $ztile = undef;
+	      ROW:for my $row(0..$me->{multi}->[1]-1) {
+		  my $imrow = undef;
+		  for my $col(0..$me->{multi}->[0]-1) {
+		      
+		      my $tile;
+		      
+		      if($widget_dex < @{$me->{widgets}}) {
+			  eval q{ $me->{widgets}->[$widget_dex++]->save_to_file($tmpfile) };
+			  last ROW if($@);
+			  $tile = rim($tmpfile);
+			  $ztile = zeroes($tile)+255;
+			  unlink($tmpfile);
+		      } else {
+			  # ztile is always initialized by first run through...
+			  $tile = $ztile;
+		      }
+		      
+		      if(!defined($imrow)) {
+			  $imrow = $tile;
+		      } else {
+			  $imrow = $imrow->glue(0,$tile);
+		      }
+		  } # end of row loop
+		  
+		  if(!defined($im)) {
+		      $im = $imrow;
+		  } else {
+		      $im = $imrow->glue(1,$im);
+		  }
+	      }
+		unless($@) {
+		    wim($im, $me->{output}.$suffix);
+		} else {
+		    print STDERR $@;
+		    undef $@;
+		}
+	    }
+	}
+    }
+
     $me->{obj}->hide;
     $me->{obj}->destroy;
     $PDL::Graphics::Prima::Simple::N_windows--;
@@ -305,9 +398,9 @@ $types->{errorbars} = sub {
     # Strategy: make T-errorbars out of the x/y/height data and generate a Line
     # plot.  The T-errorbar width is 4x the LineWidth (+/- 2x).
     my($me, $plot, $block, $cprops, $co) = @_;
-    my $width = $block->[2]->flat;
-    $block->[2] = $block->[1] - $width;
-    $block->[3] = $block->[1] + $width;
+    my $halfwidth = $block->[2]->flat/2;
+    $block->[2] = $block->[1] - $halfwidth;
+    $block->[3] = $block->[1] + $halfwidth;
     &{$types->{limitbars}}($me, $plot, $block, $cprops, $co);
 };	  
 
@@ -456,9 +549,15 @@ sub plot {
 	    $plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } = ds::Pair(@$block, plotType => $pt, @$cprops);
 	}
     }
-    
-    $plot->show;
-    $plot->unlock;
+
+    if($me->{type} !~ m/f/i) {
+	$plot->show;
+	$plot->unlock;
+    } else {
+	# Belt-and-suspenders to stay hidden
+	$plot->hide;
+	$me->{obj}->hide;
+    }
     
     ##############################
     # Another lame kludge.  Run the event loop for 50 milliseconds, to enable a redraw,

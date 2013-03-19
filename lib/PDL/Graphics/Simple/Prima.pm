@@ -158,13 +158,14 @@ sub PDL::Graphics::Simple::Prima::Sepia_Palette::apply {
     my $h = shift;
     my $data = shift;
 
-    my $me = $h->{me};
+    my $crange = $h->{crange};
     my($min, $max);
-    if(defined($me->{ipo}->{crange})) {
-	($min,$max) = @{$me->{ipo}->{crange}};
-    } else {
-	($min,$max) = $data->minmax;
+    if(defined($crange)){
+	($min,$max) = @$crange;
     }
+    $min = $data->min unless(defined($min));
+    $max = $data->max unless(defined($max));
+
     my $g = ($min==$max)?$ data->zeroes : (($data->double - $min)/($max-$min))->clip(0,1);
     my $r = $g->sqrt;
     my $b = $g*$g;
@@ -218,7 +219,7 @@ our $types = {
 	  ds::Grid($data->[2], 
 		   x_bounds=>[ $xmin, $xmax ],
 		   y_bounds=>[ $ymin, $ymax ],
-		   plotType=>pgrid::Matrix( palette => bless({me=>$me,data=>$data,co=>$co},'PDL::Graphics::Simple::Prima::Sepia_Palette')),
+		   plotType=>pgrid::Matrix( palette => bless({crange=>$me->{ipo}->{crange},data=>$data,co=>$co},'PDL::Graphics::Simple::Prima::Sepia_Palette')),
 	  );
 
 	if(!!$co->{wedge}) {

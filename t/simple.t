@@ -3,7 +3,8 @@ local($|) = 1;
 
 BEGIN {
     our $tests_per_engine = 17;
-    our @engines = qw/gnuplot prima pgplot plplot/;
+#    our @engines = qw/gnuplot prima pgplot plplot/;
+    our @engines = qw/prima/
 }
 use Test::More tests=> ( + 3                              # up-front
 			 + (@engines)*($tests_per_engine) # in per-engine loop
@@ -27,6 +28,7 @@ ok( (  defined($mods) and ref $mods eq 'HASH'  ) ,
     "module registration hash exists");
 
 for $engine(@engines) {
+    my $w;
 
     ok( (  $mods->{$engine} and ref($mods->{$engine}) eq 'HASH' and ($module = $mods->{$engine}->{module}) ),
 	"there is a modules entry for $engine ($module)" );
@@ -173,7 +175,6 @@ $a = <STDIN>;
 
     }
 
-    undef $w;
 }
 
 

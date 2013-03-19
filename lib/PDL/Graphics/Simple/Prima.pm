@@ -13,7 +13,6 @@
 #
 
 # Still to do:
-#	- multiplots
 #	- file output
 
 
@@ -113,10 +112,6 @@ sub new {
     if($opt->{type} =~ m/^f/) {
 	die "PDL::Graphics::Simple doesn't support Prima file output (yet) -- coming soon!\n";
     }
-
-    if(defined($opt->{multi})) {
-	die "PDL::Graphics::Simple doesn't support multiplots on Prima yet -- coming soon!\n";
-    }
     
     unless( check() ) {
 	die "$mod->{shortname} appears nonfunctional\n" unless(check(1));
@@ -133,7 +128,8 @@ sub new {
 	);                         
     die "Couldn't create a Prima window!" unless(defined($pw));
 
-    my $me = { obj => $pw, widgets => [] };
+
+    my $me = { obj => $pw, widgets => [], next_plotno=>0, multi=>$opt_in->{multi} };
     return bless($me, "PDL::Graphics::Simple::Prima");
 }
 
@@ -157,8 +153,8 @@ our @patterns = qw/
 # Fake-o apply method makes sepiatone values for input data.
 # We have to mock up an object method to match the style of PDL::Graphics::Prima::Palette,
 # in order to make the Matrix plot type happy (for 'with=>image').
-@PDL::Graphics::Simple::Prima::Bogus_palette::ISA = 'PDL::Graphics::Prima::Palette';
-sub PDL::Graphics::Simple::Prima::Bogus_palette::apply {
+@PDL::Graphics::Simple::Prima::Sepia_Palette::ISA = 'PDL::Graphics::Prima::Palette';
+sub PDL::Graphics::Simple::Prima::Sepia_Palette::apply {
     my $h = shift;
     my $data = shift;
 
@@ -170,7 +166,6 @@ sub PDL::Graphics::Simple::Prima::Bogus_palette::apply {
 	($min,$max) = $data->minmax;
     }
     my $g = ($min==$max)?$ data->zeroes : (($data->double - $min)/($max-$min))->clip(0,1);
-    print "min=$min; max=$max, g minmax is ".$g->min.",".$g->max."\n";
     my $r = $g->sqrt;
     my $b = $g*$g;
     
@@ -223,8 +218,12 @@ our $types = {
 	  ds::Grid($data->[2], 
 		   x_bounds=>[ $xmin, $xmax ],
 		   y_bounds=>[ $ymin, $ymax ],
-		   plotType=>pgrid::Matrix( palette => bless({me=>$me,data=>$data,co=>$co},'PDL::Graphics::Simple::Prima::Bogus_palette')),
+		   plotType=>pgrid::Matrix( palette => bless({me=>$me,data=>$data,co=>$co},'PDL::Graphics::Simple::Prima::Sepia_Palette')),
 	  );
+
+	if(!!$co->{wedge}) {
+	    print STDERR "Color wedges are not supported (yet) in Prima\n";
+	}
     },
 
 
@@ -317,10 +316,6 @@ $types->{errorbars} = sub {
 ##############################
 # Plot subroutine
 #
-# Skeletal just now.
-#
-# Need to figure out how to handle overplotting.
-# Also need to figure out how to control layout.
 #
 sub plot {
     my $me = shift;
@@ -332,127 +327,149 @@ sub plot {
 	printf(STDERR "WARNING: Ignoring 'legend' option (Legends not yet supported by PDL::Graphics::Simple::Prima v%s)",$PDL::Graphics::Simple::VERSION);
     }
     
-    # If not overplotting, erase everything in the window...
-    unless($ipo->{oplot}) {
-	map { $_->destroy } @{$me->{widgets}};
+    my $plot;
+    
+    if($ipo->{oplot} and defined($me->{last_plot})) {
+	$plot = $me->{last_plot};
+    } else {
 	$me->{curvestyle} = 0;
+	
+	if( $me->{multi} ) {
+	    # Multiplot - handle logic and plot placement
+
+	    # Advance to the next plot position. Erase the window if necessary.
+	    if($me->{next_plotno}  and  $me->{next_plotno} >= $me->{multi}->[0] * $me->{multi}->[1]) {
+		map {$_->destroy} @{$me->{widgets}};
+		$me->{widgets} = [];
+		$me->{next_plotno} = 0;
+	    }
+
+	    my $pno = $me->{next_plotno};
+	    $plot = $me->{obj}->insert('Plot',
+				       place => {
+					   relx      => ($pno % $me->{multi}->[0])/$me->{multi}->[0],
+					   relwidth  => 1.0/$me->{multi}->[0],
+					   rely      => 1.0 - (1 + int($pno / $me->{multi}->[0]))/$me->{multi}->[1],
+					   relheight => 1.0/$me->{multi}->[1],
+					   anchor    => 'sw'});
+	    $me->{next_plotno}++;
+	} else {
+	    # No multiplot - just instantiate a plot (and destroy any widgets from earlier)
+	    map { $_->destroy } @{$me->{widgets}};
+	    $me->{widgets} = [];
+	    $plot = $me->{obj}->insert('Plot',
+				       pack=>{fill=>'both',expand=>1}
+		);
+	}
+
+    }
+
+    push(@{$me->{widgets}}, $plot);
+    $me->{last_plot} = $plot;
+    
+    ## Set global plot options: titles, axis labels, and ranges.
+    $plot->hide;
+    $plot->lock;
+    $plot->title(     $ipo->{title}   )  if(defined($ipo->{title}));
+    $plot->x->label(  $ipo->{xlabel}  )  if(defined($ipo->{xlabel}));
+    $plot->y->label(  $ipo->{ylabel}  )  if(defined($ipo->{ylabel}));
+    
+    $plot->x->scaling(eval q{sc::Log}) if($ipo->{logaxis}=~ m/x/i);
+    $plot->y->scaling(eval q{sc::Log}) if($ipo->{logaxis}=~ m/y/i);
+    
+    $plot->x->min($ipo->{xrange}->[0]) if(defined($ipo->{xrange}) and defined($ipo->{xrange}->[0]));
+    $plot->x->max($ipo->{xrange}->[1]) if(defined($ipo->{xrange}) and defined($ipo->{xrange}->[1]));
+    $plot->y->min($ipo->{yrange}->[0]) if(defined($ipo->{yrange}) and defined($ipo->{yrange}->[0]));
+    $plot->y->max($ipo->{yrange}->[1]) if(defined($ipo->{yrange}) and defined($ipo->{yrange}->[1]));
+    
+    ##############################
+    # I couldn't find a way to scale the plot to make the plot area justified, so 
+    # we cheat and adjust the axis values instead.
+    # This is a total hack, but at least it produces justified plots.
+    if( !!($ipo->{justify}) ) {
+	my ($dmin,$pmin,$dmax,$pmax,$xscale,$yscale);
+	
+	($dmin,$dmax) = $plot->x->minmax;
+	$pmin = $plot->x->reals_to_pixels($dmin);
+	$pmax = $plot->x->reals_to_pixels($dmax);
+	$xscale = ($pmax-$pmin)/($dmax-$dmin);
+	
+	($dmin,$dmax) = $plot->y->minmax;
+	$pmin = $plot->y->reals_to_pixels($dmin);
+	$pmax = $plot->y->reals_to_pixels($dmax);
+	$yscale = ($pmax-$pmin)/($dmax-$dmin);
+	
+	my $ratio = $yscale / $xscale;
+	print "ratio=$ratio\n";
+	if($ratio > 1) {
+	    # More Y pixels per datavalue than X pixels.  Hence we expand the Y range.
+	    my $ycen = ($dmax+$dmin)/2;
+	    my $yof =  ($dmax-$dmin)/2;
+	    my $new_yof = $yof * $yscale/$xscale;
+	    $plot->y->min($ycen-$new_yof);
+	    $plot->y->max($ycen+$new_yof);
+	} elsif($ratio < 1) {
+	    # More X pixels per datavalue than Y pixels.  Hence we expand the X range.
+	    ($dmin,$dmax) = $plot->x->minmax;
+	    my $xcen = ($dmax+$dmin)/2;
+	    my $xof =  ($dmax-$dmin)/2;
+	    my $new_xof = $xof * $xscale/$yscale;
+	    $plot->x->min($xcen-$new_xof);
+	    $plot->x->max($xcen+$new_xof);
+	}
+    }
+
+
+    ##############################
+    # Rubber meets the road -- loop over data blocks and 
+    # ship out each curve to the appropriate dispatcher in the $types table
+    for my $block(@_) {
+	my $co = shift @$block;
+	
+	# Parse out curve style (for points type selection)
+	if(defined($co->{style}) and $co->{style}) {
+	    $me->{curvestyle} = $co->{style};
+	} else {
+	    $me->{curvestyle}++;
+	}
+	
+	my $cprops = [
+	    color        => eval $colors[   ($me->{curvestyle}-1) % @colors ],
+	    linePattern  => eval $patterns[ ($me->{curvestyle}-1) % @patterns ],
+	    lineWidth    => $co->{width} || 1
+	    ];
+	
+	my $type = $types->{$co->{with}};
+	if( ref($type) eq 'CODE' ) {
+	    &{$type}($me, $plot, $block, $cprops, $co);
+	} else {
+	    my $pt;
+	    if(ref($type) eq 'ARRAY') {
+		$pt = eval sprintf("%s",$type->[ ($me->{curvestyle}-1) % (0+@{$type}) ] );
+	    } elsif(!defined($type)) {
+		die "$co->{with} is not yet implemented in PDL::Graphics::Simple for Prima.\n";
+	    } else {
+		$pt = eval qq{$type};
+	    }
+	    
+	    $plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } = ds::Pair(@$block, plotType => $pt, @$cprops);
+	}
     }
     
-    if(!defined($ipo->{multi})) {
+    $plot->show;
+    $plot->unlock;
+    
+    ##############################
+    # Another lame kludge.  Run the event loop for 50 milliseconds, to enable a redraw,
+    # then exit it.
+    Prima::Timer->create(
+	onTick=>sub{$_[0]->stop; die "done with event loop\n"},
+	timeout=>50
+	)->start;
+    eval { $::application->go };
+    die unless $@ =~ /^done with event loop/;
+    undef $@;
 
-
-	my $plot;
-
-	if($ipo->{oplot} and defined($me->{last_plot})) {
-	    $plot = $me->{last_plot};
-	} else {
-	    $plot = $me->{obj}->insert('Plot',
-				      pack=>{fill=>'both',expand=>1}
-	    );
-	}
-	push(@{$me->{widgets}}, $plot);
-	$me->{last_plot} = $plot;
-
-
-	## Set global plot options: titles, axis labels, and ranges.
-	$plot->hide;
-	$plot->lock;
-	$plot->title(     $ipo->{title}   )  if(defined($ipo->{title}));
-	$plot->x->label(  $ipo->{xlabel}  )  if(defined($ipo->{xlabel}));
-	$plot->y->label(  $ipo->{ylabel}  )  if(defined($ipo->{ylabel}));
-
-	$plot->x->scaling(eval q{sc::Log}) if($ipo->{logaxis}=~ m/x/i);
-	$plot->y->scaling(eval q{sc::Log}) if($ipo->{logaxis}=~ m/y/i);
-
-	$plot->x->min($ipo->{xrange}->[0]) if(defined($ipo->{xrange}) and defined($ipo->{xrange}->[0]));
-	$plot->x->max($ipo->{xrange}->[1]) if(defined($ipo->{xrange}) and defined($ipo->{xrange}->[1]));
-	$plot->y->min($ipo->{yrange}->[0]) if(defined($ipo->{yrange}) and defined($ipo->{yrange}->[0]));
-	$plot->y->max($ipo->{yrange}->[1]) if(defined($ipo->{yrange}) and defined($ipo->{yrange}->[1]));
-
-	##############################
-	# I couldn't find a way to scale the plot to make the plot area justified, so 
-	# we cheat and adjust the axis values instead.
-	# This is a total hack, but at least it produces justified plots.
-	if( !!($ipo->{justify}) ) {
-	    my ($dmin,$pmin,$dmax,$pmax,$xscale,$yscale);
-	   
-	    ($dmin,$dmax) = $plot->x->minmax;
-	    $pmin = $plot->x->reals_to_pixels($dmin);
-	    $pmax = $plot->x->reals_to_pixels($dmax);
-	    $xscale = ($pmax-$pmin)/($dmax-$dmin);
-	    
-	    ($dmin,$dmax) = $plot->y->minmax;
-	    $pmin = $plot->y->reals_to_pixels($dmin);
-	    $pmax = $plot->y->reals_to_pixels($dmax);
-	    $yscale = ($pmax-$pmin)/($dmax-$dmin);
-	    
-	    my $ratio = $yscale / $xscale;
-	    print "ratio=$ratio\n";
-	    if($ratio > 1) {
-		# More Y pixels per datavalue than X pixels.  Hence we expand the Y range.
-		my $ycen = ($dmax+$dmin)/2;
-		my $yof =  ($dmax-$dmin)/2;
-		my $new_yof = $yof * $yscale/$xscale;
-		$plot->y->min($ycen-$new_yof);
-		$plot->y->max($ycen+$new_yof);
-	    } elsif($ratio < 1) {
-		# More X pixels per datavalue than Y pixels.  Hence we expand the X range.
-		($dmin,$dmax) = $plot->x->minmax;
-		my $xcen = ($dmax+$dmin)/2;
-		my $xof =  ($dmax-$dmin)/2;
-		my $new_xof = $xof * $xscale/$yscale;
-		$plot->x->min($xcen-$new_xof);
-		$plot->x->max($xcen+$new_xof);
-	    }
-	}
-
-	for my $block(@_) {
-	    my $co = shift @$block;
-
-	    # Parse out curve style (for points type selection)
-	    if(defined($co->{style}) and $co->{style}) {
-		$me->{curvestyle} = $co->{style};
-	    } else {
-		$me->{curvestyle}++;
-	    }
-
-	    my $cprops = [
-		color        => eval $colors[   ($me->{curvestyle}-1) % @colors ],
-		linePattern  => eval $patterns[ ($me->{curvestyle}-1) % @patterns ],
-		lineWidth    => $co->{width} || 1
-		];
-
-	    my $type = $types->{$co->{with}};
-	    if( ref($type) eq 'CODE' ) {
-		&{$type}($me, $plot, $block, $cprops, $co);
-	    } else {
-		my $pt;
-		if(ref($type) eq 'ARRAY') {
-		    $pt = eval sprintf("%s",$type->[ ($me->{curvestyle}-1) % (0+@{$type}) ] );
-		} elsif(!defined($type)) {
-		    die "$co->{with} is not yet implemented in PDL::Graphics::Simple for Prima.\n";
-		} else {
-		    $pt = eval qq{$type};
-		}
-		
-		$plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } = ds::Pair(@$block, plotType => $pt, @$cprops);
-	    }
-	}
-
-	$plot->show;
-	$plot->unlock;
-	
-	Prima::Timer->create(
-	    onTick=>sub{$_[0]->stop; die "done with event loop\n"},
-	    timeout=>50
-	    )->start;
-	eval { $::application->go };
-	die unless $@ =~ /^done with event loop/;
-	undef $@;
-
-    } else {
-	die "Multiplots not yet supported by P::G::S::Prima -- coming soon...\n";
-    }   
 }    
     
     

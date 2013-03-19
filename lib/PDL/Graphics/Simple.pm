@@ -426,6 +426,7 @@ sub new {
     unless(defined($engine) and defined($mods->{$engine})) {
 	die "$opt->{engine} is not a known plotting engine. Use PDL::Graphics::Simple::show() for a list. ";
     }
+    $last_successful_type = $opt->{engine};
     
     my $size = _regularize_size($opt->{size},'in');
 

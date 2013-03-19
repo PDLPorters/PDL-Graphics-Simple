@@ -339,6 +339,7 @@ sub plot {
 
 	## Set global plot options: titles, axis labels, and ranges.
 	$plot->hide;
+	$plot->lock;
 	$plot->title(     $ipo->{title}   )  if(defined($ipo->{title}));
 	$plot->x->label(  $ipo->{xlabel}  )  if(defined($ipo->{xlabel}));
 	$plot->y->label(  $ipo->{ylabel}  )  if(defined($ipo->{ylabel}));
@@ -350,9 +351,6 @@ sub plot {
 	$plot->x->max($ipo->{xrange}->[1]) if(defined($ipo->{xrange}) and defined($ipo->{xrange}->[1]));
 	$plot->y->min($ipo->{yrange}->[0]) if(defined($ipo->{yrange}) and defined($ipo->{yrange}->[0]));
 	$plot->y->max($ipo->{yrange}->[1]) if(defined($ipo->{yrange}) and defined($ipo->{yrange}->[1]));
-
-	$plot->show;
-
 
 	for my $block(@_) {
 	    my $co = shift @$block;
@@ -390,6 +388,10 @@ sub plot {
 	$plot->x->max($ipo->{xrange}->[1]) if(defined($ipo->{xrange}) and defined($ipo->{xrange}->[1]));
 	$plot->y->min($ipo->{yrange}->[0]) if(defined($ipo->{yrange}) and defined($ipo->{yrange}->[0]));
 	$plot->y->max($ipo->{yrange}->[1]) if(defined($ipo->{yrange}) and defined($ipo->{yrange}->[1]));
+
+	$plot->show;
+	$plot->unlock;
+
 
 	
 	Prima::Timer->create(

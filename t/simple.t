@@ -48,7 +48,7 @@ for $engine(@engines) {
 # Simple line & bin plot
       eval { $w->plot(with=>'line', xvals(10), xvals(10)->sqrt * sqrt(10), 
 		      with=>'bins', sin(xvals(10))*10,
-		 {title=>"PDL Simple Graphics: $engine engine, line & bin plots"}),
+		 {title=>"PDL: $engine engine, line & bin plots"}),
 
       };
       ok(!$@, "plot succeeded\n");
@@ -67,7 +67,7 @@ should have different line styles.  OK? (Y/n) > };
 # Error bars plot
       eval { $w->plot( with=>'errorbars', xvals(37)*72/36, (xvals(37)/3)**2, xvals(37),
 		       with=>'limitbars', sin(xvals(90)*4*3.14159/90)*30 + 72, xvals(90)/2, ones(90)*110,
-		       {title=>"PDL Simple Graphics: $engine, error bars (rel.) & limit bars (abs.)"}
+		       {title=>"PDL: $engine engine, error (rel.) & limit (abs.) bars"}
 		 ); };
       ok(!$@, "errorbar plot succeeded"); print($@) if($@);
       
@@ -85,7 +85,7 @@ OK? (Y/n) > };
 # Image & circles plot
       eval { $w->plot(with=>'image', rvals(11,11), 
 		      with=>'circle', xvals(15), xvals(15)*1.5, sin(xvals(15))**2 * 4,
-		      {title=>"PDL Simple Graphics: $engine, image & circle plots (not justified)"}
+		      {title=>"PDL: $engine engine, image & circle plots (not justified)"}
 		 );
       };
       ok(!$@, "plot succeeded\n");
@@ -103,7 +103,7 @@ be ellipses.  OK? (Y/n) > };
 # Image & circles plot (justified)
       eval { $w->plot(with=>'image', rvals(11,11), 
 		      with=>'circle', xvals(15), xvals(15)*1.5, sin(xvals(15))**2 * 4,
-		      {title=>"PDL Simple Graphics: $engine, image & circle plots (justified)", j=>1}
+		      {title=>"PDL: $engine engine, image & circle plots (justified)", j=>1}
 		 );
       };
       ok(!$@, "justified image and circles plot succeeded"); print($@) if($@);
@@ -120,7 +120,7 @@ really be circles.  OK? (Y/n) > };
 ##############################
 # Log scaling
 
-      eval { $w->plot(with=>'line',xvals(500)+1,{log=>'y',title=>"Y=X (semilog)"}); };
+      eval { $w->plot(with=>'line',xvals(500)+1,{log=>'y',title=>"PDL: $engine engine, Y=X (semilog)"}); };
       ok(!$@, "log scaling succeeded");
       print STDERR qq{
 Testing $engine engine: You should see a simple logarithmically scaled plot,
@@ -137,7 +137,7 @@ with appropriate title.  OK? (Y/n) > };
       eval { $w->plot(with=>'labels', 
 		      xvals(5), xvals(5), 
 		      ["<left-justified","<    left-with-spaces", "|centered","|>start with '>'",">right-justified"],
-		      {title=>"$engine: text placement on graph", yrange=>[-1,5] }
+		      {title=>"PDL: $engine engine, text on graph", yrange=>[-1,5] }
 		 );
       };
       ok( !$@, "labels plot succeeded" );

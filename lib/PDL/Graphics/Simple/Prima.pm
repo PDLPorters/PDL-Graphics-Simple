@@ -13,9 +13,6 @@
 #
 
 # Still to do:
-#       - plot justification
-#	- label style plots
-#	- line dashes (if possible)
 #	- multiplots
 #	- file output
 
@@ -152,6 +149,10 @@ sub DESTROY {
 our @colors =qw/
     cl::Black cl::Red cl::Green cl::Blue cl::Cyan cl::Magenta cl::Yellow cl::Brown cl::LighttRed cl::LightGreen cl::LightBlue cl::Gray/;
 
+our @patterns = qw/
+    lp::Solid lp::Dash lp::LongDash lp::ShortDash lp::DotDot lp::DashDot lp::DashDotDot/;
+
+
 ##############################
 # Fake-o apply method makes sepiatone values for input data.
 # We have to mock up an object method to match the style of PDL::Graphics::Prima::Palette,
@@ -248,10 +249,26 @@ our $types = {
     labels => sub {
 	my($me,$plot,$block,$cprops,$co) = @_;
 
-	my $x = $block->[0]->flat;
-	my $y = $block->[1]->flat;
+	my $x = $block->[0]->flat->sever;
+	my $y = $block->[1]->flat->sever;
 	my @labels = @{$block->[2]};
-	
+
+	my @lrc = ();
+	for my $i(0..$x->dim(0)-1) {
+	    my $j =0;
+	    if($labels[$i] =~ s/^([\<\|\> ])//) {
+		my $ch = $1;
+		if($ch =~ m/[\|\>]/) {
+		    my $tw = $plot->get_text_width($labels[$i]);
+		    $tw /= 2 if($ch eq '|');
+		    $x->slice("($i)") .= 
+			$plot->x->pixels_to_reals(
+			    $plot->x->reals_to_pixels( $x->slice("($i)") ) - $tw 
+			);
+		}
+	    }
+	}
+
 	$plot->dataSets()->{1+keys(%{$plot->dataSets()})} = 
 	  ds::Note(
 	      map { eval q{pnote::Text($labels[$_],x=>$x->slice("($_)"),y=>$y->slice("($_)"))}; } (0..$#labels)
@@ -352,6 +369,43 @@ sub plot {
 	$plot->y->min($ipo->{yrange}->[0]) if(defined($ipo->{yrange}) and defined($ipo->{yrange}->[0]));
 	$plot->y->max($ipo->{yrange}->[1]) if(defined($ipo->{yrange}) and defined($ipo->{yrange}->[1]));
 
+	##############################
+	# I couldn't find a way to scale the plot to make the plot area justified, so 
+	# we cheat and adjust the axis values instead.
+	# This is a total hack, but at least it produces justified plots.
+	if( !!($ipo->{justify}) ) {
+	    my ($dmin,$pmin,$dmax,$pmax,$xscale,$yscale);
+	   
+	    ($dmin,$dmax) = $plot->x->minmax;
+	    $pmin = $plot->x->reals_to_pixels($dmin);
+	    $pmax = $plot->x->reals_to_pixels($dmax);
+	    $xscale = ($pmax-$pmin)/($dmax-$dmin);
+	    
+	    ($dmin,$dmax) = $plot->y->minmax;
+	    $pmin = $plot->y->reals_to_pixels($dmin);
+	    $pmax = $plot->y->reals_to_pixels($dmax);
+	    $yscale = ($pmax-$pmin)/($dmax-$dmin);
+	    
+	    my $ratio = $yscale / $xscale;
+	    print "ratio=$ratio\n";
+	    if($ratio > 1) {
+		# More Y pixels per datavalue than X pixels.  Hence we expand the Y range.
+		my $ycen = ($dmax+$dmin)/2;
+		my $yof =  ($dmax-$dmin)/2;
+		my $new_yof = $yof * $yscale/$xscale;
+		$plot->y->min($ycen-$new_yof);
+		$plot->y->max($ycen+$new_yof);
+	    } elsif($ratio < 1) {
+		# More X pixels per datavalue than Y pixels.  Hence we expand the X range.
+		($dmin,$dmax) = $plot->x->minmax;
+		my $xcen = ($dmax+$dmin)/2;
+		my $xof =  ($dmax-$dmin)/2;
+		my $new_xof = $xof * $xscale/$yscale;
+		$plot->x->min($xcen-$new_xof);
+		$plot->x->max($xcen+$new_xof);
+	    }
+	}
+
 	for my $block(@_) {
 	    my $co = shift @$block;
 
@@ -363,8 +417,9 @@ sub plot {
 	    }
 
 	    my $cprops = [
-		color     => eval $colors[ ($me->{curvestyle}-1) % @colors ],
-		lineWidth => $co->{width} || 1
+		color        => eval $colors[   ($me->{curvestyle}-1) % @colors ],
+		linePattern  => eval $patterns[ ($me->{curvestyle}-1) % @patterns ],
+		lineWidth    => $co->{width} || 1
 		];
 
 	    my $type = $types->{$co->{with}};
@@ -384,15 +439,8 @@ sub plot {
 	    }
 	}
 
-	$plot->x->min($ipo->{xrange}->[0]) if(defined($ipo->{xrange}) and defined($ipo->{xrange}->[0]));
-	$plot->x->max($ipo->{xrange}->[1]) if(defined($ipo->{xrange}) and defined($ipo->{xrange}->[1]));
-	$plot->y->min($ipo->{yrange}->[0]) if(defined($ipo->{yrange}) and defined($ipo->{yrange}->[0]));
-	$plot->y->max($ipo->{yrange}->[1]) if(defined($ipo->{yrange}) and defined($ipo->{yrange}->[1]));
-
 	$plot->show;
 	$plot->unlock;
-
-
 	
 	Prima::Timer->create(
 	    onTick=>sub{$_[0]->stop; die "done with event loop\n"},

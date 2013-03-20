@@ -253,7 +253,7 @@ sub DESTROY {
     my $me = shift;
     if( $me->{opt}->{type} =~ m/^i/i   and  defined($me->{obj}) ) {
 	$me->{obj}->close;
-	undef $me->{obj};
+	delete $me->{obj};
     }
 }
 
@@ -340,6 +340,8 @@ our $plplot_methods = {
 	plflush();
 
 	if($ipo->{wedge}) {
+	    # Work around PLplot justify bug
+	    local($obj->{JUST}) = 0;
 	    $obj->colorkey($data->[2], 'v', VIEWPORT=>[0.93,0.96,0.15,0.85], TITLE=>"");
 	}
     },

@@ -143,6 +143,7 @@ sub new {
 sub DESTROY {
     my $me = shift;
 
+    print "DESTROYING $me\n";
 
     if($me->{type} =~ m/f/i) {
 	##############################
@@ -228,10 +229,10 @@ sub DESTROY {
 	}
     }
 
+
+
     $me->{obj}->hide;
     $me->{obj}->destroy;
-    $PDL::Graphics::Prima::Simple::N_windows--;
-    $PDL::Graphics::Prima::Simple::is_twiddling = 0 if($PDL::Graphics::Prima::Simple::N_windows == 0);
 }
 
 

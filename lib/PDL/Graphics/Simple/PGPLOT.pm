@@ -368,14 +368,17 @@ sub plot {
 sub DESTROY {
     my $me = shift;
 
-    eval q{ $me->{obj}->close; };
-    undef $@;
+    $me->{obj}->release;
 
-    my $file = ( ($me->{conv_fn}) ? $me->{conv_fn} : $me->{output} );
-    if($me->{conv_fn}) {
-	my $a;
-	$a = rim($me->{conv_fn}) ;
-	wim($a, $me->{opt}->{output}); 
-	unlink($me->{conv_fn});
+    if($me->{type} =~ m/^f/i) {
+	eval q{ $me->{obj}->close; };
+
+	my $file = ( ($me->{conv_fn}) ? $me->{conv_fn} : $me->{output} );
+	if($me->{conv_fn}) {
+	    my $a;
+	    $a = rim($me->{conv_fn}) ;
+	    wim($a, $me->{opt}->{output}); 
+	    unlink($me->{conv_fn});
+	}
     }
 }

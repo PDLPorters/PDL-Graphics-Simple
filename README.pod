@@ -97,20 +97,16 @@ PLplot is a moderately full featured plotting package that
 generates publication quality output with a simple high-level interface.
 It is supported on MacOS and POSIX.
 
-=back
-
-The following modules are intended for future support:
-
-=over 3
-
 =item * Prima (via PDL::Graphics::Prima)
 
 Prima is based around a widget paradigm that enables complex
-interaction with data in real-time.  It is not as mature as the other
-platforms, particularly for static plot generation to files.  The
-static plotting API is still under development - but has many
-advantages including speed and fewer external dependencies than the
-other modules.
+interaction with data in real-time, and it is highly optimized for
+that application.  It is not as mature as the other platforms,
+particularly for static plot generation to files.  This means that
+PDL::Graphics::Simple does not play to its considerable strengths,
+although Prima is serviceable and fast in this application.  Please
+run the Prima demo in the perldl shell for a better sample of Prima's
+capabilities.
 
 =back
 
@@ -134,6 +130,12 @@ Here are some examples of simple tasks, including axis labels and plot
 titles.  These non-object-oriented shortcuts are useful for display
 with the default window size.  They make use of a package-global plot
 object.
+
+The non-object interface will keep using the last plot engine you used
+successfully.  On first start, you can specify an engine with the
+environment variable PDL_SIMPLE_ENGINE.  If that one isn't working, or
+if you didn't specify one, all known engines are tried in alphabetical
+order until one works.
 
 =over 3
 
@@ -194,7 +196,7 @@ object.  You can set plot size, direct plots to files, and set up multi-panel pl
 
 The constructor accepts window configuration options that set the plotting
 environment, including size, driving plot engine, output, and multiple
-panels in a single window. 
+panels in a single window.   
 
 For interactive/display plots, the plot is rendered immediately, and lasts until
 the object is destroyed.  For file plots, the file is not guaranteed to exist
@@ -290,9 +292,13 @@ about the type of window you want:
 
 =item engine
 
-If specified, this must be one of the supported plotting engines.  You can use a module
-name or the shortened name.  If you don't give one, the constructor will scan through existing
-modules and pick one that seems to work.
+If specified, this must be one of the supported plotting engines.  You
+can use a module name or the shortened name.  If you don't give one,
+the constructor will try the last one you used, or else scan through
+existing modules and pick one that seems to work.  It will first check
+the environment variable PDL_SIMPLE_ENGINE, then search through all
+the known engines in alphabetical order until it finds one that seems
+to work on your system.
 
 =item size
 
@@ -398,7 +404,12 @@ If this is set to a true value, then the screen aspect ratio is adjusted
 to keep the Y axis and X axis scales equal -- so circles appear circular, and
 squares appear square.
 
-=item legend
+=item legend (EXPERIMENTAL)
+
+The "legend" plot option is intended for full support but it is currently
+experimental:  it is not fully implemented in all the engines, and 
+implementation is more variable than one would like in the engines that
+do support it.
 
 This controls whether and where a plot legend should be placed.  If
 you set it, you supply a combination of 't','b','c','l', and 'r':

@@ -14,6 +14,18 @@ use Test::More tests=> ( + 3                              # up-front
 use File::Temp q/tempfile/;
 use PDL;
 
+our $smoker = ($ENV{'PERL_MM_USE_DEFAULT'} or $ENV{'AUTOMATED_TESTING'});
+
+sub get_yn{
+    my $default = shift || 'y';
+    if($smoker) {
+	return $default;
+    } else {
+	my $a = <STDIN>;
+	return $a;
+    }
+}
+
 ##############################
 # Module loads properly
 eval "use PDL::Graphics::Simple;";
@@ -60,7 +72,7 @@ Testing $engine engine: You should see a superposed line plot and bin
 plot, with x range from 0 to 9 and yrange from 0 to 9. The two plots
 should have different line styles.  OK? (Y/n) > };
 
-      $a = <STDIN>;
+      $a = get_yn();
       ok( $a !~ m/^n/i, "line plot looks ok" );
 
 
@@ -78,7 +90,7 @@ Testing $engine engine: You should see error bars (symmetric relative to each
 plotted point) and limit bars (asymmetric about each plotted point).
 OK? (Y/n) > };
 
-      $a = <STDIN>; 
+      $a = get_yn(); 
       ok( $a !~ m/^n/i,
 	  "errorbars / limitbars OK");
 
@@ -97,7 +109,7 @@ Testing $engine engine: You should see a radial 11x11 "target" image
 and some superimposed "circles".  Since the plot is not justified, the
 pixels in the target image should be oblong and the "circles" should
 be ellipses.  OK? (Y/n) > };
-      $a = <STDIN>; 
+      $a = get_yn(); 
       ok( $a !~ m/^n/i,
 	  "image and circles plot looks ok");
 
@@ -115,7 +127,7 @@ justified.  superimposed "circles".  Since the plot is justified,
 the pixels in the target image should be square and the "circles" should
 really be circles.  OK? (Y/n) > };
 
-      $a = <STDIN>; 
+      $a = get_yn(); 
       ok( $a !~ m/^n/i,
 	  "justified image and circles plot looks ok");
 
@@ -128,7 +140,7 @@ really be circles.  OK? (Y/n) > };
 Testing $engine engine: You should see a simple logarithmically scaled plot,
 with appropriate title.  OK? (Y/n) > };
 
-      $a = <STDIN>;
+      $a = get_yn();
       ok( $a !~ m/^n/i,
 	  "log scaled plot looks OK");
 
@@ -148,7 +160,7 @@ Testing $engine engine: You should see "left-justified" text left
 aligned on x=0, "left-with-spaces" just right of x=1, "centered"
 centered on x=2, ">start with '>'" centered on x=3, and
 "right-justified" right-aligned on x=4.  OK? (Y/n) > };
-      $a = <STDIN>;
+      $a = get_yn();
       ok( $a !~ m/^n/i,
 	  "labels plot looks OK");
       
@@ -168,7 +180,7 @@ by the engine - otherwise a modified gradient) at bottom right.  The top two
 panels should have colorbar wedges to the right of the image.
 OK? (Y/n) > };
 
-$a = <STDIN>;
+$a = get_yn();
       ok($a !~ m/^n/i,
 	 "multiplot OK");
 
@@ -199,7 +211,7 @@ print STDERR q{
 You should see a sine wave... OK? (Y/n) > };
 
 
-$a = <STDIN>;
+$a = get_yn();
 ok($a !~ m/^n/i, "convenience plot OK");
 
 eval q: erase :;
@@ -220,7 +232,7 @@ print STDERR q{
 You should see a bullseye pattern with a brighter inner ring.  OK? (Y/n) > };
 
 
-$a=<STDIN>;
+$a=get_yn();
 ok($a !~ m/^n/i, "bullseye OK");
 
 eval q{ imag $im, {wedge=>1, title=>"Bullseye!"} };
@@ -233,7 +245,7 @@ up top; and a justified aspect ratio (circular rings). The color scale may be
 slightly less contrasty than the last frame, because some engines extend the 
 colorbar wedge to round numbers.   Ok? (Y/n) > };
 
-$a = <STDIN>;
+$a = get_yn();
 ok($a !~ m/^n/i, "justified bullseye and wedge OK");
 
 
@@ -246,7 +258,7 @@ You should see the same image, but with no title and with a tighter
 dynamic range that cuts off the low values (black rings instead of
 the fainter parts of the bullseye).  Ok? (Y/n) > };
 
-$a = <STDIN>;
+$a = get_yn();
 ok($a !~ m/^n/i, "crange shortcut is OK");
 
 eval q{ erase };
@@ -256,7 +268,7 @@ print STDERR qq{
   test> erase
 The window should have disappeared.  Ok? (Y/n) > };
 
-$a = <STDIN>;
+$a = get_yn();
 ok($a !~ m/^n/i, "erase worked");
 
 print "End of tests\n";

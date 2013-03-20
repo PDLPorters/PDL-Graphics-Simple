@@ -123,6 +123,12 @@ titles.  These non-object-oriented shortcuts are useful for display
 with the default window size.  They make use of a package-global plot
 object.
 
+The non-object interface will keep using the last plot engine you used
+successfully.  On first start, you can specify an engine with the
+environment variable PDL_SIMPLE_ENGINE.  If that one isn't working, or
+if you didn't specify one, all known engines are tried in alphabetical
+order until one works.
+
 =over 3
 
 =item * Load module and create line plots
@@ -182,7 +188,7 @@ object.  You can set plot size, direct plots to files, and set up multi-panel pl
 
 The constructor accepts window configuration options that set the plotting
 environment, including size, driving plot engine, output, and multiple
-panels in a single window. 
+panels in a single window.   
 
 For interactive/display plots, the plot is rendered immediately, and lasts until
 the object is destroyed.  For file plots, the file is not guaranteed to exist
@@ -325,9 +331,13 @@ about the type of window you want:
 
 =item engine
 
-If specified, this must be one of the supported plotting engines.  You can use a module
-name or the shortened name.  If you don't give one, the constructor will scan through existing
-modules and pick one that seems to work.
+If specified, this must be one of the supported plotting engines.  You
+can use a module name or the shortened name.  If you don't give one,
+the constructor will try the last one you used, or else scan through
+existing modules and pick one that seems to work.  It will first check
+the environment variable PDL_SIMPLE_ENGINE, then search through all
+the known engines in alphabetical order until it finds one that seems
+to work on your system.
 
 =item size
 
@@ -388,7 +398,16 @@ sub new {
     unless($opt->{engine}) {
 	# find the first working subclass...
 	unless($last_successful_type) {
-	    attempt: for my $engine( sort keys %$mods ) {
+
+	    my @try = ();
+
+	    if($ENV{'PDL_SIMPLE_ENGINE'}) {
+		push(@try, $ENV{'PDL_SIMPLE_ENGINE'});
+	    }
+	    
+	    push(@try, sort keys %$mods);
+
+	    attempt: for my $engine( @try ) {
 		print "Trying $engine ($mods->{$engine}->{engine})...";
 		my $a;
 		my $s;

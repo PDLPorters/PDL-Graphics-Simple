@@ -256,7 +256,7 @@ use PDL::Options q/iparse/;
 use File::Temp qw/tempfile tempdir/;
 use Scalar::Util q/looks_like_number/;
 
-our $VERSION = '1.001';
+our $VERSION = '1.002';
 
 ##############################
 # Exporting
@@ -342,24 +342,25 @@ to work on your system.
 =item size
 
 This is a window size as an ARRAY ref containing [width, height,
-units].  If no units are specified, the default should be "pixels",
-using the standard conversions of 72 points per inch, 100 pixels per
-inch.
+units].  If no units are specified, the default is "inches".  Accepted
+units are "in","pt","px","mm", and "cm". The conversion used for pixels
+is 100 px/inch.
 
 =item type
 
-This describes the kind of plot to create. It will match either /^i/i
-or /^f/i.  The former is "interactive", and should result in a plot
-being displayed (e.g. via X11 or the engine's default display
-method). 
+This describes the kind of plot to create, and should be either "file"
+or "interactive" - though only the leading character is checked.  If
+you don't specify either C<type> or C<output> (below), the default is
+"interactive". If you specify only C<output>, the default is "file".
 
 =item output
 
-This should be a window number for interactive plots, or a file name
-for file plots.  The default file name is "plot.png" in the current
-working directory.  Individual plotting modules are meant to support
-at least '.png', '.pdf', and '.ps', if necessary via format conversion.
-Most other standard file types are supported but are not guaranteed to work.
+This should be a window number or name for interactive plots, or a
+file name for file plots.  The default file name is "plot.png" in the
+current working directory.  Individual plotting modules all support at
+least '.png', '.pdf', and '.ps' -- via format conversion if necessary.
+Most other standard file types are supported but are not guaranteed to
+work.
 
 =item multi
 
@@ -371,6 +372,7 @@ is always horizontal first, and left-to-right, top-to-bottom.
 =back
 
 =cut
+
 our $new_defaults = {
     engine => '',
     size => [8,6,'in'],

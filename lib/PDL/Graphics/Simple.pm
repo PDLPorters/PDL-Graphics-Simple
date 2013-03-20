@@ -256,7 +256,7 @@ use PDL::Options q/iparse/;
 use File::Temp qw/tempfile tempdir/;
 use Scalar::Util q/looks_like_number/;
 
-our $VERSION = '1.002';
+our $VERSION = '1.003';
 
 ##############################
 # Exporting
@@ -1487,6 +1487,16 @@ C<image>, or C<labels>.
 Deal with legend generation.  In particular: adding legends with multi-call
 protocols is awkward and leads to many edge cases in the internal protocol.
 This needs more thought.
+
+=head1 RELEASE NOTES
+
+=head3 v1.003
+
+Fix tests for smoker compatibility
+
+=head3 v1.002
+
+Include Prima support
 
 
 =head1 REPOSITORY

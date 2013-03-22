@@ -649,7 +649,11 @@ you specify the "justify" plot option).
 This is a monochrome or RGB image.  It takes a 2-D or 3-D array of
 values, as (width x height x color-index).  Images are displayed in 
 a sepiatone color scale that enhances contrast and preserves intensity
-when converted to grayscale.
+when converted to grayscale.  If you use the convenience routines
+(C<image> or C<imag>), the "justify" plot option defaults to 1 -- so
+the image will be displayed with square pixel aspect.  If you use 
+C<< plot(with=>'image' ...) >>, "justify" defaults to 0 and you will have
+to set it if you want square pixels.
 
 =item labels
 

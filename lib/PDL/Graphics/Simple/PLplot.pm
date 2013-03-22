@@ -276,7 +276,7 @@ our $plplot_methods = {
     'points' => 'POINTS',
     'errorbars' => sub {
 	my ($me, $ipo, $data, $ppo) = @_;
-	$me->{obj}->xyplot($data->[0], $data->[1], %{$ppo}, YERRORBAR=>$data->[2]);
+	$me->{obj}->xyplot($data->[0], $data->[1], %{$ppo}, YERRORBAR=>$data->[2]*2);
     },
     'limitbars'=> sub {
 	my ($me, $ipo, $data, $ppo) = @_;

@@ -256,7 +256,7 @@ use PDL::Options q/iparse/;
 use File::Temp qw/tempfile tempdir/;
 use Scalar::Util q/looks_like_number/;
 
-our $VERSION = '1.003';
+our $VERSION = '1.004';
 
 ##############################
 # Exporting
@@ -647,9 +647,9 @@ you specify the "justify" plot option).
 =item image
 
 This is a monochrome or RGB image.  It takes a 2-D or 3-D array of
-values, as (width x height x color-index).  There is no interface for
-pseudocolor images - monochrome may be greyscale or a fixed color
-table depending on implementation.
+values, as (width x height x color-index).  Images are displayed in 
+a sepiatone color scale that enhances contrast and preserves intensity
+when converted to grayscale.
 
 =item labels
 
@@ -679,7 +679,7 @@ our $plot_options = new PDL::Options( {
     crange=> undef,
     bounds=> undef,
     wedge => 0,
-    justify=>0,
+    justify=>undef,
     });
 
 $plot_options->synonyms( {
@@ -739,11 +739,19 @@ sub plot {
     
     ##############################
     # Collect plot options.  These can be in a leading or trailing
-    # hash ref, with the trailing overriding the lead.  If the first
+    # hash ref, with the leading overriding the trailing one.  If the first
     # two elements are hash refs, then the first is plot options and
     # the second is curve options, otherwise we treat the first as curve options.
     # A curve option hash is required for every curve.
     my $po = {};
+
+    while(ref($_[$#_]) eq 'HASH') {
+	for my $k(keys %{$_[$#_]}) {
+	    $po->{$k} = $_[$#_]->{$k};
+	};
+	pop;
+    }
+
     if(ref($_[0]) eq 'HASH'   and    ref($_[1]) eq 'HASH') {
 	for my $k(keys %{$_[0]}) {
 	    $po->{$k} = $_[0]->{$k};
@@ -751,12 +759,8 @@ sub plot {
 	shift;
     }
 
-    if(ref($_[$#_]) eq 'HASH') {
-	for my $k(keys %{$_[$#_]}) {
-	    $po->{$k} = $_[$#_]->{$k};
-	};
-	pop;
-    }
+    my $called_from_imag = $po->{called_from_imag};
+    delete $po->{called_from_imag};
 
     $po = $plot_options->options($po);
     $po->{oplot} = 1 if(defined($obj->{held}) and $obj->{held});
@@ -818,6 +822,10 @@ sub plot {
 
     unless($po->{oplot}) {
 	$obj->{keys} = [];
+    }
+
+    if(!defined($po->{justify})) {
+	$po->{justify} = ($called_from_imag ? 1 : 0);
     }
 
     ##############################
@@ -1114,7 +1122,9 @@ sub bins    { _convenience_plot( 'bins',   @_ ); }
 sub points  { _convenience_plot( 'points', @_ ); }  
 *PDL::points = \&points;
 
-sub image   { _convenience_plot( 'image', @_ ); }   #  Don't PDL-class image since it's so different from imag.
+sub image   { 
+    _convenience_plot( 'image', @_ ,{called_from_imag=>1}); 
+}   #  Don't PDL-class image since it's so different from imag.
 
 sub imag   { 
     my $me;
@@ -1139,7 +1149,7 @@ sub imag   {
     }
     $_[$#_]->{crange} = $crange;
 
-    _convenience_plot( 'image',  $data, @_ );
+    _convenience_plot( 'image',  $data, @_, {called_from_imag=>1} );
 }
 *PDL::imag = \&imag;
 

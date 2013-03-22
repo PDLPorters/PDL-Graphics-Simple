@@ -21,7 +21,7 @@ our $mod = {
     module=>'PDL::Graphics::Simple::Gnuplot',
     engine => 'PDL::Graphics::Gnuplot',
     synopsis=> 'Gnuplot 2D/3D (versatile; beautiful output)',
-    pgs_version=> '1.002'
+    pgs_version=> '1.004'
 };
 PDL::Graphics::Simple::register( 'PDL::Graphics::Simple::Gnuplot' );
 

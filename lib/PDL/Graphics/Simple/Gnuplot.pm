@@ -14,14 +14,14 @@ package PDL::Graphics::Simple::Gnuplot;
 use File::Temp qw/tempfile/;
 use PDL::Options q/iparse/;
 use PDL;
-our $required_PGG_version = 1.4;
+our $required_PGG_version = 1.5;
 
 our $mod = {
     shortname => 'gnuplot',
     module=>'PDL::Graphics::Simple::Gnuplot',
     engine => 'PDL::Graphics::Gnuplot',
     synopsis=> 'Gnuplot 2D/3D (versatile; beautiful output)',
-    pgs_version=> '1.004'
+    pgs_version=> '1.005'
 };
 PDL::Graphics::Simple::register( 'PDL::Graphics::Simple::Gnuplot' );
 
@@ -264,9 +264,10 @@ sub plot {
 	yrange   => $ipo->{yrange},
 	cbrange  => $ipo->{crange},
 	colorbox => $ipo->{wedge},
-	justify  => $ipo->{justify} ? $ipo->{justify} : undef,
+	justify  => $ipo->{justify}>0 ? $ipo->{justify} : undef,
 	clut   => 'sepia',
     };
+
     if( defined($ipo->{legend}) ) {
 	my $legend = "";
 	if( $ipo->{legend} =~ m/l/i ) {
@@ -308,6 +309,8 @@ sub plot {
 
 	# Now parse out curve options and deal with line styles...
 	my $co = shift @$block;
+	my $gco = {};
+	$gco->{with} = $co->{with};
 
 	unless($co->{with} eq 'labels') {
 
@@ -317,21 +320,19 @@ sub plot {
 		$me->{curvestyle}++;
 	    }
 
-	    $co->{with} .= " linetype $me->{curvestyle}";
-
+	    $gco->{linetype} = $me->{curvestyle};
 	}
 
 	if( defined($co->{width}) and $co->{width} and $co->{with} !~ m/^label/ ) {
 	    my $s;
 	    if($co->{with} =~ m/^points/) {
-		$s = "pointsize";
-	    } else {
-		$s = "linewidth";
-	    }
-	    $co->{with} .= " linewidth ".$co->{width} 
+		$gco->{pointsize} = $co->{width};
+	    } 
+	    $gco->{linewidth} = $co->{width};
 	}
+	$gco->{legend} = $co->{key} if(defined($co->{key}));
 
-	push(@arglist, ({with=>$co->{with}, legend=>$co->{key}},@$block));
+	push(@arglist, ($gco, @$block));
     }
 
     if($me->{nplots}) {

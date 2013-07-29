@@ -206,7 +206,10 @@ sub new {
 
 ##############################
 # PDL::Graphics::Simple::Gnuplot::plot 
-# plot
+# Most of the curve types are implemented by passing them on to gnuplot -- circles is an
+# exception, since the gnuplot "circles" curve type doesn't scale the circles in scientific
+# coordinates (they are always rendered as circular on the screen), and we want to match 
+# the scaling behavior of the other engines.
 
 our $curve_types = {
     points    => 'points',
@@ -215,7 +218,7 @@ our $curve_types = {
     errorbars => 'yerrorbars',
     limitbars => 'yerrorbars',
     image     => 'image',
-    circles   => sub {
+    circles   => sub {  
 	my($me, $po, $co, @data) = @_;
 	my $ang = PDL->xvals(362)*3.14159/180;
 	my $c = $ang->cos;

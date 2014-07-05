@@ -36,15 +36,15 @@ our $filetypes = {
     gif => 'gif'
 };
 
-# (each of these must have a "persist" option that can be set to 0 -- aqua doesn't
-# do that, hence it is not listed here)
-our @disp_terms = (
-    'wxt',
-    'x11',
-    'windows'
-    );
+our @disp_terms = qw/ wxt x11 aqua windows /;
+our $disp_opts = {
+    wxt=>{persist=>1},
+    x11=>{persist=>1},
+    aqua=>{persist=>0},
+    windows=>{persist=>0}
+};
 
-    
+
 
 ##########
 # PDL::Graphics::Simple::Gnuplot::check
@@ -127,7 +127,7 @@ sub new {
     }
 
     # Generate the @params array to feed to gnuplot
-    my @params;
+    my @params = ();
     push( @params, "size" => $opt->{size} );
     
     # tempfile gets set if we need to write to a temporary file for image conversion
@@ -136,13 +136,17 @@ sub new {
     # Do different things for interactive and file types
     if($opt->{type} =~ m/^i/i) {
 	push(@params, "title"=>$opt->{output}) if(defined($opt->{output}));
-
+	
 	# Interactive - try known terminals
 	if($mod->{itype}) {
+	    push(@params, (persist=>0)) if( ($disp_opts->{$mod->{itype}} // {})->{persist} );
+	    push(@params, (font=>"=16"));
 	    $gpw = gpwin($mod->{itype}, @params, persist=>0, font=>"=16" );
 	    print $PDL::Graphics::Gnuplot::last_plotcmd;
 	} else {
 	    attempt:for my $try( @disp_terms ) {
+		push(@params, (persist=>0)) if( ($disp_opts->{$try} // {})->{persist} );
+		push(@params, (font=>"=16"));
 		eval { $gpw = gpwin($try, @params, persist=>0, font=>"=16",dashed=>1); };
 		last attempt if($gpw);
 	    }

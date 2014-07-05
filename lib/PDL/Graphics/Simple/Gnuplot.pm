@@ -36,6 +36,14 @@ our $filetypes = {
     gif => 'gif'
 };
 
+# (each of these must have a "persist" option that can be set to 0 -- aqua doesn't
+# do that, hence it is not listed here)
+our @disp_terms = (
+    'wxt',
+    'x11',
+    'windows'
+    );
+
     
 
 ##########
@@ -74,11 +82,19 @@ sub check {
     }
     $mod->{valid_terms} = $gpw->{valid_terms};
 
-    unless( $mod->{valid_terms}->{'x11'}  or  $mod->{valid_terms}->{'wxt'} ) {
+    my $okterm = undef;
+    for my $term(@disp_terms){
+	if($mod->{valid_terms}->{$term}) {
+	    $okterm = $term;
+	    last;
+	}
+    }
+
+    unless( defined $okterm ) {
 	$mod->{ok} = 0;
-	$s =  "Gnuplot exists but yours doesn't support either the x11 or wxt terminal\n";
+	$s =  "Gnuplot doesn't seem to support any of the known display terminals:\n    they are: (".join(",",@disp_terms).")\n";
 	$mod->{msg} = $s;
-	die "PDL::Graphics::SImple: $s";
+	die "PDL::Graphics::Simple: $s";
     }
 
     $mod->{ok} = 1;
@@ -121,13 +137,12 @@ sub new {
     if($opt->{type} =~ m/^i/i) {
 	push(@params, "title"=>$opt->{output}) if(defined($opt->{output}));
 
-	# Interactive - try WXT, X11 in that order.
-	# (aqua doesn't have a "persist" option we can set to 0)
+	# Interactive - try known terminals
 	if($mod->{itype}) {
 	    $gpw = gpwin($mod->{itype}, @params, persist=>0, font=>"=16" );
 	    print $PDL::Graphics::Gnuplot::last_plotcmd;
 	} else {
-	    attempt:for my $try( 'wxt', 'x11' ) {
+	    attempt:for my $try( @disp_terms ) {
 		eval { $gpw = gpwin($try, @params, persist=>0, font=>"=16",dashed=>1); };
 		last attempt if($gpw);
 	    }

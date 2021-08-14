@@ -29,6 +29,9 @@ our $mod = {
 };
 PDL::Graphics::Simple::register( 'PDL::Graphics::Simple::PLplot' );
 
+my @DEVICES = qw(
+  qtwidget wxwidgets xcairo xwin wingcc
+);
 our $guess_filetypes = {
     ps  =>  ['pscairo','psc', 'psttfc', 'ps'],
     svg =>  ['svgcairo','svg','svgqt'],
@@ -122,12 +125,8 @@ sub check {
 	}
     }
 
-    if( $mod->{devices}->{'xcairo'} ) {
-	$mod->{disp_dev} = 'xcairo';
-    } elsif( $mod->{devices}->{'xwin'} ) {
-	$mod->{disp_dev} = 'xwin';
-    } elsif( $mod->{devices}->{'wingcc'} ) {
-	$mod->{disp_dev} = 'wingcc';
+    if( my ($good_dev) = grep $mod->{devices}{$_}, @DEVICES ) {
+	$mod->{disp_dev} = $good_dev;
     } else {
 	$mod->{ok} = 0;
 	$mod->{msg} = "No suitable display device found";

@@ -59,7 +59,7 @@ for my $engine (@engines) {
 
 ##############################
 # Simple line & bin plot
-      eval { $w->plot(with=>'line', xvals(10), xvals(10)->sqrt * sqrt(10), 
+      eval { $w->plot(with=>'line', xvals(10), xvals(10)->sqrt * sqrt(10),
 		      with=>'bins', sin(xvals(10))*10,
 		 {title=>"PDL: $engine engine, line & bin plots"}),
 
@@ -83,20 +83,20 @@ should have different line styles.  OK? (Y/n) > };
 		       {title=>"PDL: $engine engine, error (rel.) & limit (abs.) bars"}
 		 ); };
       ok(!$@, "errorbar plot succeeded"); print($@) if($@);
-      
+
       print STDERR qq{
 Testing $engine engine: You should see error bars (symmetric relative to each
 plotted point) and limit bars (asymmetric about each plotted point).
 OK? (Y/n) > };
 
-      $a = get_yn(); 
+      $a = get_yn();
       ok( $a !~ m/^n/i,
 	  "errorbars / limitbars OK");
 
 
 ##############################
 # Image & circles plot
-      eval { $w->plot(with=>'image', rvals(11,11), 
+      eval { $w->plot(with=>'image', rvals(11,11),
 		      with=>'circle', xvals(15), xvals(15)*1.5, sin(xvals(15))**2 * 4,
 		      {title=>"PDL: $engine engine, image & circle plots (not justified)"}
 		 );
@@ -108,13 +108,13 @@ Testing $engine engine: You should see a radial 11x11 "target" image
 and some superimposed "circles".  Since the plot is not justified, the
 pixels in the target image should be oblong and the "circles" should
 be ellipses.  OK? (Y/n) > };
-      $a = get_yn(); 
+      $a = get_yn();
       ok( $a !~ m/^n/i,
 	  "image and circles plot looks ok");
 
 ##############################
 # Image & circles plot (justified)
-      eval { $w->plot(with=>'image', rvals(11,11), 
+      eval { $w->plot(with=>'image', rvals(11,11),
 		      with=>'circle', xvals(15), xvals(15)*1.5, sin(xvals(15))**2 * 4,
 		      {title=>"PDL: $engine engine, image & circle plots (justified)", j=>1}
 		 );
@@ -126,7 +126,7 @@ justified.  superimposed "circles".  Since the plot is justified,
 the pixels in the target image should be square and the "circles" should
 really be circles.  OK? (Y/n) > };
 
-      $a = get_yn(); 
+      $a = get_yn();
       ok( $a !~ m/^n/i,
 	  "justified image and circles plot looks ok");
 
@@ -147,8 +147,8 @@ with appropriate title.  OK? (Y/n) > };
 ##############################
 # Text
 
-      eval { $w->plot(with=>'labels', 
-		      xvals(5), xvals(5), 
+      eval { $w->plot(with=>'labels',
+		      xvals(5), xvals(5),
 		      ["<left-justified","<    left-with-spaces", "|centered","|>start with '>'",">right-justified"],
 		      {title=>"PDL: $engine engine, text on graph", yrange=>[-1,5] }
 		 );
@@ -162,30 +162,23 @@ centered on x=2, ">start with '>'" centered on x=3, and
       $a = get_yn();
       ok( $a !~ m/^n/i,
 	  "labels plot looks OK");
-      
+
 
 ##############################
 # Multiplot
       eval { $w=new PDL::Graphics::Simple(engine=>$engine, multi=>[2,2]); };
       ok(!$@, "Multiplot declaration was OK");
-      
       $w->image( rvals(9,9),{wedge=>1} );       $w->image( -rvals(9,9),{wedge=>1} );
       $w->image( sequence(9,9) );    $w->image( pdl(xvals(9,9),yvals(9,9),rvals(9,9)) );
-      
       print STDERR qq{
-Testing $engine engine: You should see two bullseyes across the top (one in 
+Testing $engine engine: You should see two bullseyes across the top (one in
 negative print), a gradient at bottom left, and an RGB blur (if supported
 by the engine - otherwise a modified gradient) at bottom right.  The top two
 panels should have colorbar wedges to the right of the image.
 OK? (Y/n) > };
-
-$a = get_yn();
-      ok($a !~ m/^n/i,
-	 "multiplot OK");
-
-
+      $a = get_yn();
+      ok($a !~ m/^n/i, "multiplot OK");
     }
-
 }
 
 
@@ -206,7 +199,7 @@ ok(!$@, "simple lines plot succeeded");
 ok( defined($PDL::Graphics::Simple::global_object), "Global convenience object got spontaneously set" );
 
 print STDERR q{
-  test>  $a = xvals(50); lines $a sin($a/3); 
+  test>  $a = xvals(50); lines $a sin($a/3);
 You should see a sine wave... OK? (Y/n) > };
 
 
@@ -218,7 +211,7 @@ ok(!$@, 'erase worked');
 ok(!defined($PDL::Graphics::Simple::global_object), 'erase erased the global object');
 
 ##############################
-# Test imag 
+# Test imag
 my $im = 1000 * sin(rvals(100,100)/3) / (rvals(100,100)+30);
 
 eval q{ imag $im };
@@ -239,8 +232,8 @@ ok(!$@, "imag worked with plot options");
 print STDERR q{
   test> imag $im, {wedge=>1, title=>"Bullseye!", j=>1};
 You should see the same image, but with a colorbar wedge on the right; a title
-up top; and a justified aspect ratio (circular rings). The color scale may be 
-slightly less contrasty than the last frame, because some engines extend the 
+up top; and a justified aspect ratio (circular rings). The color scale may be
+slightly less contrasty than the last frame, because some engines extend the
 colorbar wedge to round numbers.   Ok? (Y/n) > };
 
 $a = get_yn();
@@ -252,7 +245,7 @@ ok(!$@, "imag worked with bounds");
 
 print STDERR q{
   test> imag $im, 0, 30, {wedge=>1, j=>1};
-You should see the same image, but with no title and with a tighter 
+You should see the same image, but with no title and with a tighter
 dynamic range that cuts off the low values (black rings instead of
 the fainter parts of the bullseye).  Ok? (Y/n) > };
 

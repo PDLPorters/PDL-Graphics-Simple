@@ -29,6 +29,13 @@ our $mod = {
 };
 PDL::Graphics::Simple::register( 'PDL::Graphics::Simple::PLplot' );
 
+our $guess_filetypes = {
+    ps  =>  ['pscairo','psc', 'psttfc', 'ps'],
+    svg =>  ['svgcairo','svg','svgqt'],
+    pdf => ['pdfcairo','pdfqt'],
+    png => ['pngcairo','pngqt']
+};
+
 ##########
 # PDL::Graphics::Simple::PLplot::check
 # Checker
@@ -126,13 +133,6 @@ sub check {
 	$mod->{msg} = "No suitable display device found";
 	return 0;
     }
-
-    our $guess_filetypes = {
-	ps  =>  ['pscairo','psc', 'psttfc', 'ps'],
-	svg =>  ['svgcairo','svg'],
-	pdf => ['pdfcairo'],
-	png => ['pngcairo']
-    };
 
     our $filetypes;
     $filetypes = {};

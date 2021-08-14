@@ -24,10 +24,10 @@ sub get_yn{
 ##############################
 # Module loads properly
 eval "use PDL::Graphics::Simple;";
-ok(!$@);
+is($@, '');
 
 eval "PDL::Graphics::Simple::show();";
-ok(!$@);
+is($@, '');
 
 our $mods;
 *mods = \$PDL::Graphics::Simple::mods;
@@ -46,7 +46,7 @@ for my $engine (@engines) {
   SKIP: {
       my($check_ok);
       eval qq{\$check_ok = ${module}::check(1)};
-      ok(!$@, "${module}::check() ran OK");
+      is($@, '', "${module}::check() ran OK");
 
       unless($check_ok) {
 	  skip "Skipping tests for engine $engine (not working)", $tests_per_engine - 2;
@@ -54,8 +54,8 @@ for my $engine (@engines) {
       $pgplot_ran ||= $engine eq 'pgplot';
 
       eval { $w = new PDL::Graphics::Simple(engine=>$engine) };
-      ok( ( !$@ and ref($w) eq 'PDL::Graphics::Simple' ), "contructor for $engine worked OK");
-
+      is($@, '', "contructor for $engine worked OK");
+      isa_ok($w, 'PDL::Graphics::Simple', "contructor for $engine worked OK");
 
 ##############################
 # Simple line & bin plot
@@ -64,7 +64,7 @@ for my $engine (@engines) {
 		 {title=>"PDL: $engine engine, line & bin plots"}),
 
       };
-      ok(!$@, "plot succeeded\n");
+      is($@, '', "plot succeeded\n");
       print $@ if($@);
       print STDERR qq{
 Testing $engine engine: You should see a superposed line plot and bin
@@ -82,7 +82,7 @@ should have different line styles.  OK? (Y/n) > };
 		       with=>'limitbars', sin(xvals(90)*4*3.14159/90)*30 + 72, xvals(90)/2, ones(90)*110,
 		       {title=>"PDL: $engine engine, error (rel.) & limit (abs.) bars"}
 		 ); };
-      ok(!$@, "errorbar plot succeeded"); print($@) if($@);
+      is($@, '', "errorbar plot succeeded"); print($@) if($@);
 
       print STDERR qq{
 Testing $engine engine: You should see error bars (symmetric relative to each
@@ -101,7 +101,7 @@ OK? (Y/n) > };
 		      {title=>"PDL: $engine engine, image & circle plots (not justified)"}
 		 );
       };
-      ok(!$@, "plot succeeded\n");
+      is($@, '', "plot succeeded\n");
       print $@ if($@);
       print STDERR qq{
 Testing $engine engine: You should see a radial 11x11 "target" image
@@ -119,7 +119,7 @@ be ellipses.  OK? (Y/n) > };
 		      {title=>"PDL: $engine engine, image & circle plots (justified)", j=>1}
 		 );
       };
-      ok(!$@, "justified image and circles plot succeeded"); print($@) if($@);
+      is($@, '', "justified image and circles plot succeeded"); print($@) if($@);
       print STDERR qq{
 Testing $engine engine: You should see the same plot as before, but
 justified.  superimposed "circles".  Since the plot is justified,
@@ -134,7 +134,7 @@ really be circles.  OK? (Y/n) > };
 # Log scaling
 
       eval { $w->plot(with=>'line',xvals(500)+1,{log=>'y',title=>"PDL: $engine engine, Y=X (semilog)"}); };
-      ok(!$@, "log scaling succeeded");
+      is($@, '', "log scaling succeeded");
       print STDERR qq{
 Testing $engine engine: You should see a simple logarithmically scaled plot,
 with appropriate title.  OK? (Y/n) > };
@@ -153,7 +153,7 @@ with appropriate title.  OK? (Y/n) > };
 		      {title=>"PDL: $engine engine, text on graph", yrange=>[-1,5] }
 		 );
       };
-      ok( !$@, "labels plot succeeded" );
+      is($@, '', "labels plot succeeded" );
       print STDERR qq{
 Testing $engine engine: You should see "left-justified" text left
 aligned on x=0, "left-with-spaces" just right of x=1, "centered"
@@ -167,7 +167,7 @@ centered on x=2, ">start with '>'" centered on x=3, and
 ##############################
 # Multiplot
       eval { $w=new PDL::Graphics::Simple(engine=>$engine, multi=>[2,2]); };
-      ok(!$@, "Multiplot declaration was OK");
+      is($@, '', "Multiplot declaration was OK");
       $w->image( rvals(9,9),{wedge=>1} );       $w->image( -rvals(9,9),{wedge=>1} );
       $w->image( sequence(9,9) );    $w->image( pdl(xvals(9,9),yvals(9,9),rvals(9,9)) );
       print STDERR qq{
@@ -194,7 +194,7 @@ FOO
 ok( !defined($PDL::Graphics::Simple::global_object), "Global convenience object not defined" );
 
 eval q: $a = xvals(50); lines $a sin($a/3) :;
-ok(!$@, "simple lines plot succeeded");
+is($@, '', "simple lines plot succeeded");
 
 ok( defined($PDL::Graphics::Simple::global_object), "Global convenience object got spontaneously set" );
 
@@ -207,7 +207,7 @@ $a = get_yn();
 ok($a !~ m/^n/i, "convenience plot OK");
 
 eval q: erase :;
-ok(!$@, 'erase worked');
+is($@, '', 'erase worked');
 ok(!defined($PDL::Graphics::Simple::global_object), 'erase erased the global object');
 
 ##############################
@@ -215,7 +215,7 @@ ok(!defined($PDL::Graphics::Simple::global_object), 'erase erased the global obj
 my $im = 1000 * sin(rvals(100,100)/3) / (rvals(100,100)+30);
 
 eval q{ imag $im };
-ok(!$@, "imag worked with no additional arguments" );
+is($@, '', "imag worked with no additional arguments" );
 
 print STDERR q{
   test> $im = 1000 * sin(rvals(100,100)/3) / (rvals(100,100)+30);
@@ -227,7 +227,7 @@ $a=get_yn();
 ok($a !~ m/^n/i, "bullseye OK");
 
 eval q{ imag $im, {wedge=>1, title=>"Bullseye!"} };
-ok(!$@, "imag worked with plot options");
+is($@, '', "imag worked with plot options");
 
 print STDERR q{
   test> imag $im, {wedge=>1, title=>"Bullseye!", j=>1};
@@ -241,7 +241,7 @@ ok($a !~ m/^n/i, "justified bullseye and wedge OK");
 
 
 eval q{ imag $im, 0, 30, {wedge=>1, j=>1} };
-ok(!$@, "imag worked with bounds");
+is($@, '', "imag worked with bounds");
 
 print STDERR q{
   test> imag $im, 0, 30, {wedge=>1, j=>1};
@@ -253,7 +253,7 @@ $a = get_yn();
 ok($a !~ m/^n/i, "crange shortcut is OK");
 
 eval q{ erase };
-ok(!$@, "erase executed");
+is($@, '', "erase executed");
 
 my $extra = $pgplot_ran ? ' (for PGPLOT on X you need to close the X window to continue)' : '';
 print STDERR qq{

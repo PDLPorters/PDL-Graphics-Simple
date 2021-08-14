@@ -54,9 +54,9 @@ WriteMakefile(
     PREREQ_PM => \%prereq,
     META_ADD => {
 	resources => {
-	    homepage => 'http://github.com/drzowie/PDL-Graphics-Simple',
-	    repository => 'git://github.com/drzowie/PDL-Graphics-Simple.git',
-	    bugtracker => 'craig@deforest.org'
+	    homepage => 'http://github.com/PDLPorters/PDL-Graphics-Simple',
+	    repository => 'git://github.com/PDLPorters/PDL-Graphics-Simple.git',
+	    bugtracker => 'http://github.com/PDLPorters/PDL-Graphics-Simple/issues'
 	}
     },
 

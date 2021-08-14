@@ -115,7 +115,7 @@ sub new {
     my $dev;
 
     if( $opt->{type} =~ m/^i/i) {
-	$dev = ( defined($opt->{output}) ? $opt->{output} : "" ) . "/" . $mod->{disp_dev};
+	$dev = ( defined($opt->{output}) ? $opt->{output} : "" ) . ($ENV{PGPLOT_DEV} || "/$mod->{disp_dev}");
     } else {
 	my $ext;
 
@@ -151,7 +151,6 @@ sub new {
 	push(@params, 'nx=>$opt->{multi}->[0]');
 	push(@params, 'ny=>$opt->{multi}->[1]');
     }
-
     
     my $creator = 'pgwin( $dev, { '. join(",", @params) . '} );';
     $pgw = eval $creator;

@@ -354,6 +354,10 @@ or "interactive" - though only the leading character is checked.  If
 you don't specify either C<type> or C<output> (below), the default is
 "interactive". If you specify only C<output>, the default is "file".
 
+For PGPLOT, if the type is "interactive", the environment variable
+C<PGPLOT_DEV> is set (eg C</NULL>), that will be used as the output
+device.
+
 =item output
 
 This should be a window number or name for interactive plots, or a

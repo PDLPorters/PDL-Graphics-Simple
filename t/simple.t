@@ -9,7 +9,8 @@ use Test::More;
 use File::Temp q/tempfile/;
 use PDL;
 
-our $smoker = ($ENV{'PERL_MM_USE_DEFAULT'} or $ENV{'AUTOMATED_TESTING'});
+my $smoker = ($ENV{'PERL_MM_USE_DEFAULT'} or $ENV{'AUTOMATED_TESTING'});
+$ENV{PGPLOT_DEV} ||= '/NULL' if $smoker;
 
 sub get_yn{
     my $default = shift || 'y';
@@ -29,9 +30,7 @@ is($@, '');
 eval "PDL::Graphics::Simple::show();";
 is($@, '');
 
-our $mods;
-*mods = \$PDL::Graphics::Simple::mods;
-*mods = \$PDL::Graphics::Simple::mods; # duplicate to shut up the typo detector.
+my $mods = $PDL::Graphics::Simple::mods;
 ok( (  defined($mods) and ref $mods eq 'HASH'  ) ,
     "module registration hash exists");
 
@@ -53,7 +52,7 @@ for my $engine (@engines) {
       }
       $pgplot_ran ||= $engine eq 'pgplot';
 
-      eval { $w = new PDL::Graphics::Simple(engine=>$engine) };
+      eval { $w = PDL::Graphics::Simple->new(engine=>$engine) };
       is($@, '', "contructor for $engine worked OK");
       isa_ok($w, 'PDL::Graphics::Simple', "contructor for $engine worked OK");
 

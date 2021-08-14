@@ -35,6 +35,7 @@ our $mods;
 ok( (  defined($mods) and ref $mods eq 'HASH'  ) ,
     "module registration hash exists");
 
+my $pgplot_ran = 0;
 for my $engine (@engines) {
     my $w;
 
@@ -50,6 +51,7 @@ for my $engine (@engines) {
       unless($check_ok) {
 	  skip "Skipping tests for engine $engine (not working)", $tests_per_engine - 2;
       }
+      $pgplot_ran ||= $engine eq 'pgplot';
 
       eval { $w = new PDL::Graphics::Simple(engine=>$engine) };
       ok( ( !$@ and ref($w) eq 'PDL::Graphics::Simple' ), "contructor for $engine worked OK");
@@ -260,9 +262,10 @@ ok($a !~ m/^n/i, "crange shortcut is OK");
 eval q{ erase };
 ok(!$@, "erase executed");
 
+my $extra = $pgplot_ran ? ' (for PGPLOT on X you need to close the X window to continue)' : '';
 print STDERR qq{
   test> erase
-The window should have disappeared.  Ok? (Y/n) > };
+The window should have disappeared$extra.  Ok? (Y/n) > };
 
 $a = get_yn();
 ok($a !~ m/^n/i, "erase worked");

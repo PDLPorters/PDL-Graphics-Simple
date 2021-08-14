@@ -35,10 +35,11 @@ WriteMakefile(
     AUTHOR              => ['Craig DeForest <craig@deforest.org>'],
     VERSION_FROM        => 'lib/PDL/Graphics/Simple.pm',
     ABSTRACT_FROM       => 'lib/PDL/Graphics/Simple.pm',
-    ($ExtUtils::MakeMaker::VERSION >= 6.3002
-     ? ('LICENSE'=> 'perl')
-     : ()),
+    LICENSE=> 'perl',
     PREREQ_PM => \%prereq,
+    CONFIGURE_REQUIRES => {
+        'ExtUtils::MakeMaker' => '7.12', # working .g.c
+    },
     META_ADD => {
 	resources => {
 	    homepage => 'http://github.com/PDLPorters/PDL-Graphics-Simple',

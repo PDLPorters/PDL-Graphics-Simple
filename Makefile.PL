@@ -2,19 +2,6 @@ use strict;
 use warnings;
 use ExtUtils::MakeMaker;
 
-sub parseversion
-{
-    my $version;
-  open GP, 'lib/PDL/Graphics/Simple.pm' or die "Couldn't open Simple.pm";
-  for(<GP>){
-      if(m/our \$VERSION = \'([\d\.]+b?)\'/) {$version = $1;}
-      last if($version);
-  }
-  die "Couldn't parse version from Simple.pm" unless($version);
-  close GP;
-  return $version;
-}
-
 sub MY::libscan
 {
     package MY;
@@ -46,7 +33,7 @@ $prereq{'Win32::Process'} = 0.14 if $^O =~ /MSWin32/i;
 WriteMakefile(
     NAME                => 'PDL::Graphics::Simple',
     AUTHOR              => ['Craig DeForest <craig@deforest.org>'],
-    VERSION             => parseversion(),
+    VERSION_FROM        => 'lib/PDL/Graphics/Simple.pm',
     ABSTRACT_FROM       => 'lib/PDL/Graphics/Simple.pm',
     ($ExtUtils::MakeMaker::VERSION >= 6.3002
      ? ('LICENSE'=> 'perl')

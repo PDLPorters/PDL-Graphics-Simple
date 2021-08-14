@@ -78,7 +78,7 @@ sub check {
     else {
       my $pid = fork();
       unless(defined($pid)) {
- 	print STDERR "Fork failed in PLplot probe -- returning 0\n";
+	print STDERR +($mod->{msg} = "Fork failed in PLplot probe -- returning 0"), "\n";
 	return 0;
       }
 
@@ -123,6 +123,7 @@ sub check {
 	$mod->{disp_dev} = 'wingcc';
     } else {
 	$mod->{ok} = 0;
+	$mod->{msg} = "No suitable display device found";
 	return 0;
     }
 
@@ -147,6 +148,7 @@ sub check {
 
     unless($filetypes->{ps}) {
 	$mod->{ok} = 0;
+	$mod->{msg} = "No PostScript found";
 	return 0;
     }
 

@@ -23,8 +23,7 @@ FOO
     return $text;
 }
 
-my %prereq = ( 'Test::More'  => 0,
-               'PDL'         => 0,
+my %prereq = ( 'PDL'         => 0,
 	       'File::Temp'  => 0,
 	       'Time::HiRes' => 0);
 
@@ -39,6 +38,9 @@ WriteMakefile(
     PREREQ_PM => \%prereq,
     CONFIGURE_REQUIRES => {
         'ExtUtils::MakeMaker' => '7.12', # working .g.c
+    },
+    TEST_REQUIRES => {
+        'Test::More'  => '0.88',
     },
     META_ADD => {
 	resources => {

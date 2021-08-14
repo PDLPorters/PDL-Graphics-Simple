@@ -1,16 +1,11 @@
-#!perl
+use strict;
+use warnings;
+
 local($|) = 1;
 
-BEGIN {
-    our $tests_per_engine = 17;
-    our @engines = qw/gnuplot pgplot plplot prima/;
-
-}
-use Test::More tests=> ( + 3                              # up-front
-			 + (@engines)*($tests_per_engine) # in per-engine loop
-			 + 14                             # down-back
-    );
-
+my $tests_per_engine = 17;
+my @engines = qw/gnuplot pgplot plplot prima/;
+use Test::More;
 use File::Temp q/tempfile/;
 use PDL;
 
@@ -34,14 +29,16 @@ ok(!$@);
 eval "PDL::Graphics::Simple::show();";
 ok(!$@);
 
+our $mods;
 *mods = \$PDL::Graphics::Simple::mods;
 *mods = \$PDL::Graphics::Simple::mods; # duplicate to shut up the typo detector.
 ok( (  defined($mods) and ref $mods eq 'HASH'  ) ,
     "module registration hash exists");
 
-for $engine(@engines) {
+for my $engine (@engines) {
     my $w;
 
+    my $module;
     ok( (  $mods->{$engine} and ref($mods->{$engine}) eq 'HASH' and ($module = $mods->{$engine}->{module}) ),
 	"there is a modules entry for $engine ($module)" );
 
@@ -220,8 +217,7 @@ ok(!defined($PDL::Graphics::Simple::global_object), 'erase erased the global obj
 
 ##############################
 # Test imag 
-$im = 0; # shut up the typo detector
-$im = 1000 * sin(rvals(100,100)/3) / (rvals(100,100)+30);
+my $im = 1000 * sin(rvals(100,100)/3) / (rvals(100,100)+30);
 
 eval q{ imag $im };
 ok(!$@, "imag worked with no additional arguments" );
@@ -271,4 +267,4 @@ The window should have disappeared.  Ok? (Y/n) > };
 $a = get_yn();
 ok($a !~ m/^n/i, "erase worked");
 
-print "End of tests\n";
+done_testing;

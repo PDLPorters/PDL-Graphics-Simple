@@ -16,7 +16,7 @@ PDL::Graphics::Simple - Simple backend-independent plotting for PDL
  release;                     # Release graphics
 
  # Object interface - simple plotting, to file or screen
- an$w = pgswin( size=>[8,4], multi=>[2,2] ); # 2x2 plot grid on an 8"x4" window
+ $w = pgswin( size=>[8,4], multi=>[2,2] ); # 2x2 plot grid on an 8"x4" window
  $w = pgswin( size=>[1000,1000,'px'], output=>'plot.png' ); # output to a PNG
 
  $w->plot( with=>'points', $rr, $sec, with=>'line', $rrr, $fit,

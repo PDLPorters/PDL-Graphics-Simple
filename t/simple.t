@@ -4,7 +4,8 @@ use warnings;
 local($|) = 1;
 
 my $tests_per_engine = 17;
-my @engines = qw/gnuplot pgplot plplot prima/;
+#my @engines = qw/gnuplot pgplot plplot prima/;
+my @engines = qw/plplot gnuplot/;
 use Test::More;
 use File::Temp q/tempfile/;
 use PDL;
@@ -50,6 +51,7 @@ for my $engine (@engines) {
       }
       $pgplot_ran ||= $engine eq 'pgplot';
 
+if (0) {
       eval { $w = PDL::Graphics::Simple->new(engine=>$engine) };
       is($@, '', "contructor for $engine worked OK");
       isa_ok($w, 'PDL::Graphics::Simple', "contructor for $engine worked OK");
@@ -66,6 +68,7 @@ for my $engine (@engines) {
 Testing $engine engine: You should see a superposed line plot and bin
 plot, with x range from 0 to 9 and yrange from 0 to 9. The two plots
 should have different line styles.}, "line plot looks ok";
+#diag "RUN1 ", Test::More::explain $w;
 
 
 
@@ -129,6 +132,7 @@ with appropriate title.}, "log scaled plot looks OK";
 aligned on x=0, "left-with-spaces" just right of x=1, "centered"
 centered on x=2, ">start with '>'" centered on x=3, and
 "right-justified" right-aligned on x=4.}, "labels plot looks OK";
+}
 
 
 ##############################
@@ -136,14 +140,19 @@ centered on x=2, ">start with '>'" centered on x=3, and
       eval { $w=new PDL::Graphics::Simple(engine=>$engine, multi=>[2,2]); };
       is($@, '', "Multiplot declaration was OK");
       $w->image( rvals(9,9),{wedge=>1} );       $w->image( -rvals(9,9),{wedge=>1} );
-      $w->image( sequence(9,9) );    $w->image( pdl(xvals(9,9),yvals(9,9),rvals(9,9)) );
+my $p=pdl(xvals(9,9),yvals(9,9),rvals(9,9));
+diag "p=", $p->info;
+diag $p;
+      $w->image( sequence(9,9) );    $w->image( $p );
       ask_yn qq{Testing $engine engine: You should see two bullseyes across the top (one in
 negative print), a gradient at bottom left, and an RGB blur (if supported
 by the engine - otherwise a modified gradient) at bottom right.  The top two
 panels should have colorbar wedges to the right of the image.}, "multiplot OK";
+#diag "RUN2 ", Test::More::explain $w;
     }
 }
 
+if (0) {
 
 ##############################
 # Try the simple engine and convenience interfaces...
@@ -196,5 +205,6 @@ is($@, '', "erase executed");
 my $extra = $pgplot_ran ? ' (for PGPLOT on X you need to close the X window to continue)' : '';
 ask_yn qq{  test> erase
 The window should have disappeared$extra.}, "erase worked";
+}
 
 done_testing;

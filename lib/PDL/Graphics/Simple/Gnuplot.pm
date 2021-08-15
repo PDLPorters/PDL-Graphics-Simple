@@ -55,8 +55,8 @@ sub check {
 
     return $mod->{ok} unless( $force or !defined($mod->{ok}) );
 
-    # Eval PDL::Graphics::Gnuplot.  Require relatively recent version.  
-    # We don't specify the version in the 'use', so we can issue a 
+    # Eval PDL::Graphics::Gnuplot.  Require relatively recent version.
+    # We don't specify the version in the 'use', so we can issue a
     # warning on an older version.
     eval 'use PDL::Graphics::Gnuplot;';
     if($@) {
@@ -129,14 +129,14 @@ sub new {
     # Generate the @params array to feed to gnuplot
     my @params = ();
     push( @params, "size" => $opt->{size} );
-    
+
     # tempfile gets set if we need to write to a temporary file for image conversion
     my $conv_tempfile = '';
-    
+
     # Do different things for interactive and file types
     if($opt->{type} =~ m/^i/i) {
 	push(@params, "title"=>$opt->{output}) if(defined($opt->{output}));
-	
+
 	# Interactive - try known terminals
 	if($mod->{itype}) {
 	    push(@params, (persist=>0)) if( ($disp_opts->{$mod->{itype}} // {})->{persist} );
@@ -157,7 +157,7 @@ sub new {
 	# File output - parse out file type, and then see if we support it.
 	# (Maybe the parsing part could be pushed into a utility routine...)
 
-	# Filename extension -- 2-4 characters 
+	# Filename extension -- 2-4 characters
 	my $ext;
 	if($opt->{output} =~ m/\.(\w{2,4})$/) {
 	    $ext = $1;
@@ -168,7 +168,7 @@ sub new {
 	$opt->{ext} = $ext;
 
 	##########
-	# Scan through the supported file types.  Gnuplot has several drivers for some 
+	# Scan through the supported file types.  Gnuplot has several drivers for some
 	# of the types, so we search until we find a valid one.
 	# At the end, $ft has either a valid terminal name from the table (at top),
 	# or undef.
@@ -187,7 +187,7 @@ sub new {
 	    $ft = undef;
 	}
 
-	# Now $ext has the file type - check if its a supported type.  If not, make a 
+	# Now $ext has the file type - check if its a supported type.  If not, make a
 	# tempfilename to hold gnuplot's output.
 	unless( defined($ft) ) {
 	    unless($mod->{valid_terms}->{'pscairo'}  or  $mod->{valid_terms}->{'postscript'}) {
@@ -224,10 +224,10 @@ sub new {
 
 
 ##############################
-# PDL::Graphics::Simple::Gnuplot::plot 
+# PDL::Graphics::Simple::Gnuplot::plot
 # Most of the curve types are implemented by passing them on to gnuplot -- circles is an
 # exception, since the gnuplot "circles" curve type doesn't scale the circles in scientific
-# coordinates (they are always rendered as circular on the screen), and we want to match 
+# coordinates (they are always rendered as circular on the screen), and we want to match
 # the scaling behavior of the other engines.
 
 our $curve_types = {
@@ -237,7 +237,7 @@ our $curve_types = {
     errorbars => 'yerrorbars',
     limitbars => 'yerrorbars',
     image     => 'image',
-    circles   => sub {  
+    circles   => sub {
 	my($me, $po, $co, @data) = @_;
 	my $ang = PDL->xvals(362)*3.14159/180;
 	my $c = $ang->cos;
@@ -252,14 +252,14 @@ our $curve_types = {
     labels => sub {
 	my($me, $po, $co, @data) = @_;
 	my $label_list = ($po->{label} or []);
-	
+
 	for my $i(0..$data[0]->dim(0)-1) {
 	    my $j = "";
 	    my $s = $data[2]->[$i];
 	    if( $s =~ s/^([\<\>\| ])// ) {
 		$j = $1;
 	    }
-	    
+
 	    my @spec = ("$s", at=>[$data[0]->at($i), $data[1]->at($i)]);
 	    push(@spec,"left") if($j eq '<');
 	    push(@spec,"center") if($j eq '|');
@@ -272,7 +272,7 @@ our $curve_types = {
     }
 
 };
-    
+
 sub plot {
     my $me = shift;
     my $ipo = shift;
@@ -349,7 +349,7 @@ sub plot {
 	    my $s;
 	    if($co->{with} =~ m/^points/) {
 		$gco->{pointsize} = $co->{width};
-	    } 
+	    }
 	    $gco->{linewidth} = $co->{width};
 	}
 	$gco->{legend} = $co->{key} if(defined($co->{key}));
@@ -380,14 +380,14 @@ sub plot {
 	if($me->{plot_no} >= $me->{nplots}) {
 	    $me->{obj}->end_multi();
 	    $me->{plot_no} = 0;
-	    
+
 	    $me->{obj}->close()    if($me->{opt}->{type} =~ m/^f/i);
-	    
+
 	}
     } else {
 	$me->{obj}->close() if($me->{opt}->{type} =~ m/^f/i);
     }
-    
+
     if($me->{opt}->{type} =~ m/^f/i  and  $me->{conv_fn}) {
 	print "converting $me->{conv_fn} to $me->{opt}->{output}...";
 	$a = rim($me->{conv_fn});

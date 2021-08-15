@@ -36,7 +36,7 @@ our $filetypes = {
     gif => 'gif'
 };
 
-our @disp_terms = qw/ wxt x11 aqua windows /;
+our @disp_terms = qw/ qt wxt x11 aqua windows /;
 our $disp_opts = {
     wxt=>{persist=>1},
     x11=>{persist=>1},

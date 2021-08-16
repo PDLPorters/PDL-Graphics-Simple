@@ -1,3 +1,4 @@
+1.006 2021-08-16
 - in ::PGPLOT, can set PGPLOT_DEV in env to override for "interactive" so automated tests don't hang
 - in ::PLplot and ::Gnuplot add Qt devices
 

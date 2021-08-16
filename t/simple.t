@@ -136,7 +136,7 @@ centered on x=2, ">start with '>'" centered on x=3, and
       eval { $w=new PDL::Graphics::Simple(engine=>$engine, multi=>[2,2]); };
       is($@, '', "Multiplot declaration was OK");
       $w->image( rvals(9,9),{wedge=>1} );       $w->image( -rvals(9,9),{wedge=>1} );
-      $w->image( sequence(9,9) );    $w->image( pdl(xvals(9,9),yvals(9,9),rvals(9,9)) );
+      $w->image( sequence(9,9) );    $w->image( pdl(xvals(9,9),yvals(9,9),rvals(9,9))*20 );
       ask_yn qq{Testing $engine engine: You should see two bullseyes across the top (one in
 negative print), a gradient at bottom left, and an RGB blur (if supported
 by the engine - otherwise a modified gradient) at bottom right.  The top two

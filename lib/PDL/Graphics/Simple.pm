@@ -660,6 +660,16 @@ the image will be displayed with square pixel aspect.  If you use
 C<< plot(with=>'image' ...) >>, "justify" defaults to 0 and you will have
 to set it if you want square pixels.
 
+For RGB images, the numerical values need to be in the range 0-255,
+as they are interpreted as 8 bits per plane colour values. E.g.:
+
+  $w = pgswin(); # plot to a default-shape window
+  $w->image( pdl(xvals(9,9),yvals(9,9),rvals(9,9))*20 );
+
+  # or, from an image on disk:
+  $image_data = rpic( 'my-image.png' )->mv(0,-1); # need RGB 3-dim last
+  $w->image( $image_data );
+
 =item labels
 
 This places text annotations on the plot.  It requires three input

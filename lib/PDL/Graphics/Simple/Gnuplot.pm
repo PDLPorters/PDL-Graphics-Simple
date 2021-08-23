@@ -23,7 +23,8 @@ our $mod = {
     synopsis=> 'Gnuplot 2D/3D (versatile; beautiful output)',
     pgs_version=> '1.007',
 };
-PDL::Graphics::Simple::register( 'PDL::Graphics::Simple::Gnuplot' );
+eval { require PDL::Graphics::Gnuplot; 1; } and
+  PDL::Graphics::Simple::register( 'PDL::Graphics::Simple::Gnuplot' );
 
 our $filetypes = {
     ps => ['pscairo','postscript'],
@@ -43,7 +44,6 @@ our $disp_opts = {
     aqua=>{persist=>0},
     windows=>{persist=>0}
 };
-
 
 
 ##########

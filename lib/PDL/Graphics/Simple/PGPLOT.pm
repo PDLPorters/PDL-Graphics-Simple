@@ -25,7 +25,8 @@ our $mod = {
     synopsis=> 'PGPLOT (venerable but trusted)',
     pgs_version=> '1.007',
 };
-eval q{PDL::Graphics::Simple::register( 'PDL::Graphics::Simple::PGPLOT' )};
+eval { require PDL::Graphics::PGPLOT::Window; 1; } and
+  PDL::Graphics::Simple::register( 'PDL::Graphics::Simple::PGPLOT' );
 print $@;
 
 ##########

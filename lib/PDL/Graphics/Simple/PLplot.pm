@@ -27,7 +27,8 @@ our $mod = {
     synopsis=> 'PLplot (nice plotting, sloooow images)',
     pgs_version=> '1.007',
 };
-PDL::Graphics::Simple::register( 'PDL::Graphics::Simple::PLplot' );
+eval { require PDL::Graphics::PLplot; 1; } and
+  PDL::Graphics::Simple::register( 'PDL::Graphics::Simple::PLplot' );
 
 my @DEVICES = qw(
   qtwidget wxwidgets xcairo xwin wingcc

@@ -44,7 +44,8 @@ for my $engine (@engines) {
     my $w;
 
     my $module;
-    ok( (  $mods->{$engine} and ref($mods->{$engine}) eq 'HASH' and ($module = $mods->{$engine}->{module}) ),
+    next if !$mods->{$engine}; # if didn't register, skip
+    ok( ( ref($mods->{$engine}) eq 'HASH' and ($module = $mods->{$engine}->{module}) ),
 	"there is a modules entry for $engine ($module)" );
 
   SKIP: {

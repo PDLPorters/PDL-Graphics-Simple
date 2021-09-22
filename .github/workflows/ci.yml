@@ -1,0 +1,114 @@
+name: perl
+on:
+  push:
+    branches:
+      - '*'
+    tags-ignore:
+      - '*'
+  pull_request:
+  create:
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    if: ${{ always() }}
+    steps:
+      - uses: PDLPorters/devops/github-actions/irc-notifications@master
+        with:
+          target-notifications: false # TODO
+  ci:
+    runs-on: ${{ matrix.os }}
+    if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
+    needs: notify
+    env:
+      PDL_SIMPLE_ENGINE: ${{ matrix.pdl-simple-engine }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Possible values of pdl-simple-engine
+        # - 'gnuplot' : test Gnuplot
+        # - 'plplot'  : test PLplot
+        # - 'pgplot'  : test PGPLOT
+        # - ''        : test all of the above
+        pdl-simple-engine: ['']
+        os: [ubuntu-latest]
+        perl-version: ['5.10', '5.14', '5.20']
+        include:
+          # Test each on ubuntu separately.
+          - perl-version: '5.30'
+            os: ubuntu-latest
+            pdl-simple-engine: 'gnuplot'
+          - perl-version: '5.30'
+            os: ubuntu-latest
+            pdl-simple-engine: 'plplot'
+          - perl-version: '5.30'
+            os: ubuntu-latest
+            pdl-simple-engine: 'pgplot'
+          # Test all engines on ubuntu with coverage.
+          - perl-version: '5.30'
+            os: ubuntu-latest
+            release-test: true
+            coverage: true
+          # Only test plplot on Windows.
+          - perl-version: '5.30'
+            os: windows-latest
+            pdl-simple-engine: 'plplot'
+          # Test all engines on macOS.
+          - perl-version: '5.30'
+            os: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: 'ci-dist: target-setup-perl'
+        uses: PDLPorters/devops/github-actions/ci-dist@gha-bulk-actions # TODO
+        with:
+          target-setup-perl: true
+          perl-version: ${{ matrix.perl-version }}
+      - name: Install Gnuplot
+        if: ${{ matrix.pdl-simple-engine == 'gnuplot' || matrix.pdl-simple-engine == '' }}
+        uses: PDLPorters/devops/github-actions/install-dep-gnuplot@master
+      - name: Install PLplot
+        if: ${{ matrix.pdl-simple-engine == 'plplot' || matrix.pdl-simple-engine == '' }}
+        uses: PDLPorters/devops/github-actions/install-dep-plplot@gha-bulk-actions # TODO
+      - name: Install PDL dependencies
+        uses: PDLPorters/devops/github-actions/install-dep-pdl-dep@gha-bulk-actions # TODO
+      - name: Install Perl runtime optional deps (gnuplot)
+        if: ${{ matrix.pdl-simple-engine == 'gnuplot' || matrix.pdl-simple-engine == '' }}
+        shell: bash
+        run: |
+          $MYPERL -S cpanm -n PDL::Graphics::Gnuplot || cat ~/.cpanm/build.log
+      - name: Install Perl runtime optional deps (plplot)
+        if: ${{ matrix.pdl-simple-engine == 'plplot' || matrix.pdl-simple-engine == '' }}
+        shell: bash
+        run: |
+          $MYPERL -S cpanm -n PDL::Graphics::PLplot || cat ~/.cpanm/build.log
+      - name: Install Perl runtime optional deps (pgplot)
+        if: ${{ matrix.pdl-simple-engine == 'pgplot' || matrix.pdl-simple-engine == '' }}
+        shell: bash
+        run: |
+          $MYPERL -S cpanm -n PDL::Graphics::PGPLOT || cat ~/.cpanm/build.log
+      - name: Dump engine module status
+        shell: bash
+        run: |
+          $MYPERL -Ilib -MPDL::Graphics::Simple -MData::Dumper -e '$Data::Dumper::Sortkeys = 1; my $mods = $PDL::Graphics::Simple::mods; eval "${_}::check()" for map { $_->{module} } values %$mods; print Dumper($mods)'
+      - name: 'ci-dist: target-all'
+        uses: PDLPorters/devops/github-actions/ci-dist@gha-bulk-actions # TODO
+        with:
+          target-setup-perl: false
+          target-install-dist-perl-deps: true
+          target-test-release-testing: true
+          target-test: true
+          test-enable-release-testing: ${{ matrix.release-test }}
+          test-enable-coverage: ${{ matrix.coverage }}
+          test-enable-graphical-display: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  build-status:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    if: ${{ always() }}
+    needs: [ 'ci' ]
+    steps:
+      - uses: PDLPorters/devops/github-actions/irc-notifications@master
+        with:
+          target-build-status: false # TODO
+          needs: ${{ toJSON(needs) }}

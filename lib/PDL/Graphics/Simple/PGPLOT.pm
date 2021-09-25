@@ -80,6 +80,7 @@ sub check {
 	return 0;
     }
 
+    $mod->{ok} = 1;
     return 1;
 }
 

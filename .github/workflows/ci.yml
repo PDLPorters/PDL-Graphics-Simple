@@ -50,9 +50,10 @@ jobs:
             release-test: true
             coverage: true
           # Windows: gnuplot
-          - perl-version: '5.30'
-            os: windows-latest
-            pdl-simple-engine: 'gnuplot'
+          # NOTE: this currently hangs in the CI testing environment
+          #- perl-version: '5.30'
+          #  os: windows-latest
+          #  pdl-simple-engine: 'gnuplot'
           # Windows: plplot
           # NOTE: this currently fails due to a memory error for the wingcc
           # interactive plotting device.

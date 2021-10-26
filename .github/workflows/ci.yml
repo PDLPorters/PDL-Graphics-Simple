@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: PDLPorters/devops/github-actions/irc-notifications@master
         with:
-          target-notifications: false # TODO
+          target-notifications: true
   ci:
     runs-on: ${{ matrix.os }}
     if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
@@ -67,7 +67,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: 'ci-dist: target-setup-perl'
-        uses: PDLPorters/devops/github-actions/ci-dist@gha-bulk-actions # TODO
+        uses: PDLPorters/devops/github-actions/ci-dist@master
         with:
           target-setup-perl: true
           perl-version: ${{ matrix.perl-version }}
@@ -76,9 +76,9 @@ jobs:
         uses: PDLPorters/devops/github-actions/install-dep-gnuplot@master
       - name: Install PLplot
         if: ${{ matrix.pdl-simple-engine == 'plplot' || matrix.pdl-simple-engine == '' }}
-        uses: PDLPorters/devops/github-actions/install-dep-plplot@gha-bulk-actions # TODO
+        uses: PDLPorters/devops/github-actions/install-dep-plplot@master
       - name: Install PDL dependencies
-        uses: PDLPorters/devops/github-actions/install-dep-pdl-dep@gha-bulk-actions # TODO
+        uses: PDLPorters/devops/github-actions/install-dep-pdl-dep@master
       - name: Install Perl runtime optional deps (gnuplot)
         if: ${{ matrix.pdl-simple-engine == 'gnuplot' || matrix.pdl-simple-engine == '' }}
         shell: bash
@@ -99,7 +99,7 @@ jobs:
         run: |
           $MYPERL -Ilib -MPDL::Graphics::Simple -MData::Dumper -e '$Data::Dumper::Sortkeys = 1; my $mods = $PDL::Graphics::Simple::mods; eval "${_}::check()" for map { $_->{module} } values %$mods; print Dumper($mods)'
       - name: 'ci-dist: target-all'
-        uses: PDLPorters/devops/github-actions/ci-dist@gha-bulk-actions # TODO
+        uses: PDLPorters/devops/github-actions/ci-dist@master
         with:
           target-setup-perl: false
           target-install-dist-perl-deps: true
@@ -118,5 +118,5 @@ jobs:
     steps:
       - uses: PDLPorters/devops/github-actions/irc-notifications@master
         with:
-          target-build-status: false # TODO
+          target-build-status: true
           needs: ${{ toJSON(needs) }}

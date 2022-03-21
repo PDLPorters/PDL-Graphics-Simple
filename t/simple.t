@@ -6,7 +6,7 @@ use File::Temp q/tempfile/;
 use PDL;
 
 my $tests_per_engine = 17;
-my @engines = qw/gnuplot pgplot plplot prima/;
+my @engines = qw/plplot gnuplot pgplot prima/;
 my $smoker = ($ENV{'PERL_MM_USE_DEFAULT'} or $ENV{'AUTOMATED_TESTING'});
 $ENV{PGPLOT_DEV} ||= '/NULL' if $smoker;
 
@@ -54,6 +54,7 @@ for my $engine (@engines) {
       is($@, '', "${module}::check() ran OK");
 
       unless($check_ok) {
+	  eval qq{diag "Skipping $module: \$${module}::mod->{msg}"};
 	  skip "Skipping tests for engine $engine (not working)", $tests_per_engine - 2;
       }
       $pgplot_ran ||= $engine eq 'pgplot';

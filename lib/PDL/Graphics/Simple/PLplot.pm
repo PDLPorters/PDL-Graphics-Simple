@@ -130,7 +130,8 @@ sub check {
 	$mod->{disp_dev} = $good_dev;
     } else {
 	$mod->{ok} = 0;
-	$mod->{msg} = "No suitable display device found";
+	$mod->{msg} = join "\n\t", "No suitable display device found among:",
+          sort keys %{ $mod->{devices} };
 	return 0;
     }
 

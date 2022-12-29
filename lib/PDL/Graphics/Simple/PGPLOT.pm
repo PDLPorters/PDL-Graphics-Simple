@@ -50,7 +50,7 @@ sub check {
     my ($fh,$tf) = tempfile('pgg_pgplot_XXXX');
     close $fh;
 
-    my $cmd = qq{|perl -e "use PGPLOT; open STDOUT,q[>$tf] || die; open STDERR,STDOUT || die; pgopen(q[?])"};
+    my $cmd = qq{|perl -e "use PGPLOT; open STDOUT,q[>$tf] or die; open STDERR,STDOUT or die; pgopen(q[?])"};
     open FOO,$cmd;
     print FOO "?\n";
     close FOO;

@@ -83,17 +83,17 @@ jobs:
         if: ${{ matrix.pdl-simple-engine == 'gnuplot' || matrix.pdl-simple-engine == '' }}
         shell: bash
         run: |
-          $MYPERL -S cpanm -n PDL::Graphics::Gnuplot || cat ~/.cpanm/build.log
+          $MYPERL -S cpanm -n PDL::Graphics::Gnuplot || ( cat ~/.cpanm/build.log && false )
       - name: Install Perl runtime optional deps (plplot)
         if: ${{ matrix.pdl-simple-engine == 'plplot' || matrix.pdl-simple-engine == '' }}
         shell: bash
         run: |
-          $MYPERL -S cpanm -n PDL::Graphics::PLplot || cat ~/.cpanm/build.log
+          $MYPERL -S cpanm -n PDL::Graphics::PLplot || ( cat ~/.cpanm/build.log && false )
       - name: Install Perl runtime optional deps (pgplot)
         if: ${{ matrix.pdl-simple-engine == 'pgplot' || matrix.pdl-simple-engine == '' }}
         shell: bash
         run: |
-          $MYPERL -S cpanm -n PDL::Graphics::PGPLOT || cat ~/.cpanm/build.log
+          $MYPERL -S cpanm -n PDL::Graphics::PGPLOT || ( cat ~/.cpanm/build.log && false )
       - name: Dump engine module status
         shell: bash
         run: |

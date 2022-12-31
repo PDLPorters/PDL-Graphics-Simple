@@ -122,7 +122,7 @@ sub new {
 				    size => [$size->[0], $size->[1]],
 				    onCreate  => sub { $PDL::Graphics::Prima::Simple::N_windows++; },  
 				    onDestroy => sub { $PDL::Graphics::Prima::Simple::N_windows--; 
-						       $PDL::Graphics::Prima::Simple::is_twiddling = 0 if($PDL::Graphics::Prima::Simple::N_windows==0);
+						       PDL::Graphics::Prima::Simple::twiddling(0) if($PDL::Graphics::Prima::Simple::N_windows==0);
 				    } 	
 	);                         
     die "Couldn't create a Prima window!" unless(defined($pw));

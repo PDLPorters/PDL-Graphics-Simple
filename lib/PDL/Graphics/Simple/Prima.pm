@@ -44,7 +44,7 @@ sub check {
     $mod->{ok} = 0; # makes default case simpler
 
     # Check Prima availability
-    my $min_version = 0.13;
+    my $min_version = 0.18;
     eval { require PDL::Graphics::Prima; };
     if($@) {
 	$mod->{msg} = "Couldn't load PDL::Graphics::Prima: ".$@;

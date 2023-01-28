@@ -28,7 +28,7 @@ our $mod = {
     module => 'PDL::Graphics::Simple::Prima',
     engine => 'PDL::Graphics::Prima',
     synopsis => 'Prima (interactive, fast, PDL-specific)',
-    pgs_version => '1.008'
+    pgs_version => '1.009',
 };
 eval { require PDL::Graphics::Prima; 1 } and
   PDL::Graphics::Simple::register('PDL::Graphics::Simple::Prima');

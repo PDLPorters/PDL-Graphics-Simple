@@ -66,9 +66,9 @@ sub check {
     my ($fh2, $gzouta) = tempfile('pgs_gzouta_XXXX');
     close $fh2;
 
-    open FOO, ">$gzinta" or die "Couldn't write to temp file";
-    print FOO "1\n"; #Just one line
-    close FOO;
+    open my $fh3, ">", $gzinta or die "Couldn't write to temp file";
+    print $fh3 "1\n"; #Just one line
+    close $fh3;
 
     if($^O =~ /MSWin32/i) {
       eval {require Win32::Process};
@@ -86,6 +86,8 @@ sub check {
         0,
         32, #NORMAL_PRIORITY_CLASS
         ".")|| die ErrorReport();
+
+      sleep 1; # Don't read $gzouta before it's written
     }
     else {
       my $pid = fork();
@@ -97,9 +99,9 @@ sub check {
       if( $pid==0 ) {   # assignment
 
 	# Daughter: try to create a PLplot window with a bogus device, to stimulate a driver listing
-	open STDOUT,">$gzouta";
-	open STDERR,">&STDOUT";
-	open STDIN, "<$gzinta";
+	open STDOUT,">", $gzouta;
+	open STDERR,">&", STDOUT;
+	open STDIN, "<", $gzinta;
 	PDL::Graphics::PLplot->new(DEV=>'?');
 	exit(0);
       }
@@ -110,12 +112,10 @@ sub check {
       waitpid($pid,0);      # Clean up.
     }
 
-    sleep 1 if $^O =~ /MSWin32/i; # Don't read $gzouta before it's written
-
     # Snarf up the file.
-    open FOO, "<$gzouta";
-    my @lines = <FOO>;
-    close FOO;
+    open my $fh4, "<", $gzouta;
+    my @lines = <$fh4>;
+    close $fh4;
 
     unlink $gzinta;
     unlink $gzouta;
@@ -138,7 +138,6 @@ sub check {
     }
 
     $filetypes = {};
-
     for my $k (keys %{$guess_filetypes}) {
 	VAL:for my $v ( @{$guess_filetypes->{$k}} ) {
 	    if ($mod->{devices}->{$v}) {

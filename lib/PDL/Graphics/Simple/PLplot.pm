@@ -13,6 +13,8 @@
 
 package PDL::Graphics::Simple::PLplot;
 
+use strict;
+use warnings;
 use File::Temp qw/tempfile/;
 use Time::HiRes qw/usleep/;
 use PDL::Options q/iparse/;
@@ -37,6 +39,7 @@ our $guess_filetypes = {
     pdf => ['pdfcairo','pdfqt'],
     png => ['pngcairo','pngqt']
 };
+our $filetypes;
 
 ##########
 # PDL::Graphics::Simple::PLplot::check
@@ -77,7 +80,7 @@ sub check {
                             : cmd_location();
 
       Win32::Process::Create(
-        $ProcessObj,
+        my $ProcessObj,
         $cmd_location,
         "cmd /c \"$^X -MPDL -MPDL::Graphics::PLplot -e \"PDL::Graphics::PLplot->new() \" <$gzinta >$gzouta\"",
         0,
@@ -111,7 +114,7 @@ sub check {
 
     # Snarf up the file.
     open FOO, "<$gzouta";
-    @lines = <FOO>;
+    my @lines = <FOO>;
     close FOO;
 
     unlink $gzinta;
@@ -133,19 +136,18 @@ sub check {
 	return 0;
     }
 
-    our $filetypes;
     $filetypes = {};
 
-    for $k(keys %{$guess_filetypes}) {
-	VAL:for $v( @{$guess_filetypes->{$k}} ) {
-	    if($mod->{devices}->{$v}) {
+    for my $k (keys %{$guess_filetypes}) {
+	VAL:for my $v ( @{$guess_filetypes->{$k}} ) {
+	    if ($mod->{devices}->{$v}) {
 		$filetypes->{$k} = $v;
 		last VAL;
 	    }
 	}
     }
 
-    unless($filetypes->{ps}) {
+    unless ($filetypes->{ps}) {
 	$mod->{ok} = 0;
 	$mod->{msg} = "No PostScript found";
 	return 0;
@@ -363,9 +365,9 @@ our $plplot_methods = {
 	# Call xyplot to make sure the axes get set up.
 	$me->{obj}->xyplot( pdl(1.1)->asin, pdl(1.1)->asin, %{$ppo} );
 
-	for $i(0..$data->[0]->dim(0)-1) {
+	for my $i (0..$data->[0]->dim(0)-1) {
 	    my $j = 0;
-	    $s = $data->[2]->[$i];
+	    my $s = $data->[2]->[$i];
 	    if ($s =~ s/^([\<\|\> ])//) {
 		$j = 1   if($1 eq '>');
 		$j = 0.5 if($1 eq '|');
@@ -455,7 +457,7 @@ sub plot {
 	    $ppo->{LINEWIDTH} = $co->{width};
 	}
 
-	$plpm = $plplot_methods->{$co->{with}};
+	my $plpm = $plplot_methods->{$co->{with}};
 	die "Unknown curve option 'with $co->{with}'!" unless($plpm);
 
 	my %plplot_opts = (%$ppo);

@@ -11,6 +11,8 @@
 #
 package PDL::Graphics::Simple::Gnuplot;
 
+use strict;
+use warnings;
 use File::Temp qw/tempfile/;
 use PDL::Options q/iparse/;
 use PDL;
@@ -91,7 +93,7 @@ sub check {
 
     unless( defined $okterm ) {
 	$mod->{ok} = 0;
-	$s =  "Gnuplot doesn't seem to support any of the known display terminals:\n    they are: (".join(",",@disp_terms).")\n";
+	my $s =  "Gnuplot doesn't seem to support any of the known display terminals:\n    they are: (".join(",",@disp_terms).")\n";
 	$mod->{msg} = $s;
 	die "PDL::Graphics::Simple: $s";
     }
@@ -141,6 +143,7 @@ sub new {
 	    push(@params, (persist=>0)) if( ($disp_opts->{$mod->{itype}} // {})->{persist} );
 	    push(@params, (font=>"=16"));
 	    $gpw = gpwin($mod->{itype}, @params, persist=>0, font=>"=16" );
+            no warnings 'once';
 	    print $PDL::Graphics::Gnuplot::last_plotcmd;
 	} else {
 	    attempt:for my $try( @disp_terms ) {
@@ -172,24 +175,24 @@ sub new {
 	# At the end, $ft has either a valid terminal name from the table (at top),
 	# or undef.
 	my $ft = $filetypes->{$ext};
-	if(ref $ft eq ARRAY) {
-	  try:for my $try(@$ft) {
+	if (ref $ft eq 'ARRAY') {
+	  try:for my $try (@$ft) {
 	      if($mod->{valid_terms}->{$try}) {
 		  $ft = $try;
 		  last try;
 	      }
 	  }
-	    if(ref($ft)) {
+	    if (ref($ft)) {
 		$ft = undef;
 	    }
-	} elsif(!defined($mod->{valid_terms}->{$ft})) {
+	} elsif (!defined($mod->{valid_terms}->{$ft})) {
 	    $ft = undef;
 	}
 
 	# Now $ext has the file type - check if its a supported type.  If not, make a
 	# tempfilename to hold gnuplot's output.
-	unless( defined($ft) ) {
-	    unless($mod->{valid_terms}->{'pscairo'}  or  $mod->{valid_terms}->{'postscript'}) {
+	unless ( defined($ft) ) {
+	    unless ($mod->{valid_terms}->{'pscairo'}  or  $mod->{valid_terms}->{'postscript'}) {
 		die "PDL::Graphics::Simple: $ext isn't a valid output file type for your gnuplot,\n\tand it doesn't support .ps either.  Sorry, I give up.\n";
 	    }
 

@@ -1040,7 +1040,7 @@ sub plot {
 
     ##############################
     # At long last, the parsing is over.  Dispatch the call.
-    $obj->{obj}->{keys} = $obj->{keys};
+    $obj->{obj}{keys} = $obj->{keys};
     $obj->{obj}->plot( $po, @blocks );
 }
 

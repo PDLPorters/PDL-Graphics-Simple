@@ -17,8 +17,9 @@
 
 
 package PDL::Graphics::Simple::Prima;
-use strict;
 
+use strict;
+use warnings;
 use PDL;
 use PDL::Options q/iparse/;
 use File::Temp qw/tempfile/;
@@ -569,7 +570,7 @@ sub plot {
 	onTick=>sub{$_[0]->stop; die "done with event loop\n"},
 	timeout=>50
 	)->start;
-    eval { $::application->go };
+    eval { no warnings 'once'; $::application->go };
     die unless $@ =~ /^done with event loop/;
     undef $@;
 

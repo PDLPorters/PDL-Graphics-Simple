@@ -13,6 +13,8 @@
 
 package PDL::Graphics::Simple::PGPLOT;
 
+use strict;
+use warnings;
 use File::Temp qw/tempfile/;
 use PDL::Options q/iparse/;
 use IPC::Open2;
@@ -180,10 +182,10 @@ our $pgplot_methods = {
     },
     'labels'=> sub {
 	my ($me,$ipo,$data,$ppo) = @_;
-	for my $i(0..$data->[0]->dim(0)-1) {
-	    $s = $data->[2]->[$i];
+	for my $i (0..$data->[0]->dim(0)-1) {
+	    my $s = $data->[2]->[$i];
 	    my $j = 0.0;
-	    if( $s =~ s/^([\<\|\>\ ])// ) {
+	    if ( $s =~ s/^([\<\|\>\ ])// ) {
 		$j = 0.5 if($1 eq '|');
 		$j = 1.0 if($1 eq '>');
 	    }

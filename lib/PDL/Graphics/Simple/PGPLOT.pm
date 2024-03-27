@@ -104,7 +104,7 @@ sub new {
     # Force a recheck on failure, in case the user fixed PGPLOT.
     # Also loads PDL::Graphics::PGPLOT::Window.
     unless(check()) {
-	die "$mod->{shortname} appears nonfunctional\n" unless(check(1));
+	die "$mod->{shortname} appears nonfunctional: $mod->{msg}\n" unless(check(1));
     }
 
     # Figure the device name and size to feed to PGPLOT.

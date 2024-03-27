@@ -124,7 +124,7 @@ sub new {
     # Force a recheck on failure, in case the user fixed gnuplot.
     # Also loads PDL::Graphics::Gnuplot.
     unless(check()) {
-	die "$mod->{shortname} appears nonfunctional\n" unless(check(1));
+	die "$mod->{shortname} appears nonfunctional: $mod->{msg}\n" unless(check(1));
     }
 
     # Generate the @params array to feed to gnuplot

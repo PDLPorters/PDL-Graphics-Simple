@@ -126,7 +126,7 @@ sub new {
 
     
     unless( check() ) {
-	die "$mod->{shortname} appears nonfunctional\n" unless(check(1));
+	die "$mod->{shortname} appears nonfunctional: $mod->{msg}\n" unless(check(1));
     }
 
     my $size = PDL::Graphics::Simple::_regularize_size($opt->{size},'px');

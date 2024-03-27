@@ -142,7 +142,7 @@ centered on x=2, ">start with '>'" centered on x=3, and
 
 ##############################
 # Multiplot
-      eval { $w=new PDL::Graphics::Simple(engine=>$engine, multi=>[2,2]); };
+      eval { $w=PDL::Graphics::Simple->new(engine=>$engine, multi=>[2,2]); };
       is($@, '', "Multiplot declaration was OK");
       $w->image( rvals(9,9),{wedge=>1} );       $w->image( -rvals(9,9),{wedge=>1} );
       $w->image( sequence(9,9) );    $w->image( pdl(xvals(9,9),yvals(9,9),rvals(9,9))*20 );

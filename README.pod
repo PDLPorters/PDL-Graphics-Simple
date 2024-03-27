@@ -281,7 +281,7 @@ C<pgswin(%opts)> is exactly the same as calling C<< PDL::Graphics::Simple->new(%
 
 =for usage
 
- $w = new PDL::Graphics::Simple( %opts );
+ $w = PDL::Graphics::Simple->new( %opts );
 
 =for ref
 
@@ -341,7 +341,7 @@ is always horizontal first, and left-to-right, top-to-bottom.
 
 =for usage
 
- $w = new PDL::Graphics::Simple ( %opts );
+ $w = PDL::Graphics::Simple->new( %opts );
  $w->plot($data);
 
 =for ref
@@ -533,7 +533,7 @@ to denote default justification (left).
 
 =for usage
 
- $w = new PDL::Graphics::Simple ( %opts );
+ $w = PDL::Graphics::Simple->new( %opts );
  $w->plot($data);
  $w->oplot($more_data);
 
@@ -549,7 +549,7 @@ so that the plot will be overlain on the previous one.
 =for usage
 
  # Object-oriented convenience
- $w = new PDL::Graphics::Simple ( % opts );
+ $w = PDL::Graphics::Simple->new( % opts );
  $w->line($data);
 
  # Very Lazy Convenience

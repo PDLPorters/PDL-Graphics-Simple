@@ -321,7 +321,7 @@ C<pgswin(%opts)> is exactly the same as calling C<< PDL::Graphics::Simple->new(%
 
 =for usage
 
- $w = new PDL::Graphics::Simple( %opts );
+ $w = PDL::Graphics::Simple->new( %opts );
 
 =for ref
 
@@ -386,7 +386,7 @@ our $new_defaults = {
     multi => undef
 };
 
-sub pgswin { new('PDL::Graphics::Simple',@_); }
+sub pgswin { __PACKAGE__->new(@_) }
 
 sub new {
     my $pkg = shift;
@@ -484,17 +484,16 @@ sub new {
 
     my $submod= $mods->{$engine}->{module};
     my $params = { size=>$size, type=>$type, output=>$output, multi=>$opt->{multi} };
-    my $obj = eval "new $mods->{$engine}->{module}(\$params)";
+    my $obj = eval "$mods->{$engine}->{module}->new(\$params)";
     my $me = { engine=>$engine, params=>$params, obj=>$obj };
     return bless($me,$pkg);
-
 }
 
 =head2 plot
 
 =for usage
 
- $w = new PDL::Graphics::Simple ( %opts );
+ $w = PDL::Graphics::Simple->new( %opts );
  $w->plot($data);
 
 =for ref
@@ -686,7 +685,7 @@ to denote default justification (left).
 # Plot options have a bunch of names for familiarity to different package users.
 # They're hammered into a single simplified set for transfer to the engines.
 
-our $plot_options = new PDL::Options( {
+our $plot_options = PDL::Options->new( {
     oplot=> 0,
     title => undef,
     xlabel=> undef,
@@ -731,10 +730,10 @@ sub plot {
     if(UNIVERSAL::isa($_[0],"PDL::Graphics::Simple")) {
 	$obj = shift;
     } else {
-	$obj = $global_plot = new('PDL::Graphics::Simple');
+	$obj = $global_plot = __PACKAGE__->new;
     }
 
-    my $curve_options = new PDL::Options( {
+    my $curve_options = PDL::Options->new( {
 	with => 'lines',
 	key  => undef,
 	style => undef,
@@ -1048,7 +1047,7 @@ sub plot {
 
 =for usage
 
- $w = new PDL::Graphics::Simple ( %opts );
+ $w = PDL::Graphics::Simple->new( %opts );
  $w->plot($data);
  $w->oplot($more_data);
 
@@ -1079,7 +1078,7 @@ sub oplot {
 =for usage
 
  # Object-oriented convenience
- $w = new PDL::Graphics::Simple ( % opts );
+ $w = PDL::Graphics::Simple->new( % opts );
  $w->line($data);
 
  # Very Lazy Convenience

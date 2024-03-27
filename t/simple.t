@@ -44,13 +44,14 @@ for my $engine (@engines) {
     my $w;
 
     my $module;
-    diag("skipping $engine"), next if !$mods->{$engine}; # if didn't register
+    diag("skipping $engine as unregistered"), next if !$mods->{$engine}; # if didn't register
     ok( ( ref($mods->{$engine}) eq 'HASH' and ($module = $mods->{$engine}->{module}) ),
 	"there is a modules entry for $engine ($module)" );
 
-  SKIP: {
+    SKIP: {
       my $check_ok = eval {${module}->can('check')->(1)};
       is($@, '', "${module}::check() ran OK");
+      diag "module '$engine' registration hash: ", explain $mods->{$engine};
 
       unless($check_ok) {
 	  no strict 'refs';

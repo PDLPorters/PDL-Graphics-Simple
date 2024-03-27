@@ -133,7 +133,7 @@ sub check {
 	$mod->{ok} = 0;
 	$mod->{msg} = join("\n\t", "No suitable display device found among:",
           sort keys %{ $mod->{devices} }) . join("\n\t", "Lines read:",
-          @lines);
+          map {chomp; $_} @lines);
 	return 0;
     }
 

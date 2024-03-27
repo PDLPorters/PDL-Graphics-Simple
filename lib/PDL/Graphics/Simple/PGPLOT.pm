@@ -367,17 +367,16 @@ sub plot {
 
 }
 
-
 sub DESTROY {
     my $me = shift;
 
     $me->{obj}->release;
 
-    if($me->{type} =~ m/^f/i) {
+    if (defined $me->{type} and $me->{type} =~ m/^f/i) {
 	eval { $me->{obj}->close; };
 
 	my $file = ( ($me->{conv_fn}) ? $me->{conv_fn} : $me->{output} );
-	if($me->{conv_fn}) {
+	if ($me->{conv_fn}) {
 	    my $a;
 	    $a = rim($me->{conv_fn}) ;
 	    wim($a, $me->{opt}->{output}); 
@@ -385,3 +384,5 @@ sub DESTROY {
 	}
     }
 }
+
+1;

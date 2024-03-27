@@ -131,8 +131,9 @@ sub check {
 	$mod->{disp_dev} = $good_dev;
     } else {
 	$mod->{ok} = 0;
-	$mod->{msg} = join "\n\t", "No suitable display device found among:",
-          sort keys %{ $mod->{devices} };
+	$mod->{msg} = join("\n\t", "No suitable display device found among:",
+          sort keys %{ $mod->{devices} }) . join("\n\t", "Lines read:",
+          @lines);
 	return 0;
     }
 

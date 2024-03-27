@@ -21,18 +21,18 @@ sub ask_yn {
 ##############################
 # Try the simple engine and convenience interfaces...
 
-eval q: $a = xvals(50); lines $a sin($a/3) :;
+eval { $a = xvals(50); lines $a sin($a/3) };
 plan skip_all => 'No plotting engines installed' if $@ =~ /Sorry, all known/;
 is($@, '', "simple lines plot succeeded");
 ok( defined($PDL::Graphics::Simple::global_object), "Global convenience object got spontaneously set" );
 ask_yn q{  test>  $a = xvals(50); lines $a sin($a/3);
 You should see a sine wave...}, "convenience plot OK";
 
-eval q: erase :;
+eval { erase };
 is($@, '', 'erase worked');
 ok(!defined($PDL::Graphics::Simple::global_object), 'erase erased the global object');
 
-eval "PDL::Graphics::Simple::show();";
+eval { PDL::Graphics::Simple::show() };
 is($@, '');
 
 my $mods = do { no warnings 'once'; $PDL::Graphics::Simple::mods };
@@ -44,17 +44,17 @@ for my $engine (@engines) {
     my $w;
 
     my $module;
-    next if !$mods->{$engine}; # if didn't register, skip
+    diag("skipping $engine"), next if !$mods->{$engine}; # if didn't register
     ok( ( ref($mods->{$engine}) eq 'HASH' and ($module = $mods->{$engine}->{module}) ),
 	"there is a modules entry for $engine ($module)" );
 
   SKIP: {
-      my($check_ok);
-      eval qq{\$check_ok = ${module}::check(1)};
+      my $check_ok = eval {${module}->can('check')->(1)};
       is($@, '', "${module}::check() ran OK");
 
       unless($check_ok) {
-	  eval qq{diag "Skipping $module: \$${module}::mod->{msg}"};
+	  no strict 'refs';
+	  diag qq{Skipping $module: ${"${module}::mod"}->{msg}};
 	  skip "Skipping tests for engine $engine (not working)", $tests_per_engine - 2;
       }
       $pgplot_ran ||= $engine eq 'pgplot';
@@ -159,13 +159,13 @@ panels should have colorbar wedges to the right of the image.}, "multiplot OK";
 # Test imag
 my $im = 1000 * sin(rvals(100,100)/3) / (rvals(100,100)+30);
 
-eval q{ imag $im };
+eval { imag $im };
 is($@, '', "imag worked with no additional arguments" );
 ask_yn q{  test> $im = 1000 * sin(rvals(100,100)/3) / (rvals(100,100)+30);
   test> imag $im;
 You should see a bullseye pattern with a brighter inner ring.}, "bullseye OK";
 
-eval q{ imag $im, {wedge=>1, title=>"Bullseye!"} };
+eval { imag $im, {wedge=>1, title=>"Bullseye!"} };
 is($@, '', "imag worked with plot options");
 ask_yn q{  test> imag $im, {wedge=>1, title=>"Bullseye!", j=>1};
 You should see the same image, but with a colorbar wedge on the right; a title
@@ -173,14 +173,14 @@ up top; and a justified aspect ratio (circular rings). The color scale may be
 slightly less contrasty than the last frame, because some engines extend the
 colorbar wedge to round numbers.}, "justified bullseye and wedge OK";
 
-eval q{ imag $im, 0, 30, {wedge=>1, j=>1} };
+eval { imag $im, 0, 30, {wedge=>1, j=>1} };
 is($@, '', "imag worked with bounds");
 ask_yn q{  test> imag $im, 0, 30, {wedge=>1, j=>1};
 You should see the same image, but with no title and with a tighter
 dynamic range that cuts off the low values (black rings instead of
 the fainter parts of the bullseye).}, "crange shortcut is OK";
 
-eval q{ erase };
+eval { erase };
 is($@, '', "erase executed");
 my $extra = $pgplot_ran ? ' (for PGPLOT on X you need to close the X window to continue)' : '';
 ask_yn qq{  test> erase

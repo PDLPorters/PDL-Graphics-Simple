@@ -58,8 +58,8 @@ sub check {
     # Eval PDL::Graphics::Gnuplot.  Require relatively recent version.
     # We don't specify the version in the 'use', so we can issue a
     # warning on an older version.
-    eval 'use PDL::Graphics::Gnuplot;';
-    if($@) {
+    eval { require PDL::Graphics::Gnuplot; PDL::Graphics::Gnuplot->import; };
+    if ($@) {
 	$mod->{ok} = 0;
 	$mod->{msg} = $@;
 	return 0;
@@ -73,8 +73,7 @@ sub check {
 	return 0;
     }
 
-    my $gpw;
-    eval '$gpw = gpwin();';
+    my $gpw = eval { gpwin() };
     if($@) {
 	$mod->{ok} = 0;
 	$mod->{msg} = $@;

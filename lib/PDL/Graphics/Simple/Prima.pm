@@ -33,6 +33,8 @@ our $mod = {
 eval { require PDL::Graphics::Prima; 1 } and
   PDL::Graphics::Simple::register('PDL::Graphics::Simple::Prima');
 
+our (@colors, @patterns);
+
 ##########
 # PDL::Graphics::Simple::Prima::check
 # Checker
@@ -81,13 +83,23 @@ sub check {
 	require Prima::Buttons;
 	require Prima::Utils;
 	require Prima::Edit;
+	require Prima::Const;
     };
     if($@){ 
 	$mod->{msg} = "Couldn't load auxiliary Prima modules: ".$@;
 	undef $@;
 	return 0;
     }
- 
+    @colors = (
+      cl::Black(), cl::Red(), cl::Green(), cl::Blue(), cl::Cyan(),
+      cl::Magenta(), cl::Yellow(), cl::Brown(),
+      cl::LightRed(), cl::LightGreen(), cl::LightBlue(), cl::Gray(),
+    );
+    @patterns = (
+      lp::Solid(), lp::Dash(), lp::LongDash(), lp::ShortDash(), lp::DotDot(),
+      lp::DashDot(), lp::DashDotDot(),
+    );
+
     $mod->{ok} =1;
     return 1;
 }
@@ -154,7 +166,7 @@ sub DESTROY {
 	    # Save plot to file
 
 	    if($me->{widgets}->[0]) {
-		eval q{$me->{widgets}->[0]->save_to_file($me->{output})};
+		eval {$me->{widgets}->[0]->save_to_file($me->{output})};
 		if($@) {
 		    print $@;
 		    undef $@;
@@ -196,7 +208,7 @@ sub DESTROY {
 		      my $tile;
 		      
 		      if($widget_dex < @{$me->{widgets}}) {
-			  eval q{ $me->{widgets}->[$widget_dex++]->save_to_file($tmpfile) };
+			  eval { $me->{widgets}->[$widget_dex++]->save_to_file($tmpfile) };
 			  last ROW if($@);
 			  $tile = rim($tmpfile);
 			  $ztile = zeroes($tile)+255;
@@ -229,19 +241,9 @@ sub DESTROY {
 	}
     }
 
-
-
     $me->{obj}->hide;
     $me->{obj}->destroy;
 }
-
-
-our @colors =qw/
-    cl::Black cl::Red cl::Green cl::Blue cl::Cyan cl::Magenta cl::Yellow cl::Brown cl::LighttRed cl::LightGreen cl::LightBlue cl::Gray/;
-
-our @patterns = qw/
-    lp::Solid lp::Dash lp::LongDash lp::ShortDash lp::DotDot lp::DashDot lp::DashDotDot/;
-
 
 ##############################
 # Fake-o apply method makes sepiatone values for input data.
@@ -278,7 +280,7 @@ sub PDL::Graphics::Simple::Prima::Sepia_Palette::apply {
 our $types = {
     lines => q{ppair::Lines},
 
-    points => [ map { 'ppair::'.$_ } qw/Blobs Triangles Squares Crosses Xs Asterisks/ ],
+    points => [ map { ppair->can($_)->() } qw/Blobs Triangles Squares Crosses Xs Asterisks/ ],
 
     bins => sub {
 	my ($me, $plot, $block, $cprops) = @_;
@@ -291,7 +293,7 @@ our $types = {
 	my $newy = $y->dummy(0,2)->clump(2)->sever;
 	
 	$plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } = 
-	    ds::Pair($newx,$newy,plotType=>eval q{ppair::Lines}, @$cprops);
+	    ds::Pair($newx,$newy,plotType=>ppair::Lines(), @$cprops);
     },
 
 
@@ -336,7 +338,7 @@ our $types = {
 	my $dx = ($data->[0]->flat->dummy(0,1) + $dr->dummy(0,1)*$cstash->{c})->flat;
 	my $dy = ($data->[1]->flat->dummy(0,1) + $dr->dummy(0,1)*$cstash->{s})->flat;
 	$plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } = 
-	    ds::Pair( $dx, $dy, plotType=>eval q{ppair::Lines}, @$cprops);
+	    ds::Pair( $dx, $dy, plotType=>ppair::Lines(), @$cprops);
     },
 
 
@@ -365,7 +367,7 @@ our $types = {
 
 	$plot->dataSets()->{1+keys(%{$plot->dataSets()})} = 
 	  ds::Note(
-	      map { eval q{pnote::Text($labels[$_],x=>$x->slice("($_)"),y=>$y->slice("($_)"))}; } (0..$#labels)
+	      map { pnote::Text($labels[$_],x=>$x->slice("($_)"),y=>$y->slice("($_)")); } (0..$#labels)
 	  );
     }
 };
@@ -389,9 +391,9 @@ $types->{limitbars} = sub {
     my $xdraw = pdl($xlo,$xhi,$x,  $x,  $xlo,$xhi,$nan)->mv(1,0)->flat; 
     my $ydraw = pdl($ylo,$ylo,$ylo,$yhi,$yhi,$yhi,$nan)->mv(1,0)->flat;
     $plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } = 
-	ds::Pair($xdraw,$ydraw,plotType=>eval q{ppair::Lines}, @$cprops);
+	ds::Pair($xdraw,$ydraw,plotType=>ppair::Lines(), @$cprops);
     $plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } =
-	ds::Pair($x,$y,plotType=>eval ($types->{points}->[ ($me->{curvestyle}-1) %(0+@{$types->{points}}) ]), @$cprops);
+	ds::Pair($x,$y,plotType=>$types->{points}->[ ($me->{curvestyle}-1) %(0+@{$types->{points}}) ], @$cprops);
 };
 
 
@@ -469,8 +471,8 @@ sub plot {
     $plot->x->label(  $ipo->{xlabel}  )  if(defined($ipo->{xlabel}));
     $plot->y->label(  $ipo->{ylabel}  )  if(defined($ipo->{ylabel}));
     
-    $plot->x->scaling(eval q{sc::Log}) if($ipo->{logaxis}=~ m/x/i);
-    $plot->y->scaling(eval q{sc::Log}) if($ipo->{logaxis}=~ m/y/i);
+    $plot->x->scaling(sc::Log()) if($ipo->{logaxis}=~ m/x/i);
+    $plot->y->scaling(sc::Log()) if($ipo->{logaxis}=~ m/y/i);
     
     $plot->x->min($ipo->{xrange}->[0]) if(defined($ipo->{xrange}) and defined($ipo->{xrange}->[0]));
     $plot->x->max($ipo->{xrange}->[1]) if(defined($ipo->{xrange}) and defined($ipo->{xrange}->[1]));
@@ -529,8 +531,8 @@ sub plot {
 	}
 	
 	my $cprops = [
-	    color        => eval $colors[   ($me->{curvestyle}-1) % @colors ],
-	    linePattern  => eval $patterns[ ($me->{curvestyle}-1) % @patterns ],
+	    color        => $colors[   ($me->{curvestyle}-1) % @colors ],
+	    linePattern  => $patterns[ ($me->{curvestyle}-1) % @patterns ],
 	    lineWidth    => $co->{width} || 1
 	    ];
 	
@@ -540,11 +542,11 @@ sub plot {
 	} else {
 	    my $pt;
 	    if(ref($type) eq 'ARRAY') {
-		$pt = eval sprintf("%s",$type->[ ($me->{curvestyle}-1) % (0+@{$type}) ] );
+		$pt = $type->[ ($me->{curvestyle}-1) % (0+@{$type}) ];
 	    } elsif(!defined($type)) {
 		die "$co->{with} is not yet implemented in PDL::Graphics::Simple for Prima.\n";
 	    } else {
-		$pt = eval qq{$type};
+		$pt = eval $type;
 	    }
 	    
 	    $plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } = ds::Pair(@$block, plotType => $pt, @$cprops);

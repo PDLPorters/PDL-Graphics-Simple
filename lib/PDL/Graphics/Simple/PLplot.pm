@@ -18,8 +18,6 @@ use Time::HiRes qw/usleep/;
 use PDL::Options q/iparse/;
 use PDL;
 
-eval 'use PDL::Graphics::PLplot';
-
 our $mod = {
     shortname => 'plplot',
     module=>'PDL::Graphics::Simple::PLplot',
@@ -50,7 +48,7 @@ sub check {
 
     return $mod->{ok} unless( $force or !defined($mod->{ok}) );
 
-    eval 'use PDL::Graphics::PLplot';
+    eval { require PDL::Graphics::PLplot; PDL::Graphics::PLplot->import };
     if($@) {
 	$mod->{ok} = 0;
 	$mod->{msg} = $@;

@@ -278,7 +278,9 @@ our $global_plot = undef;
 # Attempt to load some default modules
 
 for my $submod(qw/ PGPLOT Gnuplot PLplot Prima /) {
-eval "use PDL::Graphics::Simple::$submod;";
+  my $module = "PDL::Graphics::Simple::$submod";
+  (my $file = $module) =~ s/::/\//g;
+  eval { require "$file.pm"; $module->import; };
 }
 
 =head2 show
@@ -416,9 +418,8 @@ sub new {
 
 	    attempt: for my $engine( @try ) {
 		print "Trying $engine ($mods->{$engine}->{engine})...";
-		my $a;
 		my $s;
-		eval "\$a = $mods->{$engine}->{module}::check()";
+		my $a = eval { $mods->{$engine}{module}->can('check')->() };
 		if($@) {
 		    chomp $@;
 		    $s = "$@";
@@ -484,7 +485,7 @@ sub new {
 
     my $submod= $mods->{$engine}->{module};
     my $params = { size=>$size, type=>$type, output=>$output, multi=>$opt->{multi} };
-    my $obj = eval "$mods->{$engine}->{module}->new(\$params)";
+    my $obj = $mods->{$engine}->{module}->new($params);
     my $me = { engine=>$engine, params=>$params, obj=>$obj };
     return bless($me,$pkg);
 }
@@ -1381,14 +1382,13 @@ same as C<$PDL::Graphics::Simple::VERSION>.
 sub register {
     my $module = shift;
 
-    my $modname = "\$${module}::mod";
-    barf "PDL::Graphics::Simple::register: tried to register $module \n\t...but $modname wasn't defined.\n"
-	unless (eval qq{defined($modname) and ref($modname) eq 'HASH';});
-
-    my $mod = eval $modname;
+    no strict 'refs';
+    my $mod = ${"${module}::mod"};
+    barf "PDL::Graphics::Simple::register: tried to register $module\n\t...but $module\::mod wasn't defined.\n"
+	unless defined($mod) and ref($mod) eq 'HASH';;
 
     for(qw/shortname module engine synopsis pgs_version/) {
-	barf "PDL::Graphics::Simple::register: $modname looks fishy; I give up\n"
+	barf "PDL::Graphics::Simple::register: $module\::mod looks fishy; I give up\n"
 	    unless( defined($mod->{$_}));
     }
 

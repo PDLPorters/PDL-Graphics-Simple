@@ -38,7 +38,7 @@ sub check {
     my $force = shift;
     $force = 0 unless(defined($force));
     return $mod->{ok} unless( $force or !defined($mod->{ok}) );
-    eval 'use PDL::Graphics::PGPLOT::Window;';
+    eval { require PDL::Graphics::PGPLOT::Window; PDL::Graphics::PGPLOT::Window->import; };
     if ($@) {
 	$mod->{ok} = 0;
 	$mod->{msg} = $@;
@@ -372,7 +372,7 @@ sub DESTROY {
     $me->{obj}->release;
 
     if($me->{type} =~ m/^f/i) {
-	eval q{ $me->{obj}->close; };
+	eval { $me->{obj}->close; };
 
 	my $file = ( ($me->{conv_fn}) ? $me->{conv_fn} : $me->{output} );
 	if($me->{conv_fn}) {

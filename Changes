@@ -1,3 +1,5 @@
+- P{GPLOT,Lplot} to read devices using proper API not subprocesses
+
 1.010 2024-03-24
 - fix PGPLOT to read devices correctly
 

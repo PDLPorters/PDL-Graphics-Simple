@@ -17,7 +17,6 @@ use strict;
 use warnings;
 use File::Temp qw/tempfile/;
 use PDL::Options q/iparse/;
-use IPC::Open2;
 
 use PDL;
 
@@ -47,18 +46,20 @@ sub check {
 	return 0;
     }
     # Module loaded OK, now try to extract valid devices from it
-    my @lines = eval {
-      open2(my $chld_out, my $chld_in, $^X, qw(-MPGPLOT -e pgopen(q[?])));
-      print $chld_in "?\n";
-      close $chld_in;
-      grep /^\s+\//, <$chld_out>;
+    eval {
+      my %devs;
+      PGPLOT::pgqndt(my $n);
+      for my $count (1..$n) {
+        PGPLOT::pgqdt($count,my ($type,$v1,$descr,$v2,$v3));
+        $devs{substr $type, 1} = 1; # chop off "/"
+      }
+      $mod->{devices} = \%devs;
     };
     if ($@) {
 	$mod->{ok} = 0;
 	$mod->{msg} = $@;
 	return 0;
     }
-    $mod->{devices} = { map { chomp; s/^\s*\///; s/\s.*//; ($_,1) } @lines };
     delete $mod->{disp_dev};
     TRY:for my $try(qw/XWINDOW XSERVE CGW GW/){
 	if($mod->{devices}->{$try}) { 

@@ -59,81 +59,15 @@ sub check {
     }
 
     # Module loaded OK, now try to extract valid devices from it.
-    # We would use a pipe, but Microsoft Windows doesn't play nice
-    # with them - so we use a temp file instead.
-    my ($fh1, $gzinta) = tempfile('pgs_gzinta_XXXX');
-    close $fh1;
-    my ($fh2, $gzouta) = tempfile('pgs_gzouta_XXXX');
-    close $fh2;
-
-    open my $fh3, ">", $gzinta or die "Couldn't write to temp file";
-    print $fh3 "1\n"; #Just one line
-    close $fh3;
-
-    if($^O =~ /MSWin32/i) {
-      eval {require Win32::Process};
-      die "Win32::Process didn't load: $@"
-        if $@;
-
-      my $cmd_location = -e "\\Windows\\system32\\cmd.exe"
-                            ? "\\Windows\\system32\\cmd.exe"
-                            : cmd_location();
-
-      Win32::Process::Create(
-        my $ProcessObj,
-        $cmd_location,
-        "cmd /c \"$^X -MPDL -MPDL::Graphics::PLplot -e \"PDL::Graphics::PLplot->new() \" <$gzinta >$gzouta\"",
-        0,
-        32, #NORMAL_PRIORITY_CLASS
-        ".")|| die ErrorReport();
-
-      sleep 1; # Don't read $gzouta before it's written
-    }
-    else {
-      my $pid = fork();
-      unless(defined($pid)) {
-	print STDERR +($mod->{msg} = "Fork failed in PLplot probe -- returning 0"), "\n";
-	return 0;
-      }
-
-      if( $pid==0 ) {   # assignment
-
-	# Daughter: try to create a PLplot window with a bogus device, to stimulate a driver listing
-	open STDOUT,">", $gzouta;
-	open STDERR,">&", STDOUT;
-	open STDIN, "<", $gzinta;
-	PDL::Graphics::PLplot->new(DEV=>'?');
-	exit(0);
-      }
-
-      # Parent - snarf up the results from the daughter
-      usleep(2e5);          # hang around for 0.2 seconds
-      eval {kill 9,$pid;};  # kill it dead, just in case it buzzed or hung (I'm looking at you, Microsoft Windows)
-      waitpid($pid,0);      # Clean up.
-    }
-
-    # Snarf up the file.
-    open my $fh4, "<", $gzouta;
-    my @lines = <$fh4>;
-    close $fh4;
-
-    unlink $gzinta;
-    unlink $gzouta;
-
-    $mod->{devices} = {};
-    for my $l(@lines) {
-	if( $l=~ m/^\s+\<\s*\d+\>\s+(\w+)/ ) {
-	    $mod->{devices}->{$1} = 1;
-	}
-    }
+    my $plgDevs = plgDevs();
+    $mod->{devices} = {map +($_=>1), keys %$plgDevs};
 
     if( my ($good_dev) = grep $mod->{devices}{$_}, @DEVICES ) {
 	$mod->{disp_dev} = $good_dev;
     } else {
 	$mod->{ok} = 0;
 	$mod->{msg} = join("\n\t", "No suitable display device found among:",
-          sort keys %{ $mod->{devices} }) . join("\n\t", "Lines read:",
-          map {chomp; $_} @lines);
+          sort keys %{ $mod->{devices} }) . "\n";
 	return 0;
     }
 

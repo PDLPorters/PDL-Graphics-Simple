@@ -275,10 +275,36 @@ our $mod_abbrevs = undef;
 our $last_successful_type = undef;
 our $global_plot = undef;
 
-# Attempt to load some default modules
+# lifted from PDL::Demos::list
+sub _list_submods {
+  my @d = @_;
+  my @found;
+  my %found_already;
+  foreach my $path ( @INC ) {
+    next if !-d (my $dir = File::Spec->catdir( $path, @d ));
+    my @c = do { opendir my $dirfh, $dir or die "$dir: $!"; grep !/^\./, readdir $dirfh };
+    for my $f (grep /\.pm$/ && -f File::Spec->catfile( $dir, $_ ), @c) {
+      $f =~ s/\.pm//;
+      my $found_mod = join "::", @d, $f;
+      next if $found_already{$found_mod}++;
+      push @found, $found_mod;
+    }
+    for my $t (grep -d $_->[1], map [$_, File::Spec->catdir( $dir, $_ )], @c) {
+      my ($subname, $subd) = @$t;
+      # one extra level
+      my @c = do { opendir my $dirfh, $subd or die "$subd: $!"; grep !/^\./, readdir $dirfh };
+      for my $f (grep /\.pm$/ && -f File::Spec->catfile( $subd, $_ ), @c) {
+        $f =~ s/\.pm//;
+        my $found_mod = join "::", @d, $subname, $f;
+        next if $found_already{$found_mod}++;
+        push @found, $found_mod;
+      }
+    }
+  }
+  @found;
+}
 
-for my $submod(qw/ PGPLOT Gnuplot PLplot Prima /) {
-  my $module = "PDL::Graphics::Simple::$submod";
+for my $module (_list_submods(qw(PDL Graphics Simple))) {
   (my $file = $module) =~ s/::/\//g;
   eval { require "$file.pm"; $module->import; };
 }
@@ -479,13 +505,12 @@ sub new {
 	if(  ref($opt->{multi}) ne 'ARRAY'  or  @{$opt->{multi}} != 2  ) {
 	    barf "PDL::Graphics::Simple::new: 'multi' option requires a 2-element ARRAY ref\n";
 	}
-	$opt->{multi}->[0] = 1  unless(  $opt->{multi}->[0]  );
-	$opt->{multi}->[1] = 1  unless(  $opt->{multi}->[1]  );
+	$opt->{multi}[0] ||= 1;
+	$opt->{multi}[1] ||= 1;
     }
 
-    my $submod= $mods->{$engine}->{module};
     my $params = { size=>$size, type=>$type, output=>$output, multi=>$opt->{multi} };
-    my $obj = $mods->{$engine}->{module}->new($params);
+    my $obj = $mods->{$engine}{module}->new($params);
     my $me = { engine=>$engine, params=>$params, obj=>$obj };
     return bless($me,$pkg);
 }

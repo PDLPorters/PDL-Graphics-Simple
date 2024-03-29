@@ -1,4 +1,5 @@
 - P{GPLOT,Lplot} to read devices using proper API not subprocesses
+- if PDL_SIMPLE_ENGINE in ENV, use ONLY that if engine unspecified
 
 1.010 2024-03-24
 - fix PGPLOT to read devices correctly
@@ -27,8 +28,11 @@
 1.003 2013-03-20
 - Fix tests for smoker compatibility
 
-1.002
+1.002 2013-03-20
+- window name, default to inches
+
+1.001 2013-03-20
 - Include Prima support
 
-1.001 2013-03-19
+1.000 2013-03-14
 - initial CPAN release

@@ -6,7 +6,7 @@ use File::Temp q/tempfile/;
 use PDL;
 
 my $tests_per_engine = 17;
-my @engines = qw/plplot gnuplot pgplot prima/;
+my @engines = $ENV{PDL_SIMPLE_ENGINE} || qw/plplot gnuplot pgplot prima/;
 my $smoker = ($ENV{'PERL_MM_USE_DEFAULT'} or $ENV{'AUTOMATED_TESTING'});
 $ENV{PGPLOT_DEV} ||= '/NULL' if $smoker;
 

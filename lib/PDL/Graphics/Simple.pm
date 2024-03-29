@@ -125,9 +125,24 @@ object.
 
 The non-object interface will keep using the last plot engine you used
 successfully.  On first start, you can specify an engine with the
-environment variable PDL_SIMPLE_ENGINE.  If that one isn't working, or
+environment variable C<PDL_SIMPLE_ENGINE>. As of 1.011, only that will be tried, but
 if you didn't specify one, all known engines are tried in alphabetical
 order until one works.
+
+The value of C<PDL_SIMPLE_ENGINE> should be the "shortname" of the
+engine, currently:
+
+=over
+
+=item C<gnuplot>
+
+=item C<plplot>
+
+=item C<pgplot>
+
+=item C<prima>
+
+=back
 
 =over 3
 
@@ -364,9 +379,9 @@ If specified, this must be one of the supported plotting engines.  You
 can use a module name or the shortened name.  If you don't give one,
 the constructor will try the last one you used, or else scan through
 existing modules and pick one that seems to work.  It will first check
-the environment variable PDL_SIMPLE_ENGINE, then search through all
-the known engines in alphabetical order until it finds one that seems
-to work on your system.
+the environment variable C<PDL_SIMPLE_ENGINE>, and as of 1.011, only that will be tried, but
+if you didn't specify one, all known engines are tried in alphabetical
+order until one works.
 
 =item size
 
@@ -430,37 +445,36 @@ sub new {
     ##############################
     # Pick out a working plot engine...
 
-    unless($opt->{engine}) {
+    unless ($opt->{engine}) {
 	# find the first working subclass...
-	unless($last_successful_type) {
+	unless ($last_successful_type) {
 
 	    my @try = ();
-
-	    if($ENV{'PDL_SIMPLE_ENGINE'}) {
+	    if ($ENV{'PDL_SIMPLE_ENGINE'}) {
 		push(@try, $ENV{'PDL_SIMPLE_ENGINE'});
+	    } else {
+		push(@try, sort keys %$mods);
 	    }
-
-	    push(@try, sort keys %$mods);
 
 	    attempt: for my $engine( @try ) {
 		print "Trying $engine ($mods->{$engine}->{engine})...";
 		my $s;
 		my $a = eval { $mods->{$engine}{module}->can('check')->() };
-		if($@) {
+		if ($@) {
 		    chomp $@;
 		    $s = "$@";
 		} else {
 		    $s = ($a ? "ok" : "nope");
 		}
 		print $s."\n";
-		if($a) {
+		if ($a) {
 		    $last_successful_type = $engine;
 		    last attempt;
 		}
 	    }
-	      unless( $last_successful_type ) {
-		  barf "Sorry, all known plotting engines failed.  Install one and try again.\n";
-	      }
+	    unless ( $last_successful_type ) {
+		barf "Sorry, all known plotting engines failed.  Install one and try again.\n";
+	    }
 	}
 	$opt->{engine} = $last_successful_type;
     }

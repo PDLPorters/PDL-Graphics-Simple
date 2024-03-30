@@ -44,18 +44,18 @@ for my $engine (@engines) {
     my $w;
 
     my $module;
-    diag("skipping $engine as unregistered"), next if !$mods->{$engine}; # if didn't register
-    ok( ( ref($mods->{$engine}) eq 'HASH' and ($module = $mods->{$engine}->{module}) ),
+    my $mod_hash = $mods->{$engine};
+    diag("skipping $engine as unregistered"), next if !$mod_hash; # if didn't register
+    ok( ( ref($mod_hash) eq 'HASH' and ($module = $mod_hash->{module}) ),
 	"there is a modules entry for $engine ($module)" );
 
     SKIP: {
-      my $check_ok = eval {${module}->can('check')->(1)};
+      my $check_ok = eval {$module->can('check')->(1)};
       is($@, '', "${module}::check() ran OK");
-      diag "module '$engine' registration hash: ", explain $mods->{$engine};
+      diag "module '$engine' registration hash: ", explain $mod_hash;
 
       unless($check_ok) {
-	  no strict 'refs';
-	  diag qq{Skipping $module: ${"${module}::mod"}->{msg}};
+	  diag qq{Skipping $module: $mod_hash->{msg}};
 	  skip "Skipping tests for engine $engine (not working)", $tests_per_engine - 2;
       }
       $pgplot_ran ||= $engine eq 'pgplot';

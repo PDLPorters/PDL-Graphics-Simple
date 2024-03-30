@@ -23,7 +23,7 @@ our $mod = {
     module=>'PDL::Graphics::Simple::Gnuplot',
     engine => 'PDL::Graphics::Gnuplot',
     synopsis=> 'Gnuplot 2D/3D (versatile; beautiful output)',
-    pgs_version=> '1.010',
+    pgs_api_version=> '1.011',
 };
 eval { require PDL::Graphics::Gnuplot; 1; } and
   PDL::Graphics::Simple::register( 'PDL::Graphics::Simple::Gnuplot' );

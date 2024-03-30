@@ -1,5 +1,6 @@
 - P{GPLOT,Lplot} to read devices using proper API not subprocesses
 - if PDL_SIMPLE_ENGINE in ENV, use ONLY that if engine unspecified
+- each driver module now publishes which $P:G:S::API_VERSION it conforms to
 
 1.010 2024-03-24
 - fix PGPLOT to read devices correctly

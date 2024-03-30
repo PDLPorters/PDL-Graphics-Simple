@@ -25,7 +25,7 @@ our $mod = {
     module=>'PDL::Graphics::Simple::PGPLOT',
     engine => 'PDL::Graphics::PGPLOT::Window',
     synopsis=> 'PGPLOT (venerable but trusted)',
-    pgs_version=> '1.010',
+    pgs_api_version=> '1.011',
 };
 eval { require PDL::Graphics::PGPLOT::Window; 1; } and
   PDL::Graphics::Simple::register( 'PDL::Graphics::Simple::PGPLOT' );

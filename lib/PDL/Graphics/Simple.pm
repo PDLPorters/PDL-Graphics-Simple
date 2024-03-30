@@ -44,7 +44,7 @@ Only a small subset of PDL's complete graphics functionality is
 supported -- each individual plotting module has unique advantages and
 functionality that are beyond what PDL::Graphics::Simple can do.  Only
 2-D plotting is supported.  For 3-D plotting, use
-PDL::Graphics::Gnuplot or PDL::Graphics::Trid directly.
+L<PDL::Graphics::Gnuplot> or L<PDL::Graphics::TriD> directly.
 
 When plotting to a file, the file output is not guaranteed to be
 present until the plot object is destroyed (e.g. by being undefed or
@@ -277,9 +277,10 @@ $VERSION =~ s/_//g;
 ##############################
 # Exporting
 use base 'Exporter';
-our @EXPORT_OK = qw(pgswin plot line points imag hold release erase image );
 our @EXPORT = qw(pgswin line points imag hold release erase);
+our @EXPORT_OK = (@EXPORT, qw(image plot));
 
+our $API_VERSION = '1.011'; # PGS version where that API started
 
 ##############################
 # Configuration
@@ -1409,15 +1410,20 @@ This is the fully qualified package name of the Perl API for the graphics engine
 
 This is a brief string describing the backend
 
-=item pgs_version
+=item pgs_api_version
 
 This is a one-period version number of PDL::Graphics::Simple against which
 the module has been tested.  A warning will be thrown if the version isn't the
-same as C<$PDL::Graphics::Simple::VERSION>.
+same as C<$PDL::Graphics::Simple::API_VERSION>.
+
+That value will only change when the API changes, allowing the modules
+to be released independently, rather than with every version of
+PDL::Graphics::Simple as up to 1.010.
 
 =back
 
 =cut
+
 sub register {
     my $module = shift;
 
@@ -1426,13 +1432,13 @@ sub register {
     barf "PDL::Graphics::Simple::register: tried to register $module\n\t...but $module\::mod wasn't defined.\n"
 	unless defined($mod) and ref($mod) eq 'HASH';;
 
-    for(qw/shortname module engine synopsis pgs_version/) {
-	barf "PDL::Graphics::Simple::register: $module\::mod looks fishy; I give up\n"
+    for(qw/shortname module engine synopsis pgs_api_version/) {
+	barf "PDL::Graphics::Simple::register: $module\::mod looks fishy, no '$_' key found; I give up\n"
 	    unless( defined($mod->{$_}));
     }
 
-    warn "PDL::Graphics::Simple::register: $module is out of date (mod='$mod->{pgs_version}' PGS='$VERSION') - winging it"
-	unless($mod->{pgs_version} eq $VERSION);
+    warn "PDL::Graphics::Simple::register: $module is out of date (mod='$mod->{pgs_api_version}' PGS='$API_VERSION') - winging it"
+	unless($mod->{pgs_api_version} eq $API_VERSION);
 
     $mods->{$mod->{shortname}} = $mod;
 }

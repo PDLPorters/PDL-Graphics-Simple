@@ -26,7 +26,7 @@ our $mod = {
     pgs_api_version=> '1.011',
 };
 eval { require PDL::Graphics::Gnuplot; 1; } and
-  PDL::Graphics::Simple::register( 'PDL::Graphics::Simple::Gnuplot' );
+  PDL::Graphics::Simple::register( $mod );
 
 our $filetypes = {
     ps => ['pscairo','postscript'],

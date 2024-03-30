@@ -28,7 +28,7 @@ our $mod = {
     pgs_api_version=> '1.011',
 };
 eval { require PDL::Graphics::PLplot; 1; } and
-  PDL::Graphics::Simple::register( 'PDL::Graphics::Simple::PLplot' );
+  PDL::Graphics::Simple::register( $mod );
 
 my @DEVICES = qw(
   qtwidget wxwidgets xcairo xwin wingcc

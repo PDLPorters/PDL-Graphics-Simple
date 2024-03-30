@@ -28,7 +28,7 @@ our $mod = {
     pgs_api_version=> '1.011',
 };
 eval { require PDL::Graphics::PGPLOT::Window; 1; } and
-  PDL::Graphics::Simple::register( 'PDL::Graphics::Simple::PGPLOT' );
+  PDL::Graphics::Simple::register( $mod );
 print $@;
 
 ##########

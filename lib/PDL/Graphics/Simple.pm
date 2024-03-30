@@ -1382,15 +1382,14 @@ sub _make_abbrevs {
 
 =for usage
 
- PDL::Graphics::Simple::register( $module_name );
+ PDL::Graphics::Simple::register( \%description );
 
 =for ref
 
 This is the registration mechanism for new driver methods for
 C<PDL::Graphics::Simple>.  Compliant drivers should announce
-themselves at compile time by calling C<register>.  When they do that,
-they should have already defined a package global hash ref, C<$mod>,
-containing the following keys:
+themselves at compile time by calling C<register>, passing
+a hash ref containing the following keys:
 
 =over
 
@@ -1425,21 +1424,15 @@ PDL::Graphics::Simple as up to 1.010.
 =cut
 
 sub register {
-    my $module = shift;
-
-    no strict 'refs';
-    my $mod = ${"${module}::mod"};
-    barf "PDL::Graphics::Simple::register: tried to register $module\n\t...but $module\::mod wasn't defined.\n"
-	unless defined($mod) and ref($mod) eq 'HASH';;
-
-    for(qw/shortname module engine synopsis pgs_api_version/) {
-	barf "PDL::Graphics::Simple::register: $module\::mod looks fishy, no '$_' key found; I give up\n"
-	    unless( defined($mod->{$_}));
+    my $mod = shift;
+    my $module = $mod->{module};
+    barf __PACKAGE__."::register: \\%description from ".caller()." looks fishy, no 'module' key found; I give up\n" unless defined $module;
+    for (qw/shortname engine synopsis pgs_api_version/) {
+	barf __PACKAGE__."::register: \\%description from $module looks fishy, no '$_' key found; I give up\n"
+	    unless defined $mod->{$_};
     }
-
-    warn "PDL::Graphics::Simple::register: $module is out of date (mod='$mod->{pgs_api_version}' PGS='$API_VERSION') - winging it"
-	unless($mod->{pgs_api_version} eq $API_VERSION);
-
+    warn __PACKAGE__."::register: $module is out of date (mod='$mod->{pgs_api_version}' PGS='$API_VERSION') - winging it"
+	unless $mod->{pgs_api_version} eq $API_VERSION;
     $mods->{$mod->{shortname}} = $mod;
 }
 

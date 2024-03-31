@@ -114,51 +114,39 @@ sub new {
     }
 
     # Figure the device name and size to feed to PLplot.
-    # size has already been regularized.
     my $conv_tempfile;
     my $dev;
     my @params;
-
     if( $opt->{type} =~ m/^i/i) {
 	## Interactive devices
 	$dev = $mod->{disp_dev};
-	push(@params,  DEV => $dev );
 	if($opt->{output}) {
 	    push(@params, FILE=>$opt->{output});
 	}
-
-
     } else {
 	my $ext;
 	## File devices
-
 	if( $opt->{output} =~ m/\.(\w{2,4})$/ ) {
 	    $ext = $1;
 	} else {
 	    $ext = 'png';
 	    $opt->{output} .= ".png";
 	}
-
-	our $mod;
 	unless(  $filetypes->{$ext}  and  $mod->{devices}->{$filetypes->{$ext}} ) {
 	    ## Have to set up file conversion
 	    my($fh);
-	    ($fh, $conv_tempfile) = tempfile('pgs_pgplot_XXXX');
+	    ($fh, $conv_tempfile) = tempfile('pgs_plplot_XXXX');
 	    close $fh;
 	    unlink $conv_tempfile; # just to be sure...
 	    $conv_tempfile .= ".ps";
 	    $dev = $filetypes->{ps};
-
 	    push(@params, FILE=>$conv_tempfile);
-
 	} else {
 	    $dev = "$filetypes->{$ext}";
 	    push(@params, FILE=>$opt->{output});
 	}
-
-	push(@params, DEV=>$dev);
-
     }
+    push @params, DEV=>$dev;
 
     my $size = PDL::Graphics::Simple::_regularize_size($opt->{size},'px');
     push(@params, PAGESIZE => [ $size->[0], $size->[1] ]);
@@ -176,13 +164,10 @@ sub new {
 			plspause(0);
 			return $w;
     };
-    $pgw = eval { &$creator };
+    $me->{obj} = eval { &$creator };
     print STDERR $@ if($@);
 
-    $me->{creator} = $creator;
-    $me->{obj} = $pgw;
-
-    return bless($me, 'PDL::Graphics::Simple::PLplot');
+    return bless $me;
 }
 
 sub DESTROY {
@@ -263,12 +248,7 @@ our $plplot_methods = {
 	my $b = (xvals(128)/127)**2;
 	plscmap1l( 1, xvals(128)/127, $r, $g, $b, ones(128));
 
-
-
-	my $fill_width = 2;
-	my $cont_color = 0;
-	my $cont_width = 0;
-
+	my ($fill_width, $cont_color, $cont_width) = (2, 0, 0);
 	my $clevel = ((PDL->sequence($nsteps)*(($max - $min)/($nsteps-1))) + $min);
 	my $grid = plAlloc2dGrid($data->[0], $data->[1]);
 	

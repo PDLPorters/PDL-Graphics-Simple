@@ -397,3 +397,5 @@ sub plot {
 	unlink($me->{conv_fn});
     }
 }
+
+1;

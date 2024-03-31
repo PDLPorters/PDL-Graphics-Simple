@@ -417,3 +417,5 @@ sub cmd_location {
   }
   die "Can't locate cmd.exe";
 }
+
+1;

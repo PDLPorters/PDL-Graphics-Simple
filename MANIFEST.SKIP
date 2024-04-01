@@ -1,0 +1,7 @@
+^\.git
+^blib/
+^(MY)?META\.
+^pm_to_blib
+MANIFEST\.SKIP
+\.sw.$
+^Makefile$

@@ -392,8 +392,6 @@ sub _load_types {
   };
 }
 
- 
-
 
 ##############################
 # Plot subroutine

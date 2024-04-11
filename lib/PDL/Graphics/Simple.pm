@@ -322,7 +322,7 @@ sub _list_submods {
 
 for my $module (_list_submods(qw(PDL Graphics Simple))) {
   (my $file = $module) =~ s/::/\//g;
-  eval { require "$file.pm"; $module->import; };
+  require "$file.pm";
 }
 $mod_abbrevs ||= _make_abbrevs($mods); # Deal with abbreviations.
 

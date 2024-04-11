@@ -2,6 +2,7 @@
 - if PDL_SIMPLE_ENGINE in ENV, use ONLY that if engine unspecified
 - each driver module now publishes which $P:G:S::API_VERSION it conforms to
 - PGS::register takes hashref instead of magic var in driver namespace
+- loading driver module not eval-ed
 
 1.010 2024-03-24
 - fix PGPLOT to read devices correctly

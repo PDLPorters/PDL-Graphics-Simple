@@ -19,7 +19,6 @@ jobs:
   ci:
     runs-on: ${{ matrix.os }}
     if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
-    needs: notify
     env:
       PDL_SIMPLE_ENGINE: ${{ matrix.pdl-simple-engine }}
     strategy:
@@ -96,7 +95,7 @@ jobs:
         if: ${{ matrix.pdl-simple-engine == 'pgplot' || matrix.pdl-simple-engine == '' }}
         shell: bash
         run: |
-          $MYPERL -S cpanm -n PDL::Graphics::PGPLOT || ( cat ~/.cpanm/build.log && false )
+          $MYPERL -S cpanm -n PDL PDL::Graphics::PGPLOT || ( cat ~/.cpanm/build.log && false )
       - name: Dump engine module status
         shell: bash
         run: |

@@ -2,7 +2,6 @@ use strict;
 use warnings;
 use PDL::Graphics::Simple;
 use Test::More;
-use File::Temp q/tempfile/;
 use PDL;
 use PDL::Constants qw(PI);
 

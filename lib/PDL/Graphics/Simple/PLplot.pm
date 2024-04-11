@@ -106,8 +106,6 @@ sub new {
     my $opt_in = shift;
     my $opt = { iparse( $new_defaults, $opt_in ) };
 
-    my $pgw;
-
     # Force a recheck on failure, in case the user fixed PLplot.
     unless(check()) {
 	die "$mod->{shortname} appears nonfunctional: $mod->{msg}\n" unless(check(1));
@@ -394,8 +392,6 @@ sub plot {
     }
 
     $me->{obj}->close if($me->{opt}->{type} =~ m/^f/i and !defined($me->{opt}->{multi}));
-
-    my $file = ( ($me->{conv_fn}) ? $me->{conv_fn} : $me->{output} );
 
     if($me->{conv_fn}) {
 	$a = rim($me->{conv_fn});

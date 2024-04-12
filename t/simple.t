@@ -121,7 +121,7 @@ for my $engine (@engines) {
       }
       $pgplot_ran ||= $engine eq 'pgplot';
 
-      eval { $w = PDL::Graphics::Simple->new(engine=>$engine) };
+      eval { $w = PDL::Graphics::Simple->new(engine=>$engine, multi=>[3,2]) };
       is($@, '', "constructor for $engine worked OK");
       isa_ok($w, 'PDL::Graphics::Simple', "constructor for $engine worked OK");
 
@@ -157,15 +157,8 @@ is_deeply \@args, [
       eval { $w->plot(with=>'line', $x10, $x10sqrt,
 		      with=>'bins', $sin10,
 		 {title=>"PDL: $engine engine, line & bin plots"}),
-
       };
       is($@, '', "plot succeeded\n");
-      ask_yn qq{
-Testing $engine engine: You should see a superposed line plot and bin
-plot, with x range from 0 to 9 and yrange from 0 to 9. The two plots
-should have different line styles.}, "line plot looks ok";
-
-
 
 ##############################
 # Error bars plot
@@ -201,9 +194,6 @@ is_deeply \@args, [
 		       {title=>"PDL: $engine engine, error (rel.) & limit (abs.) bars"}
 		 ); };
       is($@, '', "errorbar plot succeeded");
-      ask_yn qq{Testing $engine engine: You should see error bars (symmetric relative to each
-plotted point) and limit bars (asymmetric about each plotted point).}, "errorbars / limitbars OK";
-
 
 ##############################
 # Image & circles plot
@@ -240,10 +230,6 @@ is_deeply \@args, [
 		 );
       };
       is($@, '', "plot succeeded\n");
-      ask_yn qq{Testing $engine engine: You should see a radial 11x11 "target" image
-and some superimposed "circles".  Since the plot is not justified, the
-pixels in the target image should be oblong and the "circles" should
-be ellipses.}, "image and circles plot looks ok";
 
 ##############################
 # Image & circles plot (justified)
@@ -280,10 +266,6 @@ is_deeply \@args, [
 		 );
       };
       is($@, '', "justified image and circles plot succeeded");
-      ask_yn qq{Testing $engine engine: You should see the same plot as before, but
-justified.  superimposed "circles".  Since the plot is justified,
-the pixels in the target image should be square and the "circles" should
-really be circles.}, "justified image and circles plot looks ok";
 
 ##############################
 # Text
@@ -321,11 +303,6 @@ is_deeply \@args, [
 		 );
       };
       is($@, '', "labels plot succeeded" );
-      ask_yn qq{Testing $engine engine: You should see "left-justified" text left
-aligned on x=0, "left-with-spaces" just right of x=1, "centered"
-centered on x=2, ">start with '>'" centered on x=3, and
-"right-justified" right-aligned on x=4.}, "labels plot looks OK";
-
 
 ##############################
 # Log scaling
@@ -351,9 +328,23 @@ is_deeply \@args, [
 }
       eval { $w->plot(with=>'line',$x500,{log=>'y',title=>"PDL: $engine engine, Y=X (semilog)"}); };
       is($@, '', "log scaling succeeded");
-      ask_yn qq{Testing $engine engine: You should see a simple logarithmically scaled plot,
-with appropriate title.}, "log scaled plot looks OK";
 
+      ask_yn qq{
+Testing $engine engine: You should see in a 3x2 grid:
+1) a superposed line plot and bin plot, with x range from 0 to 9 and
+yrange from 0 to 9. The two plots should have different line styles.
+2) error bars (symmetric relative to each plotted point) and limit bars
+(asymmetric about each plotted point).
+3) a radial 11x11 "target" image and some superimposed "circles".
+Since the plot is not justified, the pixels in the target image should
+be oblong and the "circles" should be ellipses.
+4) the same plot as (3), but justified.  superimposed "circles".
+Since the plot is justified, the pixels in the target image should be
+square and the "circles" should really be circles.
+5) "left-justified" text left aligned on x=0, "left-with-spaces" just
+right of x=1, "centered" centered on x=2, ">start with '>'" centered on
+x=3, and "right-justified" right-aligned on x=4.
+6) a simple logarithmically scaled plot, with appropriate title.}, "plots look OK";
 
 ##############################
 # Multiplot

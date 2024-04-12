@@ -75,7 +75,7 @@ sub check {
     }
 
     my $gpw = eval { gpwin() };
-    if($@) {
+    if ($@) {
 	$mod->{ok} = 0;
 	$mod->{msg} = $@;
 	die "PDL::Graphics::Simple: PDL::Graphics::Gnuplot didn't construct properly.\n\t$@";
@@ -83,14 +83,14 @@ sub check {
     $mod->{valid_terms} = $gpw->{valid_terms};
 
     my $okterm = undef;
-    for my $term(@disp_terms){
-	if($mod->{valid_terms}->{$term}) {
+    for my $term (@disp_terms) {
+	if ($mod->{valid_terms}{$term}) {
 	    $okterm = $term;
 	    last;
 	}
     }
 
-    unless( defined $okterm ) {
+    unless ( defined $okterm ) {
 	$mod->{ok} = 0;
 	my $s =  "Gnuplot doesn't seem to support any of the known display terminals:\n    they are: (".join(",",@disp_terms).")\n";
 	$mod->{msg} = $s;
@@ -135,20 +135,20 @@ sub new {
 
     # Do different things for interactive and file types
     if($opt->{type} =~ m/^i/i) {
-	push(@params, "title"=>$opt->{output}) if(defined($opt->{output}));
-
+	push(@params, title=>$opt->{output}) if defined $opt->{output};
 	# Interactive - try known terminals
-	if($mod->{itype}) {
-	    push(@params, (persist=>0)) if( ($disp_opts->{$mod->{itype}} // {})->{persist} );
-	    push(@params, (font=>"=16"));
-	    $gpw = gpwin($mod->{itype}, @params, persist=>0, font=>"=16" );
+	push @params, font=>"=16", dashed=>1;
+	if (my $try = $mod->{itype}) {
+	    $gpw = gpwin($mod->{itype}, @params,
+		($disp_opts->{$try} // {})->{persist} ? (persist=>0) : ()
+	    );
             no warnings 'once';
 	    print $PDL::Graphics::Gnuplot::last_plotcmd;
 	} else {
 	    attempt:for my $try( @disp_terms ) {
-		push(@params, (persist=>0)) if( ($disp_opts->{$try} // {})->{persist} );
-		push(@params, (font=>"=16"));
-		eval { $gpw = gpwin($try, @params, persist=>0, font=>"=16",dashed=>1); };
+		eval { $gpw = gpwin($try, @params,
+		    ($disp_opts->{$try} // {})->{persist} ? (persist=>0) : ()
+		); };
 		last attempt if($gpw);
 	    }
 	    die "Couldn't start a gnuplot interactive window" unless($gpw);

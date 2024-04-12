@@ -34,6 +34,7 @@ my $a = xvals(50); my $sin = sin($a/3);
 my $type = 'line';
 my $me = PDL::Graphics::Simple::_invocant_or_global();
 my @args = PDL::Graphics::Simple::_translate_plot(@$me{qw(held keys)}, PDL::Graphics::Simple::_translate_convenience($type, $a, $sin));
+delete $args[1]{yrange}; # so different sin can't cause spurious fails
 is_deeply \@args, [
   [ 'line 1' ],
   {
@@ -43,7 +44,6 @@ is_deeply \@args, [
     'title' => undef, 'wedge' => '',
     'xlabel' => undef, 'ylabel' => undef,
     'xrange' => [ 0, 49 ],
-    'yrange' => [ '-0.999990206550703', '0.995407957751765' ]
   },
   [
     { 'key' => undef, 'style' => undef, 'width' => undef, 'with' => 'lines' },
@@ -133,6 +133,7 @@ my @args = PDL::Graphics::Simple::_translate_plot(@$w{qw(held keys)},
   with=>'bins', $x10, $sin10,
   {title=>"PDL: $engine engine, line & bin plots"}
 );
+delete $args[1]{yrange}; # so different sin can't cause spurious fails
 is_deeply \@args, [
   [ 'line 1', 'bin 2' ],
   {
@@ -142,7 +143,6 @@ is_deeply \@args, [
     'title' => "PDL: $engine engine, line & bin plots", 'wedge' => '',
     'xlabel' => undef, 'ylabel' => undef,
     'xrange' => [ 0, 9 ],
-    'yrange' => [ '-9.58924274663138', '9.89358246623382' ]
   },
   [
     { 'key' => undef, 'style' => undef, 'width' => undef, 'with' => 'lines' },

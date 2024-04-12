@@ -471,13 +471,13 @@ sub _translate_new {
 
   my $size = _regularize_size($opt->{size},'in');
 
-  my $type = $opt->{type};
-  my $output = $opt->{output};
-  unless($type) {
+  my $type = $ENV{PDL_SIMPLE_OUTPUT} ? 'f' : $opt->{type};
+  my $output = $ENV{PDL_SIMPLE_OUTPUT} || $opt->{output};
+  unless ($type) {
       # Default to file if output looks like a filename; to interactive otherwise.
       $type = (  ($output =~ m/\.(\w{2,4})$/) ? 'f' : 'i'  );
   }
-  unless($type =~ m/^[fi]/i) {
+  unless ($type =~ m/^[fi]/i) {
       barf "$type is not a known output type (must be 'file' or 'interactive')\n";
   }
 
@@ -485,7 +485,7 @@ sub _translate_new {
   $output ||= $type eq 'f' ? "plot.png" : "";
 
   # Hammer it into a '.png' if no suffix is specified
-  if( $opt->{type} =~ m/^f/i   and     $output !~ m/\.(\w{2,4})$/  ) {
+  if ( $type =~ m/^f/i and $output !~ m/\.(\w{2,4})$/ ) {
       $output .= ".png";
   }
 
@@ -1023,20 +1023,19 @@ sub _translate_plot {
   ##############################
   # Deal with context-dependent defaults.
 
+  $po->{xrange}[0] //= $xminmax->[0];
+  $po->{xrange}[1] //= $xminmax->[1];
+  $po->{yrange}[0] //= $yminmax->[0];
+  $po->{yrange}[1] //= $yminmax->[1];
 
-  $po->{xrange}->[0] = $xminmax->[0] unless(defined($po->{xrange}->[0]));
-  $po->{xrange}->[1] = $xminmax->[1] unless(defined($po->{xrange}->[1]));
-  $po->{yrange}->[0] = $yminmax->[0] unless(defined($po->{yrange}->[0]));
-  $po->{yrange}->[1] = $yminmax->[1] unless(defined($po->{yrange}->[1]));
-
-  if($po->{xrange}->[0] == $po->{xrange}->[1]) {
-      $po->{xrange}->[0] -= 0.5;
-      $po->{xrange}->[1] += 0.5;
+  if($po->{xrange}[0] == $po->{xrange}[1]) {
+      $po->{xrange}[0] -= 0.5;
+      $po->{xrange}[1] += 0.5;
   }
 
-  if($po->{yrange}->[0] == $po->{yrange}->[1]) {
-      $po->{yrange}->[0] -= 0.5;
-      $po->{yrange}->[1] += 0.5;
+  if($po->{yrange}[0] == $po->{yrange}[1]) {
+      $po->{yrange}[0] -= 0.5;
+      $po->{yrange}[1] += 0.5;
   }
 
   if($po->{logaxis} =~ m/x/  and  ($po->{xrange}->[0] <= 0   or  $po->{xrange}->[1] <= 0) ) {
@@ -1512,6 +1511,12 @@ See L</new>.
 
 If this is a meaningful thing for the given engine, this value will be
 used instead of the driver module guessing.
+
+=head2 PDL_SIMPLE_OUTPUT
+
+Overrides passed-in arguments, to create the given file as output.
+If it contains C<%d>, then with Gnuplot that will be replaced with an
+increasing number (an amazing L<PDL::Graphics::Gnuplot> feature).
 
 =head1 TO-DO
 

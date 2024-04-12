@@ -4,6 +4,7 @@
 - PGS::register takes hashref instead of magic var in driver namespace
 - loading driver module not eval-ed
 - PDL_SIMPLE_DEVICE in env replaces driver guessing
+- PDL_SIMPLE_OUTPUT in env overrides input parameters
 
 1.010 2024-03-24
 - fix PGPLOT to read devices correctly

@@ -99,9 +99,7 @@ sub new {
     my $pkg = shift;
     my $opt_in = shift;
     my $opt = { iparse( $new_defaults, $opt_in ) };
-    
-    my $pgw;
-    
+
     # Force a recheck on failure, in case the user fixed PGPLOT.
     # Also loads PDL::Graphics::PGPLOT::Window.
     unless(check()) {
@@ -114,7 +112,7 @@ sub new {
     my $dev;
 
     if( $opt->{type} =~ m/^i/i) {
-	$dev = ( defined($opt->{output}) ? $opt->{output} : "" ) . "/$mod->{disp_dev}";
+	$dev = ( $opt->{output} // "" ) . "/$mod->{disp_dev}";
     } else {
 	my $ext;
 
@@ -129,8 +127,7 @@ sub new {
 	    $opt->{output} .= ".png";
 	}
 
-	our $mod;
-	unless(  $filetypes->{$ext}  and  $mod->{devices}->{$filetypes->{$ext}} ) {
+	unless ($filetypes->{$ext}  and  $mod->{devices}{$filetypes->{$ext}}) {
 	    my($fh);
 	    ($fh, $conv_tempfile) = tempfile('pgs_pgplot_XXXX');
 	    close $fh;
@@ -142,21 +139,15 @@ sub new {
 	}
     }
 
-    ($ENV{'PGPLOT_PS_WIDTH'}) = $opt->{size}->[0] * 1000;
-    ($ENV{'PGPLOT_PS_HEIGHT'}) = $opt->{size}->[1] * 1000;
+    $ENV{PGPLOT_PS_WIDTH} = $opt->{size}[0] * 1000;
+    $ENV{PGPLOT_PS_HEIGHT} = $opt->{size}[1] * 1000;
 
-    my @params = ( 'size => [$opt->{size}->[0], $opt->{size}->[1] ]' );
-    if( defined($opt->{multi}) ) {
-	push(@params, 'nx=>$opt->{multi}->[0]');
-	push(@params, 'ny=>$opt->{multi}->[1]');
-    }
-    
-    my $creator = 'pgwin( $dev, { '. join(",", @params) . '} );';
-    $pgw = eval $creator;
-    print STDERR $@ if($@);
-    
+    my @params = (size => [@{$opt->{size}}[0,1]]);
+    push @params, nx=>$opt->{multi}[0], ny=>$opt->{multi}[1]
+      if defined $opt->{multi};
+    my $pgw = pgwin( $dev, { @params } );
     my $me = { opt=>$opt, conv_fn=>$conv_tempfile, obj=>$pgw };
-    return bless($me, 'PDL::Graphics::Simple::PGPLOT');
+    return bless $me;
 }
 
 our $pgplot_methods = {
@@ -375,12 +366,8 @@ sub DESTROY {
 
     if (defined $me->{type} and $me->{type} =~ m/^f/i) {
 	eval { $me->{obj}->close; };
-
-	my $file = ( ($me->{conv_fn}) ? $me->{conv_fn} : $me->{output} );
 	if ($me->{conv_fn}) {
-	    my $a;
-	    $a = rim($me->{conv_fn}) ;
-	    wim($a, $me->{opt}->{output}); 
+	    wim(rim($me->{conv_fn}), $me->{opt}{output});
 	    unlink($me->{conv_fn});
 	}
     }

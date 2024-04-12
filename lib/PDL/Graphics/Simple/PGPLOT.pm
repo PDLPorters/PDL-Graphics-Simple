@@ -30,54 +30,54 @@ our $mod = {
 PDL::Graphics::Simple::register( $mod );
 print $@;
 
-##########
-# PDL::Graphics::Simple::PGPLOT::check
-# Checker
-
 sub check {
-    my $force = shift;
-    $force = 0 unless(defined($force));
-    return $mod->{ok} unless( $force or !defined($mod->{ok}) );
-    eval { require PDL::Graphics::PGPLOT::Window; PDL::Graphics::PGPLOT::Window->import; };
-    if ($@) {
-	$mod->{ok} = 0;
-	$mod->{msg} = $@;
-	return 0;
+  my $force = shift;
+  $force = 0 unless(defined($force));
+  return $mod->{ok} unless( $force or !defined($mod->{ok}) );
+  eval { require PDL::Graphics::PGPLOT::Window; PDL::Graphics::PGPLOT::Window->import; };
+  if ($@) {
+    $mod->{ok} = 0;
+    $mod->{msg} = $@;
+    return 0;
+  }
+  # Module loaded OK, now try to extract valid devices from it
+  eval {
+    my %devs;
+    PGPLOT::pgqndt(my $n);
+    for my $count (1..$n) {
+      PGPLOT::pgqdt($count,my ($type,$v1,$descr,$v2,$v3));
+      $devs{substr $type, 1} = 1; # chop off "/"
     }
-    # Module loaded OK, now try to extract valid devices from it
-    eval {
-      my %devs;
-      PGPLOT::pgqndt(my $n);
-      for my $count (1..$n) {
-        PGPLOT::pgqdt($count,my ($type,$v1,$descr,$v2,$v3));
-        $devs{substr $type, 1} = 1; # chop off "/"
-      }
-      $mod->{devices} = \%devs;
-    };
-    if ($@) {
-	$mod->{ok} = 0;
-	$mod->{msg} = $@;
-	return 0;
-    }
-    delete $mod->{disp_dev};
+    $mod->{devices} = \%devs;
+  };
+  if ($@) {
+    $mod->{ok} = 0;
+    $mod->{msg} = $@;
+    return 0;
+  }
+  delete $mod->{disp_dev};
+  if ($ENV{PGPLOT_DEV}) {
+    $mod->{disp_dev} = $ENV{PGPLOT_DEV};
+  } else {
     TRY:for my $try(qw/XWINDOW XSERVE CGW GW/){
-	if($mod->{devices}->{$try}) { 
-	    $mod->{disp_dev} = $try;
-	    last TRY;
-	}
+      if($mod->{devices}->{$try}) { 
+        $mod->{disp_dev} = $try;
+        last TRY;
+      }
     }
-    unless(exists($mod->{disp_dev})){
-	$mod->{ok} = 0;
-	$mod->{msg} = "Couldn't identify a PGPLOT display device -- giving up.\n";
-	return 0;
-    }
-    unless( $mod->{devices}->{'VCPS'} ) {
-	$mod->{ok} = 0;
-	$mod->{msg} = "Couldn't find the VCPS file-output device -- giving up.\n";
-	return 0;
-    }
-    $mod->{ok} = 1;
-    return 1;
+  }
+  unless(exists($mod->{disp_dev})){
+    $mod->{ok} = 0;
+    $mod->{msg} = "Couldn't identify a PGPLOT display device -- giving up.\n";
+    return 0;
+  }
+  unless( $mod->{devices}{VCPS} ) {
+    $mod->{ok} = 0;
+    $mod->{msg} = "Couldn't find the VCPS file-output device -- giving up.\n";
+    return 0;
+  }
+  $mod->{ok} = 1;
+  return 1;
 }
 
 ##########

@@ -286,34 +286,6 @@ the pixels in the target image should be square and the "circles" should
 really be circles.}, "justified image and circles plot looks ok";
 
 ##############################
-# Log scaling
-{
-my @args = PDL::Graphics::Simple::_translate_plot(@$w{qw(held keys)},
-  with=>'line',$x500,$x500,{log=>'y',title=>"PDL: $engine engine, Y=X (semilog)"}
-);
-is_deeply \@args, [
-  [ 'line 1' ],
-  {
-    'bounds' => undef, 'crange' => undef,
-    'justify' => 0, 'legend' => undef,
-    'logaxis' => 'y', 'oplot' => 0,
-    'title' => "PDL: $engine engine, Y=X (semilog)", 'wedge' => '',
-    'xlabel' => undef, 'ylabel' => undef,
-    'xrange' => [ 1, 500 ], 'yrange' => [ 1, 500 ]
-  },
-  [
-    { 'key' => undef, 'style' => undef, 'width' => undef, 'with' => 'lines' },
-    $x500, $x500,
-  ]
-];
-}
-      eval { $w->plot(with=>'line',$x500,{log=>'y',title=>"PDL: $engine engine, Y=X (semilog)"}); };
-      is($@, '', "log scaling succeeded");
-      ask_yn qq{Testing $engine engine: You should see a simple logarithmically scaled plot,
-with appropriate title.}, "log scaled plot looks OK";
-
-
-##############################
 # Text
 {
 my @args = PDL::Graphics::Simple::_translate_plot(@$w{qw(held keys)},
@@ -353,6 +325,34 @@ is_deeply \@args, [
 aligned on x=0, "left-with-spaces" just right of x=1, "centered"
 centered on x=2, ">start with '>'" centered on x=3, and
 "right-justified" right-aligned on x=4.}, "labels plot looks OK";
+
+
+##############################
+# Log scaling
+{
+my @args = PDL::Graphics::Simple::_translate_plot(@$w{qw(held keys)},
+  with=>'line',$x500,$x500,{log=>'y',title=>"PDL: $engine engine, Y=X (semilog)"}
+);
+is_deeply \@args, [
+  [ 'line 1' ],
+  {
+    'bounds' => undef, 'crange' => undef,
+    'justify' => 0, 'legend' => undef,
+    'logaxis' => 'y', 'oplot' => 0,
+    'title' => "PDL: $engine engine, Y=X (semilog)", 'wedge' => '',
+    'xlabel' => undef, 'ylabel' => undef,
+    'xrange' => [ 1, 500 ], 'yrange' => [ 1, 500 ]
+  },
+  [
+    { 'key' => undef, 'style' => undef, 'width' => undef, 'with' => 'lines' },
+    $x500, $x500,
+  ]
+];
+}
+      eval { $w->plot(with=>'line',$x500,{log=>'y',title=>"PDL: $engine engine, Y=X (semilog)"}); };
+      is($@, '', "log scaling succeeded");
+      ask_yn qq{Testing $engine engine: You should see a simple logarithmically scaled plot,
+with appropriate title.}, "log scaled plot looks OK";
 
 
 ##############################

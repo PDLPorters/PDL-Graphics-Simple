@@ -256,7 +256,7 @@ sub PDL::Graphics::Simple::Prima::Sepia_Palette::apply {
     my $data = shift;
 
     my $crange = $h->{crange};
-    my($min, $max);
+    my ($min, $max);
     if(defined($crange)){
 	($min,$max) = @$crange;
     }
@@ -279,90 +279,87 @@ sub PDL::Graphics::Simple::Prima::Sepia_Palette::apply {
 # the plot type in terms of others.
 sub _load_types {
   $types = {
-    lines => q{ppair::Lines},
+    lines => [ppair::Lines()],
 
-    points => [ map { ppair->can($_)->() } qw/Blobs Triangles Squares Crosses Xs Asterisks/ ],
+    points => [ map ppair->can($_)->(), qw/Blobs Triangles Squares Crosses Xs Asterisks/ ],
 
     bins => sub {
-	my ($me, $plot, $block, $cprops) = @_;
-	my $x = $block->[0];
-	my $x1 = $x->range( [[0],[-1]], [$x->dim(0)], 'e' )->average;
-	my $x2 = $x->range( [[1],[0]],  [$x->dim(0)], 'e' )->average;
-	my $newx = pdl($x1, $x2)->mv(-1,0)->clump(2)->sever;
-	my $y = $block->[1];
-	my $newy = $y->dummy(0,2)->clump(2)->sever;
-	$plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } =
-	    ds::Pair($newx,$newy,plotType=>ppair::Lines(), @$cprops);
+      my ($me, $plot, $block, $cprops) = @_;
+      my $x = $block->[0];
+      my $x1 = $x->range( [[0],[-1]], [$x->dim(0)], 'e' )->average;
+      my $x2 = $x->range( [[1],[0]],  [$x->dim(0)], 'e' )->average;
+      my $newx = pdl($x1, $x2)->mv(-1,0)->clump(2)->sever;
+      my $y = $block->[1];
+      my $newy = $y->dummy(0,2)->clump(2)->sever;
+      $plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } =
+          ds::Pair($newx,$newy,plotType=>ppair::Lines(), @$cprops);
     },
 
     image => sub {
-	my($me, $plot, $data, $cprops, $co) = @_;
-	my ($xmin, $xmax) = $data->[0]->minmax;
-	my $dx = 0.5 * ($xmax-$xmin) / ($data->[0]->dim(0) - (($data->[0]->dim(0)==1) ? 0 : 1));
-	$xmin -= $dx;
-	$xmax += $dx;
-	my ($ymin, $ymax) = $data->[1]->minmax;
-	my $dy = 0.5 * ($ymax-$ymin) / ($data->[0]->dim(1) - (($data->[1]->dim(1)==1) ? 0 : 1));
-	$ymin -= $dy;
-	$ymax += $dy;
-	$plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } =
-	  ds::Grid($data->[2],
-		   x_bounds=>[ $xmin, $xmax ],
-		   y_bounds=>[ $ymin, $ymax ],
-		   plotType=>pgrid::Matrix( palette => bless({crange=>$me->{ipo}->{crange},data=>$data,co=>$co},'PDL::Graphics::Simple::Prima::Sepia_Palette')),
-	  );
-	if(!!$co->{wedge}) {
-	    print STDERR "Color wedges are not supported (yet) in Prima\n";
-	}
+      my ($me, $plot, $data, $cprops, $co, $ipo) = @_;
+      my ($xmin, $xmax) = $data->[0]->minmax;
+      my $dx = 0.5 * ($xmax-$xmin) / ($data->[0]->dim(0) - (($data->[0]->dim(0)==1) ? 0 : 1));
+      $xmin -= $dx;
+      $xmax += $dx;
+      my ($ymin, $ymax) = $data->[1]->minmax;
+      my $dy = 0.5 * ($ymax-$ymin) / ($data->[0]->dim(1) - (($data->[1]->dim(1)==1) ? 0 : 1));
+      $ymin -= $dy;
+      $ymax += $dy;
+      $plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } =
+        ds::Grid($data->[2],
+                 x_bounds=>[ $xmin, $xmax ],
+                 y_bounds=>[ $ymin, $ymax ],
+                 plotType=>pgrid::Matrix( palette => bless({crange=>$me->{ipo}->{crange},data=>$data,co=>$co},'PDL::Graphics::Simple::Prima::Sepia_Palette')),
+        );
+      if(!!$ipo->{wedge}) {
+        print STDERR "Color wedges are not supported (yet) in Prima\n";
+      }
     },
 
     circles => sub {
-      my($me, $plot, $data, $cprops) = @_;
+      my ($me, $plot, $data, $cprops) = @_;
       our $cstash;
       unless(defined($cstash)) {
         my $ang = PDL->xvals(362)*3.14159/180;
-        $cstash = {};
-        $cstash->{c}   = $ang->cos;
-        $cstash->{s}   = $ang->sin;
+        $cstash = {c => $ang->cos, s => $ang->sin};
         $cstash->{s}->slice("361") .= $cstash->{c}->slice("361") .= PDL->pdl(1.1)->acos; # NaN
       }
       my $dr = $data->[2]->flat;
       my $dx = ($data->[0]->flat->dummy(0,1) + $dr->dummy(0,1)*$cstash->{c})->flat;
       my $dy = ($data->[1]->flat->dummy(0,1) + $dr->dummy(0,1)*$cstash->{s})->flat;
       $plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } =
-          ds::Pair( $dx, $dy, plotType=>ppair::Lines(), @$cprops);
+        ds::Pair( $dx, $dy, plotType=>ppair::Lines(), @$cprops);
     },
 
     labels => sub {
-	my($me,$plot,$block,$cprops,$co) = @_;
-	my $x = $block->[0]->flat->sever;
-	my $y = $block->[1]->flat->sever;
-	my @labels = @{$block->[2]};
-	my @lrc = ();
-	for my $i(0..$x->dim(0)-1) {
-	    my $j =0;
-	    if($labels[$i] =~ s/^([\<\|\> ])//) {
-		my $ch = $1;
-		if($ch =~ m/[\|\>]/) {
-		    my $tw = $plot->get_text_width($labels[$i]);
-		    $tw /= 2 if($ch eq '|');
-		    $x->slice("($i)") .=
-			$plot->x->pixels_to_reals(
-			    $plot->x->reals_to_pixels( $x->slice("($i)") ) - $tw
-			);
-		}
-	    }
-	}
-	$plot->dataSets()->{1+keys(%{$plot->dataSets()})} =
-	  ds::Note(
-	      map { pnote::Text($labels[$_],x=>$x->slice("($_)"),y=>$y->slice("($_)")); } (0..$#labels)
-	  );
+      my ($me,$plot,$block,$cprops,$co,$ipo) = @_;
+      my ($x, $y) = map $_->flat->sever, @$block[0,1];
+      my @labels = @{$block->[2]};
+      my @lrc = ();
+      for my $i(0..$x->dim(0)-1) {
+        my $j =0;
+        if($labels[$i] =~ s/^([\<\|\> ])//) {
+          my $ch = $1;
+          if($ch =~ m/[\|\>]/) {
+            my $tw = $plot->get_text_width($labels[$i]);
+            $tw /= 2 if($ch eq '|');
+            $x->slice("($i)") .=
+              $plot->x->pixels_to_reals(
+                $plot->x->reals_to_pixels( $x->slice("($i)") ) - $tw
+              );
+          }
+        }
+      }
+      $plot->dataSets()->{1+keys(%{$plot->dataSets()})} =
+        ds::Note(
+          map pnote::Text($labels[$_],x=>$x->slice("($_)"),y=>$y->slice("($_)")), 0..$#labels
+        );
     },
 
     limitbars => sub {
       # Strategy: make T-errorbars out of the x/y/height data and generate a Line
       # plot.  The T-errorbar width is 4x the LineWidth (+/- 2x).
-      my($me, $plot, $block, $cprops, $co) = @_;
+      my ($me, $plot, $block, $cprops, $co, $ipo) = @_;
       my $x = $block->[0]->flat;
       my $y = $block->[1]->flat;
       my $ylo = $block->[2]->flat;
@@ -380,14 +377,15 @@ sub _load_types {
       $plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } =
           ds::Pair($x,$y,plotType=>$types->{points}->[ ($me->{curvestyle}-1) %(0+@{$types->{points}}) ], @$cprops);
     },
+
     errorbars => sub {
       # Strategy: make T-errorbars out of the x/y/height data and generate a Line
       # plot.  The T-errorbar width is 4x the LineWidth (+/- 2x).
-      my($me, $plot, $block, $cprops, $co) = @_;
+      my ($me, $plot, $block, $cprops, $co, $ipo) = @_;
       my $halfwidth = $block->[2]->flat;
       $block->[2] = $block->[1] - $halfwidth;
       $block->[3] = $block->[1] + $halfwidth;
-      &{$types->{limitbars}}($me, $plot, $block, $cprops, $co);
+      $types->{limitbars}->($me, $plot, $block, $cprops, $co, $ipo);
     },
   };
 }
@@ -520,18 +518,12 @@ sub plot {
 	    ];
 
 	my $type = $types->{$co->{with}};
+	die "$co->{with} is not yet implemented in PDL::Graphics::Simple for Prima.\n"
+	    if !defined $type;
 	if( ref($type) eq 'CODE' ) {
-	    &{$type}($me, $plot, $block, $cprops, $co);
+	    $type->($me, $plot, $block, $cprops, $co, $ipo);
 	} else {
-	    my $pt;
-	    if(ref($type) eq 'ARRAY') {
-		$pt = $type->[ ($me->{curvestyle}-1) % (0+@{$type}) ];
-	    } elsif(!defined($type)) {
-		die "$co->{with} is not yet implemented in PDL::Graphics::Simple for Prima.\n";
-	    } else {
-		$pt = eval $type;
-	    }
-
+	    my $pt = ref($type) eq 'ARRAY' ? $type->[ ($me->{curvestyle}-1) % (0+@{$type}) ] : eval $type;
 	    $plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } = ds::Pair(@$block, plotType => $pt, @$cprops);
 	}
     }

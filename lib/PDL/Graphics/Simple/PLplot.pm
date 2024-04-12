@@ -61,7 +61,7 @@ sub check {
     my $plgDevs = plgDevs();
     $mod->{devices} = {map +($_=>1), keys %$plgDevs};
 
-    if ( my ($good_dev) = grep $mod->{devices}{$_}, @DEVICES ) {
+    if ( my ($good_dev) = $ENV{PDL_SIMPLE_DEVICE} || grep $mod->{devices}{$_}, @DEVICES ) {
 	$mod->{disp_dev} = $good_dev;
     } else {
 	$mod->{ok} = 0;
@@ -246,7 +246,6 @@ our $plplot_methods = {
 	
 	plshades( $data->[2], $xmin, $xmax, $ymin, $ymax, $clevel, $fill_width, $cont_color, $cont_width, 0, 0, \&pltr2, $grid );
 	plFreeGrid($grid);
-	plflush();
 
 	if($ipo->{wedge}) {
 	    # Work around PLplot justify bug
@@ -382,6 +381,7 @@ sub plot {
 	} else {
 	    $me->{obj}->xyplot(@data,PLOTTYPE=>$plpm,%plplot_opts);
 	}
+	plflush();
     }
 
     $me->{obj}->close if $me->{opt}->{type} =~ m/^f/i and !defined($me->{opt}->{multi});

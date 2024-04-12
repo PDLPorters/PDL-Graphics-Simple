@@ -399,10 +399,6 @@ or "interactive" - though only the leading character is checked.  If
 you don't specify either C<type> or C<output> (below), the default is
 "interactive". If you specify only C<output>, the default is "file".
 
-For PGPLOT, if the type is "interactive", the environment variable
-C<PGPLOT_DEV> is set (eg C</NULL>), that will be used as the output
-device.
-
 =item output
 
 This should be a window number or name for interactive plots, or a
@@ -1503,6 +1499,19 @@ option is undefined, then the curve should not be placed into a plot
 legend (if present).  The C<with> option will be one of C<points>,
 C<lines>, C<bins>, C<errorbars>, C<limitbars>, C<circles>
 C<image>, or C<labels>.
+
+=head1 ENVIRONMENT
+
+Setting some environment variables affects operation of the module:
+
+=head2 PDL_SIMPLE_ENGINE
+
+See L</new>.
+
+=head2 PDL_SIMPLE_DEVICE
+
+If this is a meaningful thing for the given engine, this value will be
+used instead of the driver module guessing.
 
 =head1 TO-DO
 

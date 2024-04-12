@@ -83,10 +83,14 @@ sub check {
     $mod->{valid_terms} = $gpw->{valid_terms};
 
     my $okterm = undef;
-    for my $term (@disp_terms) {
-	if ($mod->{valid_terms}{$term}) {
-	    $okterm = $term;
-	    last;
+    if ($ENV{PDL_SIMPLE_DEVICE}) {
+	$okterm = 1;
+    } else {
+	for my $term (@disp_terms) {
+	    if ($mod->{valid_terms}{$term}) {
+		$okterm = $term;
+		last;
+	    }
 	}
     }
 
@@ -136,7 +140,7 @@ sub new {
     # Do different things for interactive and file types
     if($opt->{type} =~ m/^i/i) {
 	push(@params, title=>$opt->{output}) if defined $opt->{output};
-	# Interactive - try known terminals
+	# Interactive - try known terminals unless PDL_SIMPLE_DEVICE given
 	push @params, font=>"=16", dashed=>1;
 	if (my $try = $mod->{itype}) {
 	    $gpw = gpwin($mod->{itype}, @params,
@@ -145,11 +149,17 @@ sub new {
             no warnings 'once';
 	    print $PDL::Graphics::Gnuplot::last_plotcmd;
 	} else {
-	    attempt:for my $try( @disp_terms ) {
-		eval { $gpw = gpwin($try, @params,
+	    if (my $try = $ENV{PDL_SIMPLE_DEVICE}) {
+		$gpw = gpwin($try, @params,
 		    ($disp_opts->{$try} // {})->{persist} ? (persist=>0) : ()
-		); };
-		last attempt if($gpw);
+		);
+	    } else {
+		attempt:for my $try( @disp_terms ) {
+		    eval { $gpw = gpwin($try, @params,
+			($disp_opts->{$try} // {})->{persist} ? (persist=>0) : ()
+		    ); };
+		    last attempt if($gpw);
+		}
 	    }
 	    die "Couldn't start a gnuplot interactive window" unless($gpw);
 	    $mod->{itype} = $gpw->{terminal};

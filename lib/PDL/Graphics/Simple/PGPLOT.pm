@@ -56,8 +56,9 @@ sub check {
     return 0;
   }
   delete $mod->{disp_dev};
-  if ($ENV{PGPLOT_DEV}) {
-    $mod->{disp_dev} = $ENV{PGPLOT_DEV};
+  if ($ENV{PDL_SIMPLE_DEVICE} || $ENV{PGPLOT_DEV}) {
+    $mod->{disp_dev} = $ENV{PDL_SIMPLE_DEVICE} || $ENV{PGPLOT_DEV};
+    $mod->{disp_dev} =~ s#^/+##;
   } else {
     TRY:for my $try(qw/XWINDOW XSERVE CGW GW/){
       if($mod->{devices}->{$try}) { 
@@ -113,7 +114,7 @@ sub new {
     my $dev;
 
     if( $opt->{type} =~ m/^i/i) {
-	$dev = ( defined($opt->{output}) ? $opt->{output} : "" ) . ($ENV{PGPLOT_DEV} || "/$mod->{disp_dev}");
+	$dev = ( defined($opt->{output}) ? $opt->{output} : "" ) . "/$mod->{disp_dev}";
     } else {
 	my $ext;
 

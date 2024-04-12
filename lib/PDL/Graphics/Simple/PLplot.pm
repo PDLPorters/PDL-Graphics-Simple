@@ -52,7 +52,7 @@ sub check {
     return $mod->{ok} unless( $force or !defined($mod->{ok}) );
 
     eval { require PDL::Graphics::PLplot; PDL::Graphics::PLplot->import };
-    if($@) {
+    if ($@) {
 	$mod->{ok} = 0;
 	$mod->{msg} = $@;
 	return 0;
@@ -62,7 +62,7 @@ sub check {
     my $plgDevs = plgDevs();
     $mod->{devices} = {map +($_=>1), keys %$plgDevs};
 
-    if( my ($good_dev) = grep $mod->{devices}{$_}, @DEVICES ) {
+    if ( my ($good_dev) = grep $mod->{devices}{$_}, @DEVICES ) {
 	$mod->{disp_dev} = $good_dev;
     } else {
 	$mod->{ok} = 0;
@@ -115,16 +115,16 @@ sub new {
     my $conv_tempfile;
     my $dev;
     my @params;
-    if( $opt->{type} =~ m/^i/i) {
+    if ( $opt->{type} =~ m/^i/i) {
 	## Interactive devices
 	$dev = $mod->{disp_dev};
-	if($opt->{output}) {
+	if ($opt->{output}) {
 	    push(@params, FILE=>$opt->{output});
 	}
     } else {
 	my $ext;
 	## File devices
-	if( $opt->{output} =~ m/\.(\w{2,4})$/ ) {
+	if ( $opt->{output} =~ m/\.(\w{2,4})$/ ) {
 	    $ext = $1;
 	} else {
 	    $ext = 'png';
@@ -151,20 +151,15 @@ sub new {
 
     my $me = { opt=>$opt, conv_fn=>$conv_tempfile };
 
-    if( defined($opt->{multi}) ) {
+    if ( defined($opt->{multi}) ) {
 	push(@params, SUBPAGES => [$opt->{multi}->[0], $opt->{multi}->[1]] );
 	$me->{multi_cur} = 0;
 	$me->{multi_n} = $opt->{multi}->[0] * $opt->{multi}->[1];
     }
 
-    my $creator = sub { my $w = PDL::Graphics::PLplot->new( @params );
-			plsstrm($w->{STREAMNUMBER});
-			plspause(0);
-			return $w;
-    };
-    $me->{obj} = eval { &$creator };
-    print STDERR $@ if($@);
-
+    $me->{obj} = my $w = PDL::Graphics::PLplot->new( @params );
+    plsstrm($w->{STREAMNUMBER});
+    plspause(0);
     return bless $me;
 }
 
@@ -352,11 +347,11 @@ sub plot {
 
     warn "P::G::S::PLplot: legends not implemented yet for PLplot" if($ipo->{legend});
 
-    while(@_) {
+    while (@_) {
 	my ($co, @data) = @{shift()};
 	my @extra_opts = ();
 
-	if( defined($co->{style}) and $co->{style}) {
+	if ( defined($co->{style}) and $co->{style}) {
 	    $me->{style} = $co->{style};
 	} else {
 	    $me->{style}++;
@@ -365,7 +360,7 @@ sub plot {
 	$ppo->{COLOR}     = $colors[$me->{style}%(@colors)];
 	$ppo->{LINESTYLE} = (($me->{style}-1) % 8) + 1;
 
-	if( defined($co->{width}) and $co->{width} ) {
+	if ( defined($co->{width}) and $co->{width} ) {
 	    $ppo->{LINEWIDTH} = $co->{width};
 	}
 
@@ -375,25 +370,24 @@ sub plot {
 	my %plplot_opts = (%$ppo);
 	my $plplot_opts = \%plplot_opts;
 
-	if($me->{logaxis} =~ m/x/i) {
+	if ($me->{logaxis} =~ m/x/i) {
 	    $data[0] = $data[0]->log10;
 	}
 
-	if($me->{logaxis} =~ m/y/i) {
+	if ($me->{logaxis} =~ m/y/i) {
 	    $data[1] = $data[1]->log10;
 	}
 
-	if(ref($plpm) eq 'CODE') {
-	    &$plpm($me, $ipo, \@data, $plplot_opts);
+	if (ref($plpm) eq 'CODE') {
+	    $plpm->($me, $ipo, \@data, $plplot_opts);
 	} else {
-	    my $str= sprintf('$me->{obj}->xyplot(@data,PLOTTYPE=>"%s",%s);%s',$plpm,'%plplot_opts',"\n");
-	    eval $str;
+	    $me->{obj}->xyplot(@data,PLOTTYPE=>$plpm,%plplot_opts);
 	}
     }
 
-    $me->{obj}->close if($me->{opt}->{type} =~ m/^f/i and !defined($me->{opt}->{multi}));
+    $me->{obj}->close if $me->{opt}->{type} =~ m/^f/i and !defined($me->{opt}->{multi});
 
-    if($me->{conv_fn}) {
+    if ($me->{conv_fn}) {
 	$a = rim($me->{conv_fn});
 	wim($a->mv(1,0)->slice(':,-1:0:-1'), $me->{opt}->{output});
 	unlink($me->{conv_fn});
@@ -409,7 +403,7 @@ sub cmd_location {
   my @path = File::Spec->path();
 
   for my $p(@path) {
-    if(-e "${p}\\cmd.exe") {return "${p}\\cmd.exe"}
+    if (-e "${p}\\cmd.exe") {return "${p}\\cmd.exe"}
   }
   die "Can't locate cmd.exe";
 }

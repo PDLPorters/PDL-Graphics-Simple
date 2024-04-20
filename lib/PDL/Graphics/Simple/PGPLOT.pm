@@ -324,7 +324,9 @@ sub plot {
 sub DESTROY {
     my $me = shift;
 
-    $me->{obj}->release;
+    eval { # in case of global destruction
+      $me->{obj}->release;
+    };
 
     if (defined $me->{type} and $me->{type} =~ m/^f/i) {
 	eval { $me->{obj}->close; };

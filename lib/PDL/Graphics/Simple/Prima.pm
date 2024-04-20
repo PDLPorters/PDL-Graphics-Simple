@@ -155,9 +155,6 @@ sub new {
 
 sub DESTROY {
     my $me = shift;
-
-    print "DESTROYING $me\n";
-
     if($me->{type} =~ m/f/i) {
 	##############################
 	# File-saving code...
@@ -242,8 +239,10 @@ sub DESTROY {
 	}
     }
 
-    $me->{obj}->hide;
-    $me->{obj}->destroy;
+    eval { # in case of global destruction
+      $me->{obj}->hide;
+      $me->{obj}->destroy;
+    };
 }
 
 ##############################
@@ -263,7 +262,7 @@ sub PDL::Graphics::Simple::Prima::Sepia_Palette::apply {
     $min = $data->min unless(defined($min));
     $max = $data->max unless(defined($max));
 
-    my $g = ($min==$max)?$ data->zeroes : (($data->double - $min)/($max-$min))->clip(0,1);
+    my $g = ($min==$max)? $data->zeroes : (($data->double - $min)/($max-$min))->clip(0,1);
     my $r = $g->sqrt;
     my $b = $g*$g;
 
@@ -478,7 +477,6 @@ sub plot {
 	$yscale = ($pmax-$pmin)/($dmax-$dmin);
 
 	my $ratio = $yscale / $xscale;
-	print "ratio=$ratio\n";
 	if($ratio > 1) {
 	    # More Y pixels per datavalue than X pixels.  Hence we expand the Y range.
 	    my $ycen = ($dmax+$dmin)/2;

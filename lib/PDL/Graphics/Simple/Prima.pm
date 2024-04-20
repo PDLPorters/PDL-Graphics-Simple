@@ -253,7 +253,6 @@ sub DESTROY {
 sub PDL::Graphics::Simple::Prima::Sepia_Palette::apply {
     my $h = shift;
     my $data = shift;
-
     my $crange = $h->{crange};
     my ($min, $max);
     if(defined($crange)){
@@ -304,11 +303,16 @@ sub _load_types {
       my $dy = 0.5 * ($ymax-$ymin) / ($data->[0]->dim(1) - (($data->[1]->dim(1)==1) ? 0 : 1));
       $ymin -= $dy;
       $ymax += $dy;
+      my $imdata = $data->[2];
+      if ($imdata->ndims > 2) {
+        $imdata = $imdata->mv(-1,0) if $imdata->dim(0) != 3;
+        $imdata = $imdata->sumover;
+      }
       $plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } =
-        ds::Grid($data->[2],
+        ds::Grid($imdata,
                  x_bounds=>[ $xmin, $xmax ],
                  y_bounds=>[ $ymin, $ymax ],
-                 plotType=>pgrid::Matrix( palette => bless({crange=>$me->{ipo}->{crange},data=>$data,co=>$co},'PDL::Graphics::Simple::Prima::Sepia_Palette')),
+                 plotType=>pgrid::Matrix(palette => bless({crange=>$me->{ipo}{crange},data=>$imdata,co=>$co},'PDL::Graphics::Simple::Prima::Sepia_Palette')),
         );
       if(!!$ipo->{wedge}) {
         print STDERR "Color wedges are not supported (yet) in Prima\n";

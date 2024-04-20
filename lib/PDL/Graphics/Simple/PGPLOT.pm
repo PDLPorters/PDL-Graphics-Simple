@@ -199,7 +199,7 @@ sub plot {
     my %color_opts;
     if (defined($ipo->{crange})) {
 	$color_opts{MIN} = $ipo->{crange}[0] if defined $ipo->{crange}[0];
-	$color_opts{MAX} = $ipo->{crange}[0] if defined $ipo->{crange}[1];
+	$color_opts{MAX} = $ipo->{crange}[1] if defined $ipo->{crange}[1];
     }
 
     my $more = 0;
@@ -247,7 +247,7 @@ sub plot {
 	die "Unknown curve option 'with $co->{with}'!" unless($pgpm);
 	if($pgpm eq 'imag') {
 	    for my $k(keys %color_opts) {
-		$po->{$k} = $color_opts{$k};
+		$ppo->{$k} = $color_opts{$k};
 	    }
 	    $ppo->{ drawwedge } = ($ipo->{wedge} != 0);
 	    # Extract transform parameters from the corners of the image...

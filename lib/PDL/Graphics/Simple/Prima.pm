@@ -253,18 +253,10 @@ sub DESTROY {
 sub PDL::Graphics::Simple::Prima::Sepia_Palette::apply {
     my $h = shift;
     my $data = shift;
-    my $crange = $h->{crange};
-    my ($min, $max);
-    if(defined($crange)){
-	($min,$max) = @$crange;
-    }
-    $min = $data->min unless(defined($min));
-    $max = $data->max unless(defined($max));
-
+    my ($min, $max) = @$h{qw(min max)};
     my $g = ($min==$max)? $data->zeroes : (($data->double - $min)/($max-$min))->clip(0,1);
     my $r = $g->sqrt;
     my $b = $g*$g;
-
     return (pdl($r,$g,$b)*255.999)->floor->mv(-1,0)->rgb_to_color;
 }
 
@@ -310,18 +302,20 @@ sub _load_types {
         $imdata = $imdata->mv(-1,0) if $imdata->dim(0) != 3;
         $dataset = ds::Image($imdata, @bounds);
       } else {
+        my $crange = $me->{ipo}{crange};
+        my ($cmin, $cmax) = defined($crange) ? @$crange : ();
+        $cmin //= $imdata->min;
+        $cmax //= $imdata->max;
+        my $palette = PDL::Graphics::Simple::Prima::Sepia_Palette->new(
+          min => $cmin, max => $cmax, data => $imdata,
+        );
         $dataset = ds::Grid($imdata,
           @bounds,
-          plotType=>pgrid::Matrix(palette => bless(
-            {crange=>$me->{ipo}{crange},data=>$imdata,co=>$co},
-            'PDL::Graphics::Simple::Prima::Sepia_Palette'
-          )),
+          plotType=>pgrid::Matrix($ipo->{wedge} ? () : (palette => $palette)),
         );
+        $plot->color_map($palette) if $ipo->{wedge};
       }
       $plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } = $dataset;
-      if(!!$ipo->{wedge}) {
-        print STDERR "Color wedges are not supported (yet) in Prima\n";
-      }
     },
 
     circles => sub {

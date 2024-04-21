@@ -245,7 +245,7 @@ our $plplot_methods = {
 	my $grid = plAlloc2dGrid($data->[0], $data->[1]);
 	
 	plshades( $data->[2], $xmin, $xmax, $ymin, $ymax, $clevel, $fill_width, $cont_color, $cont_width, 0, 0, \&pltr2, $grid );
-	plFreeGrid($grid);
+	plFree2dGrid($grid);
 
 	if($ipo->{wedge}) {
 	    # Work around PLplot justify bug

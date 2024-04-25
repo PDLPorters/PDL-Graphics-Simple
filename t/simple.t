@@ -23,6 +23,22 @@ eval {
   PDL::Graphics::Simple::_translate_plot(undef, undef, with=>'NEVER_USED');
 };
 like $@, qr/unknown.*NEVER_USED/i;
+eval { PDL::Graphics::Simple::_translate_plot(undef, undef) };
+like $@, qr/at least one argument/;
+eval { PDL::Graphics::Simple::_translate_plot(undef, undef, {}) };
+like $@, qr/at least one argument/;
+for my $bounds (5, {}, [1..3]) {
+  eval { PDL::Graphics::Simple::_translate_plot(undef, undef, pdl(1), {bounds => $bounds}) };
+  like $@, qr/must be a 2-element ARRAY/;
+}
+for my $bounds (5, {}, [1..3], [1,1]) {
+  eval { PDL::Graphics::Simple::_translate_plot(undef, undef, pdl(1), {xrange => $bounds}) };
+  like $@, qr/must be a 2-element ARRAY/;
+  eval { PDL::Graphics::Simple::_translate_plot(undef, undef, pdl(1), {yrange => $bounds}) };
+  like $@, qr/must be a 2-element ARRAY/;
+}
+eval { PDL::Graphics::Simple::_translate_plot(undef, undef, with=>'lines', pdl(1), pdl(1), pdl(1)) };
+like $@, qr/requires 1 or 2 columns/;
 
 ##############################
 # Try the simple engine and convenience interfaces...

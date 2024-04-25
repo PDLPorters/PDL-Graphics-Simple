@@ -329,11 +329,8 @@ sub plot {
     my @arglist = ($po);
 
     for my $block(@_) {
-	my $ct = $curve_types->{  $block->[0]->{with}  };
-
-	unless(defined($ct)) {
-	    die "PDL::Graphics::Simple::Gnuplot: undefined curve type $ct";
-	}
+	die "PDL::Graphics::Simple::Gnuplot: undefined curve type $block->[0]{with}"
+	    unless my $ct = $curve_types->{ $block->[0]{with} };
 	if(ref($ct) eq 'CODE') {
 	    $block = &$ct($me, $po, @$block);
 	} else {

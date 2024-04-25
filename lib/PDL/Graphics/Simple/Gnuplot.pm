@@ -146,8 +146,6 @@ sub new {
 	    $gpw = gpwin($mod->{itype}, @params,
 		($disp_opts->{$try} // {})->{persist} ? (persist=>0) : ()
 	    );
-            no warnings 'once';
-	    print $PDL::Graphics::Gnuplot::last_plotcmd;
 	} else {
 	    if (my $try = $ENV{PDL_SIMPLE_DEVICE}) {
 		$gpw = gpwin($try, @params,

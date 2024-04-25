@@ -18,6 +18,12 @@ sub ask_yn {
     unlike($a, qr/n/i, $label);
 }
 
+# error handling
+eval {
+  PDL::Graphics::Simple::_translate_plot(undef, undef, with=>'NEVER_USED');
+};
+like $@, qr/unknown.*NEVER_USED/i;
+
 ##############################
 # Try the simple engine and convenience interfaces...
 

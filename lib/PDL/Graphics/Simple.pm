@@ -885,7 +885,7 @@ sub _translate_plot {
 
       my $ptn = $plot_type_abbrevs->{ $co2->{with} };
       unless( defined($ptn) and defined($plot_types->{$ptn}) ) {
-          barf "Unknown plot type $ptn\n";
+          barf "Unknown plot type $co2->{with}\n";
       }
 
       if($co2->{key} and !defined($po->{legend})) {

@@ -923,16 +923,13 @@ sub _translate_plot {
     # Check that the PDL arguments all agree in a threading sense.
     # Since at least one type of args has an array ref in there, we have to
     # consider that case as a pseudo-PDL.
-    my @dims = map { ref($_) eq 'ARRAY' ? [ 0+@{$_} ] : [$_->dims] } @args;
-    my $dims;
-    {
-        local $PDL::undefval = 1;
-        $dims = pdl(@dims);
-    }
+    my $dims = do {
+      local $PDL::undefval = 1;
+      pdl([map [ ref($_) eq 'ARRAY' ? 0+@{$_} : $_->dims ], @args]);
+    };
     my $dmax = $dims->mv(1,0)->maximum;
-    unless( ( ($dims==1)  | ($dims==$dmax) )->all ) {
-        barf "Data dimensions do not agree in plot.\n";
-    }
+    barf "Data dimensions do not agree in plot.\n"
+      unless ( ($dims==1) | ($dims==$dmax) )->all;
 
     # Check that the number of dimensions is correct...
     if($dims->dim(0) != $pt->{ndims}->[0]  and
@@ -940,35 +937,36 @@ sub _translate_plot {
         barf "Data dimension (".$dims->dim(0)."-D PDLs) is not correct for plot type $ptn";
     }
 
-    # Accumulate x and y ranges...
-    my $dcorner = pdl(0,0);
-
-    # Deal with half-pixel offset at edges of images
-    if($args[0]->dims > 1) {
-        my $xymat = pdl( [ ($args[0]->slice("(1),(0)")-$args[0]->slice("(0),(0)")),
-                           ($args[0]->slice("(0),(1)")-$args[0]->slice("(0),(0)")) ],
-                         [ ($args[1]->slice("(1),(0)")-$args[1]->slice("(0),(0)")),
-                           ($args[1]->slice("(0),(1)")-$args[1]->slice("(0),(0)")) ]
-            );
+    if (@args > 1) {
+      # Accumulate x and y ranges...
+      my $dcorner = pdl(0,0);
+      # Deal with half-pixel offset at edges of images
+      if ($args[0]->dims > 1) {
+        my $xymat = pdl(
+          [ ($args[0]->slice("(1),(0)")-$args[0]->slice("(0),(0)")),
+            ($args[0]->slice("(0),(1)")-$args[0]->slice("(0),(0)")) ],
+          [ ($args[1]->slice("(1),(0)")-$args[1]->slice("(0),(0)")),
+            ($args[1]->slice("(0),(1)")-$args[1]->slice("(0),(0)")) ]
+        );
         $dcorner = ($xymat x pdl(0.5,0.5)->slice("*1"))->slice("(0)")->abs;
-    }
-
-    for my $t ([0, qr/x/, $xminmax], [1, qr/y/, $yminmax]) {
-      my ($i, $re, $var) = @$t;
-      my @minmax = $args[$i]->minmax;
-      $minmax[0] -= $dcorner->at($i);
-      $minmax[1] += $dcorner->at($i);
-      if ($po->{logaxis} =~ $re) {
-        if ($minmax[1] > 0) {
-          $minmax[0] = $args[0]->where( ($args[0]>0) )->min if $minmax[0] <= 0;
-        } else {
-          $minmax[0] = $minmax[1] = undef;
-        }
       }
-      $var->[0] = $minmax[0] if defined($minmax[0])
-        and ( !defined($var->[0]) or $minmax[0] < $var->[0] );
-      $var->[1] = $minmax[1] if defined($minmax[1])
-        and ( !defined($var->[1]) or $minmax[1] > $var->[1] );
+      for my $t ([0, qr/x/, $xminmax], [1, qr/y/, $yminmax]) {
+        my ($i, $re, $var) = @$t;
+        my @minmax = $args[$i]->minmax;
+        $minmax[0] -= $dcorner->at($i);
+        $minmax[1] += $dcorner->at($i);
+        if ($po->{logaxis} =~ $re) {
+          if ($minmax[1] > 0) {
+            $minmax[0] = $args[0]->where( ($args[0]>0) )->min if $minmax[0] <= 0;
+          } else {
+            $minmax[0] = $minmax[1] = undef;
+          }
+        }
+        $var->[0] = $minmax[0] if defined($minmax[0])
+          and ( !defined($var->[0]) or $minmax[0] < $var->[0] );
+        $var->[1] = $minmax[1] if defined($minmax[1])
+          and ( !defined($var->[1]) or $minmax[1] > $var->[1] );
+      }
     }
 
     # Push the curve block to the list.

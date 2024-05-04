@@ -27,8 +27,6 @@ my %prereq = ( 'PDL'         => 0,
 	       'File::Temp'  => 0,
 	       'Time::HiRes' => 0);
 
-$prereq{'Win32::Process'} = 0.14 if $^O =~ /MSWin32/i;
-
 WriteMakefile(
     NAME                => 'PDL::Graphics::Simple',
     AUTHOR              => ['Craig DeForest <craig@deforest.org>'],

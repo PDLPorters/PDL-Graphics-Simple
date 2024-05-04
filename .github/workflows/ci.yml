@@ -53,11 +53,9 @@ jobs:
             os: windows-latest
             pdl-simple-engine: 'gnuplot'
           # Windows: plplot
-          # NOTE: this currently fails due to a memory error for the wingcc
-          # interactive plotting device.
-          #- perl-version: '5.30'
-          #  os: windows-latest
-          #  pdl-simple-engine: 'plplot'
+          - perl-version: '5.30'
+            os: windows-latest
+            pdl-simple-engine: 'plplot'
 
           # Test all engines on macOS.
           - perl-version: '5.30'

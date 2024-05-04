@@ -932,10 +932,9 @@ sub _translate_plot {
       unless ( ($dims==1) | ($dims==$dmax) )->all;
 
     # Check that the number of dimensions is correct...
-    if($dims->dim(0) != $pt->{ndims}->[0]  and
-       ((!defined($pt->{ndims}->[1])) or ($dims->dim(0) != $pt->{ndims}->[1]))) {
-        barf "Data dimension (".$dims->dim(0)."-D PDLs) is not correct for plot type $ptn";
-    }
+    barf "Data dimension (".$dims->dim(0)."-D PDLs) is not correct for plot type $ptn (all dims=$dims)"
+      if $dims->dim(0) != $pt->{ndims}[0] and
+        (!defined($pt->{ndims}[1]) or $dims->dim(0) != $pt->{ndims}[1]);
 
     if (@args > 1) {
       # Accumulate x and y ranges...

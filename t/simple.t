@@ -20,6 +20,10 @@ sub ask_yn {
 
 # error handling
 eval {
+  PDL::Graphics::Simple::_translate_plot(undef, undef, with=>'line', undef);
+};
+like $@, qr/Undefined value/i;
+eval {
   PDL::Graphics::Simple::_translate_plot(undef, undef, with=>'NEVER_USED');
 };
 like $@, qr/unknown.*NEVER_USED/i;

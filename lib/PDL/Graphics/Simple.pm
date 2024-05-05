@@ -763,6 +763,7 @@ sub _translate_plot {
   barf "plot: requires at least one argument to plot!\n" if !@_;
   barf "plot: requires at least one argument to plot, in addition to plot options\n"
     if @_ == 1 and ref($_[0]) eq 'HASH';
+  barf "Undefined value given in plot args" if grep !defined(), @_;
 
   ##############################
   # Collect plot options.  These can be in a leading or trailing
@@ -906,16 +907,16 @@ sub _translate_plot {
 
     ##############################
     # Now check options
-    barf sprintf("plot style %s requires %d or %d columns; you gave %d\n",$ptn,$pt->{args}->[0],$pt->{args}->[1],0+@args)
+    barf sprintf("plot style %s requires %d or %d columns; you gave %d\n",$ptn,$pt->{args}[0],$pt->{args}[1],0+@args)
       if @args != $pt->{args}[0] and @args != $pt->{args}[1];
 
     # Add an index variable if needed
     if(defined($pt->{args}->[1])) {
-      if( $pt->{args}->[1] - @args == 2 ) {
+      if( $pt->{args}[1] - @args == 2 ) {
         my @dims = ($args[0]->slice(":,:")->dims)[0,1];
         unshift @args, xvals(@dims), yvals(@dims);
       }
-      if( $pt->{args}->[1] - @args == 1 ) {
+      if( $pt->{args}[1] - @args == 1 ) {
         unshift @args, xvals($args[0]);
       }
     }

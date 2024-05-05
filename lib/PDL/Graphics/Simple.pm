@@ -858,9 +858,8 @@ sub _translate_plot {
     my %co2 = %{$curve_options->options( $co )};
 
     my $ptn = $plot_type_abbrevs->{ $co2{with} };
-    unless( defined($ptn) and defined($plot_types->{$ptn}) ) {
-        barf "Unknown plot type $co2{with}\n";
-    }
+    barf "Unknown plot type $co2{with}\n"
+      unless defined($ptn) and defined($plot_types->{$ptn});
 
     if($co2{key} and !defined($po->{legend})) {
         $po->{legend} = 'tl';
@@ -872,8 +871,7 @@ sub _translate_plot {
         push @$keys, $co2{key} // sprintf "%s %d",$ptns,1+@$keys;
     }
 
-    my $pt = $plot_types->{$ptn};
-    $co2{with} = $ptn;
+    my $pt = $plot_types->{$co2{with} = $ptn};
 
     ##############################
     # Snarf up the other arguments.
@@ -892,31 +890,25 @@ sub _translate_plot {
     # PDLs.  But the last argument to a "with=labels" curve
     # needs to be left as an array ref. If it's a PDL we throw
     # an error, since that's a common mistake case.
-    if( $ptn eq 'labels' ) {
-        for my $i(0..$#args-1) {
-            $args[$i] = pdl($args[$i]) unless(UNIVERSAL::isa($args[$i],'PDL'));
-        }
-        if( ref($args[$#args]) ne 'ARRAY' ) {
-            barf "Last argument to 'labels' plot type must be an array ref!";
-        }
+    if ( $ptn eq 'labels' ) {
+      barf "Last argument to 'labels' plot type must be an array ref!"
+        if ref($args[-1]) ne 'ARRAY';
+      $_ = PDL->pdl($_) for grep !UNIVERSAL::isa($_,'PDL'), @args[0..$#args-1];
     } else {
-        for my $i(0..$#args) {
-            $args[$i] = pdl($args[$i]) unless(UNIVERSAL::isa($args[$i],'PDL'));
-        }
+      $_ = PDL->pdl($_) for grep !UNIVERSAL::isa($_,'PDL'), @args;
     }
 
     ##############################
     # Now check options
-    barf sprintf("plot style %s requires %d or %d columns; you gave %d\n",$ptn,$pt->{args}[0],$pt->{args}[1],0+@args)
+    barf "plot style $ptn requires $pt->{args}[0] or $pt->{args}[1] columns; you gave ".(0+@args)."\n"
       if @args != $pt->{args}[0] and @args != $pt->{args}[1];
 
-    # Add an index variable if needed
-    if(defined($pt->{args}->[1])) {
-      if( $pt->{args}[1] - @args == 2 ) {
+    if (defined($pt->{args}[1])) { # Add an index variable if needed
+      if ( $pt->{args}[1] - @args == 2 ) {
         my @dims = ($args[0]->slice(":,:")->dims)[0,1];
         unshift @args, xvals(@dims), yvals(@dims);
       }
-      if( $pt->{args}[1] - @args == 1 ) {
+      if ( $pt->{args}[1] - @args == 1 ) {
         unshift @args, xvals($args[0]);
       }
     }

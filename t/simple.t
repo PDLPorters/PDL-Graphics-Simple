@@ -98,6 +98,7 @@ ok( (  defined($mods) and ref $mods eq 'HASH'  ) ,
 # line & bin
 my $x10 = xvals(10);
 my $x10sqrt = $x10->sqrt * sqrt(10);
+my $x10_12 = $x10 * 0.5;
 my $sin10 = sin($x10)*10;
 # errorbars
 my $x37 = xvals(37);
@@ -156,12 +157,13 @@ for my $engine (@engines) {
 {
 my @args = PDL::Graphics::Simple::_translate_plot(@$w{qw(held keys)},
   with=>'line', $x10, $x10sqrt,
+  with=>'line', $x10, $x10_12,
   with=>'bins', $x10, $sin10,
   {title=>"PDL: $engine engine, line & bin plots"}
 );
 delete $args[1]{yrange}; # so different sin can't cause spurious fails
 is_deeply \@args, [
-  [ 'line 1', 'bin 2' ],
+  [ 'line 1', 'line 2', 'bin 3' ],
   {
     'bounds' => undef, 'crange' => undef,
     'justify' => 0, 'legend' => undef,
@@ -175,12 +177,17 @@ is_deeply \@args, [
     $x10, $x10sqrt,
   ],
   [
+    { 'key' => undef, 'style' => undef, 'width' => undef, 'with' => 'lines' },
+    $x10, $x10_12,
+  ],
+  [
     { 'key' => undef, 'style' => undef, 'width' => undef, 'with' => 'bins' },
     $x10, $sin10,
   ]
 ];
 }
       eval { $w->plot(with=>'line', $x10, $x10sqrt,
+		      with=>'line', $x10, $x10_12,
 		      with=>'bins', $sin10,
 		 {title=>"PDL: $engine engine, line & bin plots"}),
       };
@@ -357,8 +364,8 @@ is_deeply \@args, [
 
       ask_yn qq{
 Testing $engine engine: You should see in a 3x2 grid:
-1) a superposed line plot and bin plot, with x range from 0 to 9 and
-yrange from 0 to 9. The two plots should have different line styles.
+1) 2 superposed line plots and a bin plot, with x range from 0 to 9 and
+yrange from 0 to 9. The three plots should have different line styles.
 2) error bars (symmetric relative to each plotted point) and limit bars
 (asymmetric about each plotted point).
 3) a radial 11x11 "target" image and some superimposed "circles".

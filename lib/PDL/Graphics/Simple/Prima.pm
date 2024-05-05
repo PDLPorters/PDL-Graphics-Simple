@@ -269,7 +269,7 @@ sub PDL::Graphics::Simple::Prima::Sepia_Palette::apply {
 # the plot type in terms of others.
 sub _load_types {
   $types = {
-    lines => [ppair::Lines()],
+    lines => 'Lines',
 
     points => [ map ppair->can($_)->(), qw/Blobs Triangles Squares Crosses Xs Asterisks/ ],
 
@@ -457,10 +457,10 @@ sub plot {
     $plot->x->scaling(sc::Log()) if($ipo->{logaxis}=~ m/x/i);
     $plot->y->scaling(sc::Log()) if($ipo->{logaxis}=~ m/y/i);
 
-    $plot->x->min($ipo->{xrange}->[0]) if(defined($ipo->{xrange}) and defined($ipo->{xrange}->[0]));
-    $plot->x->max($ipo->{xrange}->[1]) if(defined($ipo->{xrange}) and defined($ipo->{xrange}->[1]));
-    $plot->y->min($ipo->{yrange}->[0]) if(defined($ipo->{yrange}) and defined($ipo->{yrange}->[0]));
-    $plot->y->max($ipo->{yrange}->[1]) if(defined($ipo->{yrange}) and defined($ipo->{yrange}->[1]));
+    $plot->x->min($ipo->{xrange}[0]) if(defined($ipo->{xrange}) and defined($ipo->{xrange}[0]));
+    $plot->x->max($ipo->{xrange}[1]) if(defined($ipo->{xrange}) and defined($ipo->{xrange}[1]));
+    $plot->y->min($ipo->{yrange}[0]) if(defined($ipo->{yrange}) and defined($ipo->{yrange}[0]));
+    $plot->y->max($ipo->{yrange}[1]) if(defined($ipo->{yrange}) and defined($ipo->{yrange}[1]));
 
     ##############################
     # I couldn't find a way to scale the plot to make the plot area justified, so
@@ -506,7 +506,7 @@ sub plot {
 	my $co = shift @$block;
 
 	# Parse out curve style (for points type selection)
-	if(defined($co->{style}) and $co->{style}) {
+	if ($co->{style}) {
 	    $me->{curvestyle} = $co->{style};
 	} else {
 	    $me->{curvestyle}++;
@@ -524,7 +524,7 @@ sub plot {
 	if( ref($type) eq 'CODE' ) {
 	    $type->($me, $plot, $block, $cprops, $co, $ipo);
 	} else {
-	    my $pt = ref($type) eq 'ARRAY' ? $type->[ ($me->{curvestyle}-1) % (0+@{$type}) ] : eval $type;
+	    my $pt = ref($type) eq 'ARRAY' ? $type->[ ($me->{curvestyle}-1) % (0+@{$type}) ] : ppair->can($type)->();
 	    $plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } = ds::Pair(@$block, plotType => $pt, @$cprops);
 	}
     }

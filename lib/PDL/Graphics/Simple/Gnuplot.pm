@@ -347,7 +347,7 @@ sub plot {
 		$me->{curvestyle}++;
 	    }
 
-	    $gco->{linetype} = $me->{curvestyle};
+	    $gco->{dashtype} = $gco->{linetype} = $me->{curvestyle};
 	}
 
 	if ( $co->{width} and $co->{with} !~ m/^label/ ) {

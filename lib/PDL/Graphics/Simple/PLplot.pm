@@ -330,7 +330,7 @@ sub plot {
     while (@_) {
 	my ($co, @data) = @{shift()};
 	my @extra_opts = ();
-	if ( $co->{style}) {
+	if (defined $co->{style}) {
 	    $me->{style} = $co->{style};
 	} else {
 	    $me->{style}++;

@@ -234,8 +234,8 @@ sub plot {
     while (@_) {
 	my ($co, @data) = @{shift()};
 	my @extra_opts = ();
-	if ( defined($co->{style}) and $co->{style} ) {
-	    $me->{curvestyle} = int($co->{style});
+	if ( defined $co->{style} ) {
+	    $me->{curvestyle} = int($co->{style}) + 1;
 	} else {
 	    $me->{curvestyle}++;
 	}

@@ -467,7 +467,7 @@ number supported by the backend.  The styles are generally defined by
 a mix of color and dash pattern, but the particular color and dash
 pattern depend on the engine in use. The first 30 styles are
 guaranteed to be distinguishable. This is useful to produce, e.g.,
-multiple traces with the same style.
+multiple traces with the same style. C<0> is a valid value.
 
 =back
 

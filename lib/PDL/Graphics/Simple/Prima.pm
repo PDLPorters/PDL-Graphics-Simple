@@ -506,7 +506,7 @@ sub plot {
 	my $co = shift @$block;
 
 	# Parse out curve style (for points type selection)
-	if ($co->{style}) {
+	if (defined $co->{style}) {
 	    $me->{curvestyle} = $co->{style};
 	} else {
 	    $me->{curvestyle}++;

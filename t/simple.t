@@ -48,7 +48,8 @@ like $@, qr/requires 1 or 2 columns/;
 # Try the simple engine and convenience interfaces...
 
 {
-my @new = PDL::Graphics::Simple::_translate_new();
+my @new = eval {PDL::Graphics::Simple::_translate_new()};
+plan skip_all => 'No plotting engines installed' if $@ =~ /Sorry, all known/;
 # ignore $engine
 is_deeply $new[1], {
   'multi' => undef, 'output' => '', 'size' => [ 8, 6, 'in' ], 'type' => 'i'

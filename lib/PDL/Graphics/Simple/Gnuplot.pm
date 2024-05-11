@@ -325,38 +325,25 @@ sub plot {
     }
 
     my @arglist = $po;
-
     for my $block (@_) {
-	die "PDL::Graphics::Simple::Gnuplot: undefined curve type $block->[0]{with}"
-	    unless my $ct = $curve_types->{ $block->[0]{with} };
-	if (ref($ct) eq 'CODE') {
-	    $block = &$ct($me, $po, @$block);
-	} else {
-	    $block->[0]{with} = $ct;
-	}
-
-	# Now parse out curve options and deal with line styles...
-	my $co = shift @$block;
-	my $gco = { with => $co->{with} };
-
-	unless($co->{with} eq 'labels') {
-
-	    if (defined $co->{style}) {
-		$me->{curvestyle} = $co->{style};
-	    } else {
-		$me->{curvestyle}++;
-	    }
-
-	    $gco->{dashtype} = $gco->{linetype} = $me->{curvestyle};
-	}
-
-	if ( $co->{width} and $co->{with} !~ m/^label/ ) {
-	    $gco->{pointsize} = $co->{width} if $co->{with} =~ m/^points/;
-	    $gco->{linewidth} = $co->{width};
-	}
-	$gco->{legend} = $co->{key} if defined $co->{key};
-
-	push @arglist, $gco, @$block;
+      die "PDL::Graphics::Simple::Gnuplot: undefined curve type $block->[0]{with}"
+        unless my $ct = $curve_types->{ $block->[0]{with} };
+      my @blocks = ref($ct) eq 'CODE' ? $ct->($me, $po, @$block) : [{%{$block->[0]}, with=>$ct}, @$block[1..$#$block]];
+      # Now parse out curve options and deal with line styles...
+      for my $b (@blocks) {
+        my $co = shift @$b;
+        my $gco = { with => $co->{with} };
+        unless($co->{with} eq 'labels') {
+          $me->{curvestyle} = $co->{style} // ($me->{curvestyle}//0)+1;
+          $gco->{dashtype} = $gco->{linetype} = $me->{curvestyle};
+          if ( $co->{width} ) {
+            $gco->{pointsize} = $co->{width} if $co->{with} =~ m/^points/;
+            $gco->{linewidth} = $co->{width};
+          }
+        }
+        $gco->{legend} = $co->{key} if defined $co->{key};
+        push @arglist, $gco, @$b;
+      }
     }
 
     if ($me->{nplots}) {

@@ -21,6 +21,7 @@ package PDL::Graphics::Simple::Prima;
 use strict;
 use warnings;
 use PDL;
+use PDL::ImageND; # for polylines
 use PDL::Options q/iparse/;
 use File::Temp qw/tempfile/;
 
@@ -29,7 +30,7 @@ our $mod = {
     module => 'PDL::Graphics::Simple::Prima',
     engine => 'PDL::Graphics::Prima',
     synopsis => 'Prima (interactive, fast, PDL-specific)',
-    pgs_api_version=> '1.011',
+    pgs_api_version=> '1.012',
 };
 PDL::Graphics::Simple::register( $mod );
 
@@ -246,8 +247,8 @@ sub DESTROY {
 }
 
 ##############################
-# Fake-o apply method makes sepiatone values for input data.
-# We have to mock up an object method to match the style of PDL::Graphics::Prima::Palette,
+# apply method makes sepiatone values for input data,
+# to match the style of PDL::Graphics::Prima::Palette,
 # in order to make the Matrix plot type happy (for 'with=>image').
 @PDL::Graphics::Simple::Prima::Sepia_Palette::ISA = 'PDL::Graphics::Prima::Palette';
 sub PDL::Graphics::Simple::Prima::Sepia_Palette::apply {
@@ -275,14 +276,27 @@ sub _load_types {
 
     bins => sub {
       my ($me, $plot, $block, $cprops) = @_;
-      my $x = $block->[0];
+      my ($x, $y) = @$block;
       my $x1 = $x->range( [[0],[-1]], [$x->dim(0)], 'e' )->average;
       my $x2 = $x->range( [[1],[0]],  [$x->dim(0)], 'e' )->average;
       my $newx = pdl($x1, $x2)->mv(-1,0)->clump(2)->sever;
-      my $y = $block->[1];
       my $newy = $y->dummy(0,2)->clump(2)->sever;
       $plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } =
           ds::Pair($newx,$newy,plotType=>ppair::Lines(), @$cprops);
+    },
+
+    # as of 1.012, known to not draw all its lines(!) overplotting an image
+    # draws them all without an image in same plot() call, or separate plot()
+    contours => sub {
+      my ($me, $plot, $block, $cprops) = @_;
+      my ($vals, $cvals) = @$block;
+      for my $thresh ($cvals->list) {
+        my ($pi, $p) = contour_polylines($thresh, $vals, $vals->ndcoords);
+        next if $pi->at(0) < 0;
+        $plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } =
+          ds::Pair($_->dog, plotType=>ppair::Lines(), @$cprops)
+            for path_segs($pi, $p->mv(0,-1));
+      }
     },
 
     image => sub {

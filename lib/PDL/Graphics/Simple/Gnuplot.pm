@@ -16,6 +16,7 @@ use warnings;
 use File::Temp qw/tempfile/;
 use PDL::Options q/iparse/;
 use PDL;
+use PDL::ImageND; # for polylines
 our $required_PGG_version = 1.5;
 
 our $mod = {
@@ -23,7 +24,7 @@ our $mod = {
     module=>'PDL::Graphics::Simple::Gnuplot',
     engine => 'PDL::Graphics::Gnuplot',
     synopsis=> 'Gnuplot 2D/3D (versatile; beautiful output)',
-    pgs_api_version=> '1.011',
+    pgs_api_version=> '1.012',
 };
 PDL::Graphics::Simple::register( $mod );
 
@@ -258,17 +259,27 @@ our $curve_types = {
 	$co->{with} = "lines";
 	return [ $co, $dx, $dy ];
     },
+    contours => sub {
+      my ($me, $po, $co, $vals, $cvals) = @_;
+      $co->{with} = "lines";
+      $co->{style} //= 6; # so all contour parts have same style, blue somewhat visible against sepia
+      my @out;
+      for my $thresh ($cvals->list) {
+        my ($pi, $p) = contour_polylines($thresh, $vals, $vals->ndcoords);
+        next if $pi->at(0) < 0;
+        push @out, map [ $co, $_->dog ], path_segs($pi, $p->mv(0,-1));
+      }
+      @out;
+    },
     labels => sub {
 	my($me, $po, $co, @data) = @_;
 	my $label_list = ($po->{label} or []);
-
 	for my $i(0..$data[0]->dim(0)-1) {
 	    my $j = "";
 	    my $s = $data[2]->[$i];
 	    if ( $s =~ s/^([\<\>\| ])// ) {
 		$j = $1;
 	    }
-
 	    my @spec = ("$s", at=>[$data[0]->at($i), $data[1]->at($i)]);
 	    push @spec,"left" if $j eq '<';
 	    push @spec,"center" if $j eq '|';
@@ -278,8 +289,7 @@ our $curve_types = {
 	$po->{label} = $label_list;
 	$co->{with} = "labels";
 	return [ $co, [$po->{xrange}[0]], [$po->{yrange}[0]], [""] ];
-    }
-
+    },
 };
 
 sub plot {

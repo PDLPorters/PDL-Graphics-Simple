@@ -25,7 +25,7 @@ our $mod = {
     module=>'PDL::Graphics::Simple::PLplot',
     engine => 'PDL::Graphics::PLplot',
     synopsis=> 'PLplot (nice plotting, sloooow images)',
-    pgs_api_version=> '1.011',
+    pgs_api_version=> '1.012',
 };
 PDL::Graphics::Simple::register( $mod );
 
@@ -196,6 +196,21 @@ our $plplot_methods = {
 			   YERRORBAR=>($data->[3]-$data->[2])->abs,
 			   PLOTTYPE=>'POINTS', SYMBOLSIZE=>0.0001, %$ppo);
 	$me->{obj}->xyplot($data->[0], $data->[1], PLOTTYPE=>'LINE', %$ppo);
+    },
+    contours => sub {
+	my ($me,$ipo,$data,$ppo) = @_;
+	my ($vals, $cvals) = @$data;
+	my $obj = $me->{obj};
+	plsstrm($obj->{STREAMNUMBER});
+	$obj->setparm(%$ppo);
+	pllsty($ppo->{LINESTYLE});
+	plwidth($ppo->{LINEWIDTH}) if $ppo->{LINEWIDTH};
+	my ($nx,$ny) = $vals->dims;
+	$obj->_setwindow;
+	$obj->_drawlabels;
+	my $grid = plAlloc2dGrid($vals->xvals, $vals->yvals);
+	plcont($vals, 1, $nx, 1, $ny, $cvals, \&pltr2, $grid);
+	plFree2dGrid($grid);
     },
     image => sub {
 	my ($me,$ipo,$data,$ppo) = @_;

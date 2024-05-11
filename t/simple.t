@@ -392,11 +392,13 @@ is_deeply $new[1], {
       eval { $w=PDL::Graphics::Simple->new(engine=>$engine, multi=>[2,2]); };
       is($@, '', "Multiplot declaration was OK");
       $w->image( $r9,{wedge=>1} ); $w->image( $r9minus,{wedge=>1} );
-      $w->image( $s9 );            $w->image( $xyr9 );
+      $w->plot(with=>'image', $r9, with=>'contours', $r9, {j=>1});
+      $w->image( $xyr9 );
       ask_yn qq{Testing $engine engine: You should see two bullseyes across the top (one in
-negative print), a gradient at bottom left, and an RGB blur (if supported
-by the engine - otherwise a modified gradient) at bottom right.  The top two
-panels should have colorbar wedges to the right of the image.}, "multiplot OK";
+negative print), a bullseye with contours at bottom left, and an RGB
+blur (if supported by the engine - otherwise a modified gradient) at
+bottom right.  The top two panels should have colorbar wedges to the
+right of the image.}, "multiplot OK";
     }
 }
 

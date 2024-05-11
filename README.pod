@@ -528,6 +528,11 @@ as they are interpreted as 8 bits per plane colour values. E.g.:
   $image_data = rpic( 'my-image.png' )->mv(0,-1); # need RGB 3-dim last
   $w->image( $image_data );
 
+=item contours
+
+As of 1.012. Draws contours. Takes a 2-D array of values, as (width x
+height), and optionally a 1-D vector of contour values.
+
 =item labels
 
 This places text annotations on the plot.  It requires three input
@@ -555,7 +560,7 @@ equivalent to C<plot> except it sets the plot option C<oplot>,
 so that the plot will be overlain on the previous one.
 
 =cut
-=head2 line, points, image, imag
+=head2 line, points, image, imag, cont
 
 =for usage
 
@@ -581,6 +586,8 @@ C<imag> is even more DWIMMy for PGPLOT users or PDL Book readers:
 it accepts up to three non-hash arguments at the start of the
 argument list.  The second and third are taken to be values for
 the C<crange> plot option.
+
+C<cont> resembles the PGPLOT function.
 
 =cut
 =head2 erase

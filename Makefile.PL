@@ -23,7 +23,7 @@ FOO
     return $text;
 }
 
-my %prereq = ( 'PDL'         => 0,
+my %prereq = ( 'PDL'         => '2.089', # contour_polylines
 	       'File::Temp'  => 0,
 	       'Time::HiRes' => 0);
 

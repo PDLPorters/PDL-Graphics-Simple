@@ -25,7 +25,7 @@ our $mod = {
     module=>'PDL::Graphics::Simple::PGPLOT',
     engine => 'PDL::Graphics::PGPLOT::Window',
     synopsis=> 'PGPLOT (venerable but trusted)',
-    pgs_api_version=> '1.011',
+    pgs_api_version=> '1.012',
 };
 PDL::Graphics::Simple::register( $mod );
 print $@;
@@ -167,6 +167,7 @@ our $pgplot_methods = {
 	$me->{obj}->errb($data->[0],$data->[1], $z, $z, -($data->[2]-$data->[1]), $data->[3]-$data->[1], $ppo);
     },
     'image'  => 'imag',
+    'contours' => 'cont',
     'circles'=> sub { 
 	my ($me,$ipo,$data,$ppo) = @_;
 	$ppo->{filltype}='outline';

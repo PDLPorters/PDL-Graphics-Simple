@@ -887,7 +887,7 @@ sub _translate_plot {
                       ref $_[0] eq 'ARRAY'
                       )
         )  {
-        push(@args, shift );
+        push @args, shift;
     }
 
 
@@ -1032,7 +1032,7 @@ sub oplot {
 	$h = $_[$#_];
     } else {
 	$h = {};
-	push(@_, $h);
+	push @_, $h;
     }
     $h->{replot} = 1;
 
@@ -1094,19 +1094,19 @@ sub _convenience_plot {
   $me->{obj}->plot(@args);
 }
 
-sub line    { _convenience_plot( 'line',   @_ ); }
+sub line { _convenience_plot( 'line',   @_ ); }
 *PDL::lines  = *lines = *PDL::line   = \&line;
 
-sub bins    { _convenience_plot( 'bins',   @_ ); }
+sub bins { _convenience_plot( 'bins',   @_ ); }
 *PDL::bins   = \&bins;
 
-sub points  { _convenience_plot( 'points', @_ ); }
+sub points { _convenience_plot( 'points', @_ ); }
 *PDL::points = \&points;
 
-sub image   { _convenience_plot( 'image',  @_, {called_from_imag=>1}); }
+sub image { _convenience_plot( 'image',  @_, {called_from_imag=>1}); }
 # Don't PDL-namespace image since it's so different from imag.
 
-sub cont    { _convenience_plot( 'contours', @_ ); }
+sub cont { _convenience_plot( 'contours', @_ ); }
 
 sub _translate_imag {
   my $me = &_invocant_or_global;
@@ -1120,13 +1120,13 @@ sub _translate_imag {
   }
   # Try to put the crange into the plot options, if they are present
   unless( ref($_[$#_]) eq 'HASH' ) {
-    push(@_, {} );
+    push @_, {};
   }
   $_[$#_]->{crange} = $crange;
   ($me, $data, @_, {called_from_imag=>1});
 }
 
-sub imag    { _convenience_plot( 'image',  &_translate_imag ); }
+sub imag { _convenience_plot( 'image',  &_translate_imag ); }
 *PDL::imag = \&imag;
 
 =head2 erase
@@ -1287,7 +1287,7 @@ sub _make_abbrevs {
     for my $k(keys %$hash) {
 	my $s = $k;
 	while(length($s)) {
-	    push(@{$ab{$s}},$k);
+	    push @{$ab{$s}},$k;
 	    chop $s;
 	}
     }

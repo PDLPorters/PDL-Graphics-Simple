@@ -231,7 +231,6 @@ sub plot {
     # call) but if we end up doing so, it should go here.  The linestyle and color
     # are curve options that are autoincremented each curve.
     my %ppo = ();
-    my $ppo = \%ppo;
     while (@_) {
 	my ($co, @data) = @{shift()};
 	my @extra_opts = ();
@@ -240,17 +239,15 @@ sub plot {
 	} else {
 	    $me->{curvestyle}++;
 	}
-	$ppo->{ color } = $me->{curvestyle}-1 % 7 + 1;
-	$ppo->{ linestyle } = ($me->{curvestyle}-1) % 5 + 1;
-	$ppo->{ linewidth } = int($co->{width}) if $co->{width};
+	$ppo{ color } = $me->{curvestyle}-1 % 7 + 1;
+	$ppo{ linestyle } = ($me->{curvestyle}-1) % 5 + 1;
+	$ppo{ linewidth } = int($co->{width}) if $co->{width};
 	our $pgplot_methods;
 	my $pgpm = $pgplot_methods->{$co->{with}};
 	die "Unknown curve option 'with $co->{with}'!" unless($pgpm);
 	if($pgpm eq 'imag') {
-	    for my $k(keys %color_opts) {
-		$ppo->{$k} = $color_opts{$k};
-	    }
-	    $ppo->{ drawwedge } = ($ipo->{wedge} != 0);
+	    @ppo{keys %color_opts} = values %color_opts;
+	    $ppo{ drawwedge } = ($ipo->{wedge} != 0);
 	    # Extract transform parameters from the corners of the image...
 	    my $xcoords = shift(@data);
 	    my $ycoords = shift(@data);
@@ -277,13 +274,9 @@ sub plot {
 	$data[0] = $data[0]->log10 if $me->{logaxis} =~ m/x/i;
 	$data[1] = $data[1]->log10 if $me->{logaxis} =~ m/y/i;
 	if (ref $pgpm eq 'CODE') {
-	    $pgpm->($me, $ipo, \@data, $ppo);
+	    $pgpm->($me, $ipo, \@data, \%ppo);
 	} else {
-	    $me->{obj}->$pgpm(@data,$ppo);
-	}
-	unless($pgpm eq 'imag') {
-	    $ppo->{linestyle}++;
-	    $ppo->{color}++;
+	    $me->{obj}->$pgpm(@data,\%ppo);
 	}
 	$me->{obj}->hold;
     }

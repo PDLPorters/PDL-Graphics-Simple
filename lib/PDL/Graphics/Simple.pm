@@ -988,7 +988,10 @@ sub _translate_plot {
     my ($r, $var) = @$t;
     $po->{$r}[0] //= $var->[0];
     $po->{$r}[1] //= $var->[1];
-    if($po->{$r}[0] == $po->{$r}[1]) {
+    my $defined_range_vals = grep defined, @{$po->{$r}}[0,1];
+    next if !$defined_range_vals;
+    barf "got 1 defined value for '$r'" if $defined_range_vals < 2;
+    if ($po->{$r}[0] == $po->{$r}[1]) {
       $po->{$r}[0] -= 0.5;
       $po->{$r}[1] += 0.5;
     }

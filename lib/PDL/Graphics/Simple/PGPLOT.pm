@@ -222,9 +222,9 @@ sub plot {
 	    $ipo->{yrange} = [ map log10($_), @{$ipo->{yrange}}[0,1] ];
 	}
 	$me->{obj}->release;
-	$me->{obj}->env(@{$ipo->{xrange}}, @{$ipo->{yrange}}, $po);
+	my @range_vals = (@{$ipo->{xrange}}, @{$ipo->{yrange}});
+	$me->{obj}->env(@range_vals, $po) if grep defined, @range_vals;
     }
-    $me->{obj}->hold;
 
     # ppo is "post-plot options", which are really a mix of plot and curve options.  
     # Currently we don't parse any plot options into it (they're handled by the "env"
@@ -255,7 +255,6 @@ sub plot {
 	    my $datum_sci = [$xcoords->at(0,0), $ycoords->at(0,0)];
 	    my $t1 = ($xcoords->slice("(-1),(0)") - $xcoords->slice("(0),(0)")) / ($xcoords->dim(0)-1);
 	    my $t2 = ($xcoords->slice("(0),(-1)") - $xcoords->slice("(0),(0)")) / ($xcoords->dim(1)-1);
-	    
 	    my $t4 = ($ycoords->slice("(-1),(0)") - $ycoords->slice("(0),(0)")) / ($ycoords->dim(0)-1);
 	    my $t5 = ($ycoords->slice("(0),(-1)") - $ycoords->slice("(0),(0)")) / ($ycoords->dim(1)-1);
 	    my $transform = pdl(
@@ -274,9 +273,9 @@ sub plot {
 	$data[0] = $data[0]->log10 if $me->{logaxis} =~ m/x/i;
 	$data[1] = $data[1]->log10 if $me->{logaxis} =~ m/y/i;
 	if (ref $pgpm eq 'CODE') {
-	    $pgpm->($me, $ipo, \@data, \%ppo);
+	  $pgpm->($me, $ipo, \@data, \%ppo);
 	} else {
-	    $me->{obj}->$pgpm(@data,\%ppo);
+	  $me->{obj}->$pgpm(@data,\%ppo);
 	}
 	$me->{obj}->hold;
     }

@@ -309,8 +309,8 @@ sub plot {
     my $ppo = {};
 
     $ppo->{TITLE}  = $ipo->{title}   if(defined($ipo->{title}));
-    $ppo->{XLAB}   = $ipo->{xtitle}  if(defined($ipo->{xtitle}));
-    $ppo->{YLAB}   = $ipo->{ytitle}  if(defined($ipo->{ytitle}));
+    $ppo->{XLAB}   = $ipo->{xlabel}  if(defined($ipo->{xlabel}));
+    $ppo->{YLAB}   = $ipo->{ylabel}  if(defined($ipo->{ylabel}));
     $ppo->{ZRANGE} = $ipo->{crange}  if(defined($ipo->{crange}));
 
     unless( $ipo->{oplot} ) {
@@ -353,8 +353,9 @@ sub plot {
 	$ppo->{COLOR}     = $colors[$me->{style}%(@colors)];
 	$ppo->{LINESTYLE} = (($me->{style}-1) % 8) + 1;
 	$ppo->{LINEWIDTH} = $co->{width} if $co->{width};
-	die "Unknown curve option 'with $co->{with}'!"
-	  unless my $plpm = $plplot_methods->{$co->{with}};
+	my $with = $co->{with};
+	die "Unknown curve option 'with $with'!"
+	  unless my $plpm = $plplot_methods->{$with};
 	$data[0] = $data[0]->log10 if $me->{logaxis} =~ m/x/i;
 	$data[1] = $data[1]->log10 if $me->{logaxis} =~ m/y/i;
 	if (ref($plpm) eq 'CODE') {

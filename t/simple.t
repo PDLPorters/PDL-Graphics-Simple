@@ -61,7 +61,7 @@ like $@, qr/requires 1 or 2 columns/;
 my $a = xvals(50); my $sin = sin($a/3);
 my $type = 'line';
 my $me = PDL::Graphics::Simple::_invocant_or_global();
-my @args = PDL::Graphics::Simple::_translate_plot(@$me{qw(held keys)}, PDL::Graphics::Simple::_translate_convenience($type, $a, $sin));
+my @args = PDL::Graphics::Simple::_translate_plot(@$me{qw(held keys)}, PDL::Graphics::Simple::_translate_convenience($type, $a, $sin, {xlabel=>"Abscissa", ylabel=>"Ordinate"}));
 delete $args[1]{yrange}; # so different sin can't cause spurious fails
 is_deeply \@args, [
   [ 'line 1' ],
@@ -70,7 +70,7 @@ is_deeply \@args, [
     'justify' => 0, 'legend' => undef,
     'logaxis' => '', 'oplot' => 0,
     'title' => undef, 'wedge' => '',
-    'xlabel' => undef, 'ylabel' => undef,
+    xlabel=>"Abscissa", ylabel=>"Ordinate",
     'xrange' => [ 0, 49 ],
   },
   [
@@ -79,12 +79,12 @@ is_deeply \@args, [
   ]
 ];
 }
-eval { $a = xvals(50); lines $a sin($a/3) };
+eval { $a = xvals(50); lines $a sin($a/3), {xlabel=>"Abscissa", ylabel=>"Ordinate"} };
 plan skip_all => 'No plotting engines installed' if $@ =~ /Sorry, all known/;
 is($@, '', "simple lines plot succeeded");
 ok( defined($PDL::Graphics::Simple::global_object), "Global convenience object got spontaneously set" );
 ask_yn q{  test>  $a = xvals(50); lines $a sin($a/3);
-You should see a sine wave...}, "convenience plot OK";
+You should see a sine wave, X and Y axes labelled: }, "convenience plot OK";
 
 eval { erase };
 is($@, '', 'erase worked');

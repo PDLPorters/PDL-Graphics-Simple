@@ -193,8 +193,8 @@ sub plot {
     my $ipo = shift;
     my $po = {};
     $po->{title} =  $ipo->{title}    if(defined($ipo->{title}));
-    $po->{xtitle}=  $ipo->{xtitle}   if(defined($ipo->{xtitle}));
-    $po->{ytitle}=  $ipo->{ytitle}   if(defined($ipo->{ytitle}));
+    $po->{xtitle}=  $ipo->{xlabel}   if(defined($ipo->{xlabel}));
+    $po->{ytitle}=  $ipo->{ylabel}   if(defined($ipo->{ylabel}));
     $po->{justify}= $ipo->{justify}  if(defined($ipo->{justify})); 
 
     my %color_opts;

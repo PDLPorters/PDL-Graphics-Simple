@@ -439,16 +439,18 @@ sub plot {
 					   rely      => 1.0 - (1 + int($pno / $me->{multi}->[0]))/$me->{multi}->[1],
 					   relheight => 1.0/$me->{multi}->[1],
 					   anchor    => 'sw'});
+	    $plot->titleFont(size => 12);
+
 	    $me->{next_plotno}++;
 	} else {
 	    # No multiplot - just instantiate a plot (and destroy any widgets from earlier)
-	    map { $_->destroy } @{$me->{widgets}};
+	    $_->destroy for @{$me->{widgets}};
 	    $me->{widgets} = [];
 	    $plot = $me->{obj}->insert('Plot',
 				       pack=>{fill=>'both',expand=>1}
 		);
+	    $plot->titleFont(size => 14);
 	}
-
     }
 
     push(@{$me->{widgets}}, $plot);

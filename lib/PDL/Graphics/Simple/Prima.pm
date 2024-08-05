@@ -400,7 +400,6 @@ sub _load_types {
   };
 }
 
-
 ##############################
 # Plot subroutine
 #
@@ -510,7 +509,7 @@ sub plot {
     ##############################
     # Rubber meets the road -- loop over data blocks and
     # ship out each curve to the appropriate dispatcher in the $types table
-    for my $block(@_) {
+    for my $block (@_) {
 	my $co = shift @$block;
 
 	# Parse out curve style (for points type selection)
@@ -526,10 +525,11 @@ sub plot {
 	    lineWidth    => $co->{width} || 1
 	    ];
 
-	my $type = $types->{$co->{with}};
-	die "$co->{with} is not yet implemented in PDL::Graphics::Simple for Prima.\n"
+	my $with = $co->{with};
+	my $type = $types->{$with};
+	die "$with is not yet implemented in PDL::Graphics::Simple for Prima.\n"
 	    if !defined $type;
-	if( ref($type) eq 'CODE' ) {
+	if ( ref($type) eq 'CODE' ) {
 	    $type->($me, $plot, $block, $cprops, $co, $ipo);
 	} else {
 	    my $pt = ref($type) eq 'ARRAY' ? $type->[ ($me->{curvestyle}-1) % (0+@{$type}) ] : ppair->can($type)->();
@@ -537,7 +537,7 @@ sub plot {
 	}
     }
 
-    if($me->{type} !~ m/f/i) {
+    if ($me->{type} !~ m/f/i) {
 	$plot->show;
 	$plot->unlock;
     } else {

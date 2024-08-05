@@ -1370,11 +1370,11 @@ translated and passed through to that working plotting module.
 PDL::Graphics::Simple calls are dispatched in a two-step process. The
 main module curries the arguments, parsing them into a regularized
 form and carrying out DWIM optimizations. The regularized arguments
-are passed to subclasses that translate them into the APIs of their
-respective plot engines.  The subclasses are very simple and implement
+are passed to implementation classes that translate them into the APIs of their
+respective plot engines.  The classes are very simple and implement
 only a few methods, outlined below.  They are intended only to be
 called by the PDL::Graphics::Simple driver, which limits the need for
-argument processing, currying, and parsing. The subclasses are thus
+argument processing, currying, and parsing. The classes are thus
 responsible only for converting the regularized parameters to plot
 calls in the form expected by their corresponding plot modules.
 
@@ -1386,7 +1386,7 @@ non-object-oriented interface easier to implement since the main
 interface modules are in one place and can access the global object
 easily.
 
-=head2 Interface subclass methods
+=head2 Interface class methods
 
 Each interface module supports the following methods:
 
@@ -1457,9 +1457,7 @@ The hash in the curve block contains the curve options for that
 particular curve.  They are all set to have reasonable default values.
 The values passed in are C<with> and C<key>.  If the C<legend>
 option is undefined, then the curve should not be placed into a plot
-legend (if present).  The C<with> option will be one of C<points>,
-C<lines>, C<bins>, C<errorbars>, C<limitbars>, C<circles>
-C<image>, or C<labels>.
+legend (if present).
 
 =head1 ENVIRONMENT
 

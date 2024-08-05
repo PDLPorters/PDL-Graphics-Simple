@@ -12,10 +12,6 @@
 ##
 #
 
-# Still to do:
-#	- file output
-
-
 package PDL::Graphics::Simple::Prima;
 
 use strict;
@@ -124,8 +120,6 @@ sub new {
     my $opt_in = shift;
     $opt_in = {} unless(defined($opt_in));
     my $opt = { iparse($new_defaults, $opt_in) };
-
-
     unless( check() ) {
 	die "$mod->{shortname} appears nonfunctional: $mod->{msg}\n" unless(check(1));
     }
@@ -349,7 +343,7 @@ sub _load_types {
 
     labels => sub {
       my ($me,$plot,$block,$cprops,$co,$ipo) = @_;
-      my ($x, $y) = map $_->flat->sever, @$block[0,1];
+      my ($x, $y) = map $_->flat->copy, @$block[0,1]; # copy as mutate below
       my @labels = @{$block->[2]};
       my @lrc = ();
       for my $i(0..$x->dim(0)-1) {

@@ -168,6 +168,7 @@ our $pgplot_methods = {
     },
     'image'  => 'imag',
     'contours' => 'cont',
+    fits => 'fits_imag',
     'circles'=> sub { 
 	my ($me,$ipo,$data,$ppo) = @_;
 	$ppo->{filltype}='outline';
@@ -245,6 +246,10 @@ sub plot {
 	our $pgplot_methods;
 	my $pgpm = $pgplot_methods->{$co->{with}};
 	die "Unknown curve option 'with $co->{with}'!" unless($pgpm);
+	my @ppo_added;
+	if ($pgpm eq 'fits_imag') {
+	  $ppo{$_} = $po->{$_} for @ppo_added = grep defined $po->{$_}, qw(justify title);
+	}
 	if($pgpm eq 'imag') {
 	    @ppo{keys %color_opts} = values %color_opts;
 	    $ppo{ drawwedge } = ($ipo->{wedge} != 0);
@@ -277,6 +282,7 @@ sub plot {
 	} else {
 	  $me->{obj}->$pgpm(@data,\%ppo);
 	}
+	delete @ppo{@ppo_added} if @ppo_added;
 	$me->{obj}->hold;
     }
 

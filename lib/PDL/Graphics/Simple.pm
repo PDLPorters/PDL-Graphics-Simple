@@ -694,6 +694,11 @@ as they are interpreted as 8 bits per plane colour values. E.g.:
 As of 1.012. Draws contours. Takes a 2-D array of values, as (width x
 height), and optionally a 1-D vector of contour values.
 
+=item fits
+
+As of 1.012. Displays an image from an ndarray with a FITS header.
+Uses C<CUNIT[12]> etc to make X & Y axes including labels.
+
 =item labels
 
 This places text annotations on the plot.  It requires three input
@@ -744,6 +749,7 @@ our $plot_types = {
   errorbars => { args=>[2,3], ndims=>[1]   },
   limitbars => { args=>[3,4], ndims=>[1]   },
   image     => { args=>[1,3], ndims=>[2,3] },
+  fits      => { args=>[1],   ndims=>[2,3] },
   contours  => { args=>[1,2], ndims=>[2]   },
   labels    => { args=>[3],   ndims=>[1]   },
 };
@@ -760,6 +766,32 @@ $curve_options->synonyms( {
   name=>'key'
 });
 $curve_options->incremental(0);
+
+sub _fits_convert {
+  my ($data, $opts) = @_;
+  eval "use PDL::Transform";
+  barf "PDL::Graphics::Simple: couldn't load PDL::Transform for 'with fits' option: $@" if $@;
+  barf "PDL::Graphics::Simple: 'with fits' needs an image, RGB triplet, or RGBA quad\n" unless $data->ndims==2 || ($data->ndims==3 && ($data->dim(2)==4 || $data->dim(2)==3 || $data->dim(2)==1));
+  my $h = $data->gethdr;
+  barf "PDL::Graphics::Simple: 'with fits' expected a FITS header\n"
+    unless $h && ref $h eq 'HASH' && !grep !$h->{$_}, qw(NAXIS NAXIS1 NAXIS2);
+  # Now update plot options to set the axis labels, if they haven't been updated already...
+  my %new_opts = %$opts;
+  for ([qw(xlabel CTYPE1 X CUNIT1 (pixels))],
+    [qw(ylabel CTYPE2 Y CUNIT2 (pixels))],
+  ) {
+    my ($label, $type, $typel, $unit, $unitdef) = @$_;
+    next if defined $new_opts{$label};
+    $new_opts{$label} = join(" ",
+      $h->{$type} || $typel,
+      $h->{$unit} ? "($h->{$unit})" : $unitdef
+    );
+  }
+  my ($xcoords, $ycoords) = ndcoords(map $data->dim($_), 0,1)->apply(t_fits($h, {ignore_rgb=>1}))->mv(0,-1)->dog;
+  $new_opts{xrange} = [$xcoords->minmax] if !grep defined, @{$new_opts{xrange}};
+  $new_opts{yrange} = [$ycoords->minmax] if !grep defined, @{$new_opts{yrange}};
+  ('image', \%new_opts, $xcoords, $ycoords);
+}
 
 sub _translate_plot {
   my ($held, $keys) = (shift, shift);

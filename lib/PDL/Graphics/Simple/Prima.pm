@@ -456,6 +456,15 @@ sub plot {
     push(@{$me->{widgets}}, $plot);
     $me->{last_plot} = $plot;
 
+    for my $block (@_) {
+      my $co = $block->[0];
+      if ($co->{with} eq 'fits') {
+	($co->{with}, my $new_opts, my @coords) = PDL::Graphics::Simple::_fits_convert($block->[1], $ipo);
+	$block = [ $co, @coords, $block->[1] ];
+	@$ipo{keys %$new_opts} = values %$new_opts;
+      }
+    }
+
     ## Set global plot options: titles, axis labels, and ranges.
     $plot->hide;
     $plot->lock;

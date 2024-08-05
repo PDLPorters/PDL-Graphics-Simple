@@ -354,6 +354,13 @@ sub plot {
 	$ppo->{LINESTYLE} = (($me->{style}-1) % 8) + 1;
 	$ppo->{LINEWIDTH} = $co->{width} if $co->{width};
 	my $with = $co->{with};
+	if ($with eq 'fits') {
+	  ($with, my $new_opts, my @coords) = PDL::Graphics::Simple::_fits_convert($data[0], $ipo);
+	  unshift @data, @coords;
+	  $ppo->{XLAB} = delete $new_opts->{xlabel};
+	  $ppo->{YLAB} = delete $new_opts->{ylabel};
+	  $me->{obj}{BOX} = [ @{$new_opts->{xrange}}[0,1], @{$new_opts->{yrange}}[0,1] ];
+	}
 	die "Unknown curve option 'with $with'!"
 	  unless my $plpm = $plplot_methods->{$with};
 	$data[0] = $data[0]->log10 if $me->{logaxis} =~ m/x/i;

@@ -271,6 +271,7 @@ our $curve_types = {
       }
       @out;
     },
+    fits => 'fits',
     labels => sub {
 	my($me, $po, $co, @data) = @_;
 	my $label_list = ($po->{label} or []);

@@ -457,7 +457,7 @@ sub _translate_new {
           last attempt;
         }
       }
-      barf "Sorry, all known plotting engines failed.  Install one and try again.\n"
+      barf "Sorry, all known plotting engines failed. Install one and try again"
         unless $last_successful_type;
     }
     $opt->{engine} = $last_successful_type;
@@ -465,7 +465,7 @@ sub _translate_new {
 
   my $engine = $mod_abbrevs->{lc($opt->{engine})};
   unless(defined($engine) and defined($mods->{$engine})) {
-      barf "$opt->{engine} is not a known plotting engine. Use PDL::Graphics::Simple::show() for a list. ";
+      barf "$opt->{engine} is not a known plotting engine. Use PDL::Graphics::Simple::show() for a list";
   }
   $last_successful_type = $opt->{engine};
 
@@ -478,7 +478,7 @@ sub _translate_new {
       $type = (  ($output =~ m/\.(\w{2,4})$/) ? 'f' : 'i'  );
   }
   unless ($type =~ m/^[fi]/i) {
-      barf "$type is not a known output type (must be 'file' or 'interactive')\n";
+      barf "$type is not a known output type (must be 'file' or 'interactive')";
   }
 
   # Default to 'plot.png'  if no output is specified.
@@ -492,7 +492,7 @@ sub _translate_new {
   # Error-check multi
   if( defined($opt->{multi}) ) {
       if(  ref($opt->{multi}) ne 'ARRAY'  or  @{$opt->{multi}} != 2  ) {
-          barf "PDL::Graphics::Simple::new: 'multi' option requires a 2-element ARRAY ref\n";
+          barf "PDL::Graphics::Simple::new: 'multi' option requires a 2-element ARRAY ref";
       }
       $opt->{multi}[0] ||= 1;
       $opt->{multi}[1] ||= 1;
@@ -771,9 +771,9 @@ sub _fits_convert {
   my ($data, $opts) = @_;
   eval "use PDL::Transform";
   barf "PDL::Graphics::Simple: couldn't load PDL::Transform for 'with fits' option: $@" if $@;
-  barf "PDL::Graphics::Simple: 'with fits' needs an image, RGB triplet, or RGBA quad\n" unless $data->ndims==2 || ($data->ndims==3 && ($data->dim(2)==4 || $data->dim(2)==3 || $data->dim(2)==1));
+  barf "PDL::Graphics::Simple: 'with fits' needs an image, RGB triplet, or RGBA quad" unless $data->ndims==2 || ($data->ndims==3 && ($data->dim(2)==4 || $data->dim(2)==3 || $data->dim(2)==1));
   my $h = $data->gethdr;
-  barf "PDL::Graphics::Simple: 'with fits' expected a FITS header\n"
+  barf "PDL::Graphics::Simple: 'with fits' expected a FITS header"
     unless $h && ref $h eq 'HASH' && !grep !$h->{$_}, qw(NAXIS NAXIS1 NAXIS2);
   # Now update plot options to set the axis labels, if they haven't been updated already...
   my %new_opts = %$opts;
@@ -798,8 +798,8 @@ sub _translate_plot {
 
   ##############################
   # Trap some simple errors
-  barf "plot: requires at least one argument to plot!\n" if !@_;
-  barf "plot: requires at least one argument to plot, in addition to plot options\n"
+  barf "plot: requires at least one argument to plot!" if !@_;
+  barf "plot: requires at least one argument to plot, in addition to plot options"
     if @_ == 1 and ref($_[0]) eq 'HASH';
   barf "Undefined value given in plot args" if grep !defined(), @_;
 
@@ -833,7 +833,7 @@ sub _translate_plot {
   ### bounds is a synonym for xrange/yrange together.
   ### (dcm likes it)
   if (defined($po->{bounds})) {
-    barf "Bounds option must be a 2-element ARRAY ref containing (xrange, yrange)\n"
+    barf "Bounds option must be a 2-element ARRAY ref containing (xrange, yrange)"
       if !ref($po->{bounds}) or ref($po->{bounds}) ne 'ARRAY' or @{$po->{bounds}} != 2;
     for my $t ([0,'xrange'], [1, 'yrange']) {
       my ($i, $r) = @$t;
@@ -845,7 +845,7 @@ sub _translate_plot {
   }
 
   for my $r (grep defined($po->{$_}), qw(xrange yrange)) {
-    barf "Invalid ".(uc substr $r, 0, 1)." range (must be a 2-element ARRAY ref with differing values)\n"
+    barf "Invalid ".(uc substr $r, 0, 1)." range (must be a 2-element ARRAY ref with differing values)"
       if !ref($po->{$r}) or ref($po->{$r}) ne 'ARRAY' or @{$po->{$r}} != 2
         or $po->{$r}[0] == $po->{$r}[1];
   }
@@ -856,7 +856,7 @@ sub _translate_plot {
 
   if( length($po->{logaxis}) ) {
       if($po->{logaxis} =~ m/[^xyXY]/) {
-          barf "logaxis must be X, Y, or XY (case insensitive)\n";
+          barf "logaxis must be X, Y, or XY (case insensitive)";
       }
       $po->{logaxis} =~ tr/XY/xy/;
       $po->{logaxis} =~ s/yx/xy/;
@@ -896,7 +896,7 @@ sub _translate_plot {
     my %co2 = %{$curve_options->options( $co )};
 
     my $ptn = $plot_type_abbrevs->{ $co2{with} };
-    barf "Unknown plot type $co2{with}\n"
+    barf "Unknown plot type $co2{with}"
       unless defined($ptn) and defined($plot_types->{$ptn});
 
     if($co2{key} and !defined($po->{legend})) {
@@ -938,7 +938,7 @@ sub _translate_plot {
 
     ##############################
     # Now check options
-    barf "plot style $ptn requires $pt->{args}[0] or $pt->{args}[1] columns; you gave ".(0+@args)."\n"
+    barf "plot style $ptn requires $pt->{args}[0] or $pt->{args}[1] columns; you gave ".(0+@args)
       if @args != $pt->{args}[0] and @args != $pt->{args}[1];
 
     if ($ptn eq 'contours' and @args == 1) {
@@ -967,7 +967,7 @@ sub _translate_plot {
         pdl([map [ ref($_) eq 'ARRAY' ? 0+@{$_} : $_->dims ], @args]);
       };
       my $dmax = $dims->mv(1,0)->maximum;
-      barf "Data dimensions do not agree in plot.\n"
+      barf "Data dimensions do not agree in plot: $dims vs max=$dmax"
         unless ( ($dims==1) | ($dims==$dmax) )->all;
 
       # Check that the number of dimensions is correct...
@@ -1108,7 +1108,7 @@ C<cont> resembles the PGPLOT function.
 sub _translate_convenience {
   my $type = shift;
   my @args = @_;
-  barf "Not enough args to PDL::Graphics::Simple::$type()\n" if( @args < 1 );
+  barf "Not enough args to PDL::Graphics::Simple::$type()" if( @args < 1 );
   if( ref($args[0]) eq 'HASH' ) {
     if( ref($args[1]) eq 'HASH' ) {
       $args[1]->{with} = $type;
@@ -1185,7 +1185,7 @@ our $global_object;
 sub erase {
     my $me = shift;
     if(defined($me)) {
-	barf "PDL::Graphics::Simple::erase: no arguments, please.";
+	barf "PDL::Graphics::Simple::erase: no arguments, please";
     }
     if(defined($global_object)) {
 	undef $global_object;
@@ -1216,7 +1216,7 @@ sub hold {
     } elsif(defined($global_object)) {
 	$global_object->{held}=1;
     } else {
-	barf "Can't hold a nonexistent window!\n";
+	barf "Can't hold a nonexistent window!";
     }
 }
 
@@ -1244,7 +1244,7 @@ sub release {
     } elsif(defined($global_object)) {
 	$global_object->{held} = 0;
     } else {
-	barf "Can't release a nonexistent window!\n";
+	barf "Can't release a nonexistent window!";
     }
 }
 
@@ -1292,19 +1292,19 @@ sub _regularize_size {
     my $unit = shift;
 
     $unit =~ tr/A-Z/a-z/;
-    barf "size specifier unit '$unit' is unrecognized\n" unless($units->{$unit});
+    barf "size specifier unit '$unit' is unrecognized" unless($units->{$unit});
 
     unless(ref($size)) {
 	$size = [ $size, $size, 'in' ];
     } elsif(ref($size) ne 'ARRAY') {
-	barf "size option requires an ARRAY ref or scalar\n";
+	barf "size option requires an ARRAY ref or scalar";
     }
-    barf "size array must have at least one element\n" unless(@{$size});
+    barf "size array must have at least one element" unless(@{$size});
     $size->[1] = $size->[0]     if(@{$size}==1);
     $size->[2] = 'in'           if(@{$size}==2);
-    barf "size array can have at most three elements\n" if(@{$size}>3);
-    barf "size array unit '$unit' is unrecognized\n" unless($units->{$unit});
-    barf "new: size must be nonnegative\n" unless( $size->[0] > 0   and   $size->[1] > 0 );
+    barf "size array can have at most three elements" if(@{$size}>3);
+    barf "size array unit '$unit' is unrecognized" unless($units->{$unit});
+    barf "new: size must be nonnegative" unless( $size->[0] > 0   and   $size->[1] > 0 );
 
     my $ret = [];
     $ret->[0] = $size->[0] / $units->{$size->[2]} * $units->{$unit};
@@ -1380,9 +1380,9 @@ PDL::Graphics::Simple as up to 1.010.
 sub register {
     my $mod = shift;
     my $module = $mod->{module};
-    barf __PACKAGE__."::register: \\%description from ".caller()." looks fishy, no 'module' key found; I give up\n" unless defined $module;
+    barf __PACKAGE__."::register: \\%description from ".caller()." looks fishy, no 'module' key found; I give up" unless defined $module;
     for (qw/shortname engine synopsis pgs_api_version/) {
-	barf __PACKAGE__."::register: \\%description from $module looks fishy, no '$_' key found; I give up\n"
+	barf __PACKAGE__."::register: \\%description from $module looks fishy, no '$_' key found; I give up"
 	    unless defined $mod->{$_};
     }
     warn __PACKAGE__."::register: $module is out of date (mod='$mod->{pgs_api_version}' PGS='$API_VERSION') - winging it"

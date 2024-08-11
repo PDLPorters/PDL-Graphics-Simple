@@ -47,7 +47,6 @@ our $disp_opts = {
     windows=>{persist=>0}
 };
 
-
 ##########
 # PDL::Graphics::Simple::Gnuplot::check
 # Checker
@@ -270,6 +269,13 @@ our $curve_types = {
         push @out, map [ $co, $_->dog ], path_segs($pi, $p->mv(0,-1));
       }
       @out;
+    },
+    polylines => sub {
+      my ($me, $po, $co, $xy, $pen) = @_;
+      $co->{with} = "lines";
+      $co->{style} //= 6; # so all polylines have same style, blue somewhat visible against sepia
+      my $pi = $pen->eq(0)->which;
+      map [ $co, $_->dog ], path_segs($pi, $xy->mv(0,-1));
     },
     fits => 'fits',
     labels => sub {

@@ -293,6 +293,15 @@ sub _load_types {
       }
     },
 
+    polylines => sub {
+      my ($me, $plot, $block, $cprops) = @_;
+      my ($xy, $pen) = @$block;
+      my $pi = $pen->eq(0)->which;
+      $plot->dataSets()->{ 1+keys(%{$plot->dataSets()}) } =
+        ds::Pair($_->dog, plotType=>ppair::Lines(), @$cprops)
+          for path_segs($pi, $xy->mv(0,-1));
+    },
+
     image => sub {
       my ($me, $plot, $data, $cprops, $co, $ipo) = @_;
       my ($xmin, $xmax) = $data->[0]->minmax;

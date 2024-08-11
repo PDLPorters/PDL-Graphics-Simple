@@ -151,6 +151,7 @@ sub new {
 }
 
 our $pgplot_methods = {
+    polylines => 'lines',
     'lines'  => 'line',
     'bins'   => 'bin',
     'points' => 'points',

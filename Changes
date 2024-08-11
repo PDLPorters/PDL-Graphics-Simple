@@ -1,4 +1,4 @@
-- add "contours", "fits" plot types
+- add "contours", "fits", "polylines" plot types
 
 1.011 2024-04-22
 - P{GPLOT,Lplot} to read devices using proper API not subprocesses

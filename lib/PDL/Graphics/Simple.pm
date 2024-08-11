@@ -699,6 +699,17 @@ height), and optionally a 1-D vector of contour values.
 As of 1.012. Displays an image from an ndarray with a FITS header.
 Uses C<CUNIT[12]> etc to make X & Y axes including labels.
 
+=item polylines
+
+As of 1.012. Draws polylines, with 2 arguments (C<$xy>, C<$pen>).
+The "pen" has value 0 for the last point in that polyline.
+
+  use PDL::Transform::Cartography;
+  use PDL::Graphics::Simple qw(pgswin);
+  $coast = earth_coast()->glue( 1, scalar graticule(15,1) );
+  $w = pgswin();
+  $w->plot(with => 'polylines', $coast->clean_lines);
+
 =item labels
 
 This places text annotations on the plot.  It requires three input
@@ -743,6 +754,7 @@ $plot_options->synonyms( {
 });
 our $plot_types = {
   points    => { args=>[1,2], ndims=>[1]   },
+  polylines => { args=>[2],   ndims=>[1,2] },
   lines     => { args=>[1,2], ndims=>[1]   },
   bins      => { args=>[1,2], ndims=>[1]   },
   circles   => { args=>[2,3], ndims=>[1]   },
@@ -958,6 +970,10 @@ sub _translate_plot {
       barf "Wrong dims for contours: need 2-D values, 1-D contour values"
         unless $args[0]->ndims == 2 and $args[1]->ndims == 1;
       ($xminmax, $yminmax) = ([0, $args[0]->dim(0)-1], [0, $args[0]->dim(1)-1]);
+    } elsif ($ptn eq 'polylines') { # not supposed to be compatible
+      barf "Wrong dims for contours: need 2-D values, 1-D contour values"
+        unless $args[0]->ndims == 2 and $args[1]->ndims == 1;
+      ($xminmax, $yminmax) = map [$_->minmax], $args[0]->using(0,1);
     } else {
       # Check that the PDL arguments all agree in a threading sense.
       # Since at least one type of args has an array ref in there, we have to

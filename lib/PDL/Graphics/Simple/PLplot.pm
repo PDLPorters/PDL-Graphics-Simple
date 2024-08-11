@@ -276,6 +276,14 @@ our $plplot_methods = {
 	my $dy = ($data->[1]->flat->slice("*1") + $dr->slice("*1") * $s)->flat;
 	$me->{obj}->xyplot( $dx, $dy, PLOTTYPE=>'LINE',%{$ppo});
     },
+    polylines => sub {
+      require PDL::ImageND;
+      my ($me,$ipo,$data,$ppo) = @_;
+      my ($xy, $pen) = @$data;
+      my $pi = $pen->eq(0)->which;
+      $me->{obj}->xyplot($_->dog, PLOTTYPE=>'LINE', %$ppo)
+        for PDL::ImageND::path_segs($pi, $xy->mv(0,-1));
+    },
     labels => sub {
 	my ($me, $ipo, $data, $ppo) = @_;
 

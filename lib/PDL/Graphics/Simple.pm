@@ -957,8 +957,10 @@ sub _translate_plot {
       my $cntr_cnt = 9;
       push @args, zeroes($cntr_cnt)->xlinvals($args[-1]->minmax);
     } elsif (defined($pt->{args}[1])) { # Add an index variable if needed
+      barf "First arg to '$ptn' must have at least $pt->{ndims}[0] dims"
+        if $args[0]->ndims < $pt->{ndims}[0];
       if ( $pt->{args}[1] - @args == 2 ) {
-        my @dims = ($args[0]->slice(":,:")->dims)[0,1];
+        my @dims = ($args[0]->dims)[0,1];
         unshift @args, xvals(@dims), yvals(@dims);
       }
       if ( $pt->{args}[1] - @args == 1 ) {

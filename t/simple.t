@@ -37,6 +37,10 @@ eval {
   PDL::Graphics::Simple::_translate_plot(undef, undef, with=>'NEVER_USED');
 };
 like $@, qr/unknown.*NEVER_USED/i;
+eval {
+  PDL::Graphics::Simple::_translate_plot(undef, undef, with=>'image', xvals(8));
+};
+like $@, qr/at least 2/i;
 eval { PDL::Graphics::Simple::_translate_plot(undef, undef) };
 like $@, qr/at least one argument/;
 eval { PDL::Graphics::Simple::_translate_plot(undef, undef, {}) };

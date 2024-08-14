@@ -689,6 +689,20 @@ as they are interpreted as 8 bits per plane colour values. E.g.:
   $image_data = rpic( 'my-image.png' )->mv(0,-1); # need RGB 3-dim last
   $w->image( $image_data );
 
+If you have a 2-D field of values that you would like to see with a heatmap:
+
+  use PDL::Graphics::ColorSpace;
+  sub as_heatmap {
+    my ($d) = @_;
+    my $max = $d->max;
+    die "as_heatmap: can't work if max == 0" if $max == 0;
+    $d /= $max; # negative OK
+    my $hue   = (1 - $d)*240;
+    $d = cat($hue, pdl(1), pdl(1));
+    (hsv_to_rgb($d->mv(-1,0)) * 255)->byte->mv(0,-1);
+  }
+  $w->image( as_heatmap(rvals 300,300) );
+
 =item contours
 
 As of 1.012. Draws contours. Takes a 2-D array of values, as (width x

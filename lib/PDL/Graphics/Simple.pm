@@ -964,8 +964,8 @@ sub _translate_plot {
 
     ##############################
     # Now check options
-    barf "plot style $ptn requires $pt->{args}[0] or $pt->{args}[1] columns; you gave ".(0+@args)
-      if @args != $pt->{args}[0] and @args != $pt->{args}[1];
+    barf "plot style $ptn requires ".join(" or ", @{$pt->{args}})." columns; you gave ".(0+@args)
+      if !grep @args == $_, @{$pt->{args}};
 
     if ($ptn eq 'contours' and @args == 1) {
       my $cntr_cnt = 9;

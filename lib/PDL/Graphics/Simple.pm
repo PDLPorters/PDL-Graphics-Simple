@@ -768,7 +768,7 @@ $plot_options->synonyms( {
 });
 our $plot_types = {
   points    => { args=>[1,2], ndims=>[1]   },
-  polylines => { args=>[2],   ndims=>[1,2] },
+  polylines => { args=>[1,2], ndims=>[1,2] },
   lines     => { args=>[1,2], ndims=>[1]   },
   bins      => { args=>[1,2], ndims=>[1]   },
   circles   => { args=>[2,3], ndims=>[1]   },
@@ -970,6 +970,10 @@ sub _translate_plot {
     if ($ptn eq 'contours' and @args == 1) {
       my $cntr_cnt = 9;
       push @args, zeroes($cntr_cnt)->xlinvals($args[-1]->minmax);
+    } elsif ($ptn eq 'polylines' and @args == 1) {
+      barf "Single-arg form of '$ptn' must have dim 0 of 3"
+        if $args[0]->dim(0) != 3;
+      @args = ($args[0]->slice('0:1'), $args[0]->slice('(2)'));
     } elsif (defined($pt->{args}[1])) { # Add an index variable if needed
       barf "First arg to '$ptn' must have at least $pt->{ndims}[0] dims"
         if $args[0]->ndims < $pt->{ndims}[0];

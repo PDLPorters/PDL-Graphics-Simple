@@ -58,8 +58,10 @@ for my $bounds (5, {}, [1..3], [1,1]) {
 { my @w; local $SIG{__WARN__} = sub {push @w, @_};
 eval { PDL::Graphics::Simple::_translate_plot(undef, undef, with=>'lines', pdl(1), pdl(1), pdl(1)) };
 like $@, qr/requires 1 or 2 columns/;
+eval { PDL::Graphics::Simple::_translate_plot(undef, undef, with=>'fits', pdl(1), pdl(1)) };
+like $@, qr/requires 1 columns/;
 eval { PDL::Graphics::Simple::_translate_plot(undef, undef, with=>'polylines', pdl(1)) };
-like $@, qr/requires 2 columns/;
+like $@, qr/Single-arg/;
 is "@w", "", "no warnings";
 }
 

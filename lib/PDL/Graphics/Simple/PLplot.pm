@@ -324,10 +324,11 @@ sub plot {
     unless( $ipo->{oplot} ) {
 	$me->{style} = 0;
 	$me->{logaxis} = $ipo->{logaxis};
-	$me->{multi_cur}++ if $me->{opt}{multi};
 	plsstrm($me->{obj}{STREAMNUMBER});
+	$me->{multi_cur} %= $me->{multi_n}, $me->{multi_cur}++
+	  if $me->{opt}{multi};
 	pladv($me->{multi_cur} || 1);
-	if (!$me->{multi_n} or $me->{multi_n}==1) {
+	if (!$me->{multi_n} or $me->{multi_cur}==1) {
 	    if ($me->{opt}->{type}=~ m/^i/) {
 		pleop();
 		plclear();

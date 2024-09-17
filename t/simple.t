@@ -161,50 +161,9 @@ for my $engine (@engines) {
       }
       $pgplot_ran ||= $engine eq 'pgplot';
 
-      eval { $w = PDL::Graphics::Simple->new(engine=>$engine, multi=>[3,2]) };
+      eval { $w = PDL::Graphics::Simple->new(engine=>$engine, multi=>[3,1], size=>[8,3]) };
       is($@, '', "constructor for $engine worked OK");
       isa_ok($w, 'PDL::Graphics::Simple', "constructor for $engine worked OK");
-
-##############################
-# Simple line & bin plot
-{
-my @args = PDL::Graphics::Simple::_translate_plot(@$w{qw(held keys)},
-  with=>'line', style=>0, $x10, $x10sqrt,
-  with=>'line', style=>0, $x10, $x10_12,
-  with=>'bins', $x10, $sin10,
-  {title=>"PDL: $engine engine, line & bin plots"}
-);
-delete $args[1]{yrange}; # so different sin can't cause spurious fails
-is_deeply \@args, [
-  [ 'line 1', 'line 2', 'bin 3' ],
-  {
-    'bounds' => undef, 'crange' => undef,
-    'justify' => 0, 'legend' => undef,
-    'logaxis' => '', 'oplot' => 0,
-    'title' => "PDL: $engine engine, line & bin plots", 'wedge' => '',
-    'xlabel' => undef, 'ylabel' => undef,
-    'xrange' => [ 0, 9 ],
-  },
-  [
-    { 'key' => undef, 'style' => 0, 'width' => undef, 'with' => 'lines' },
-    $x10, $x10sqrt,
-  ],
-  [
-    { 'key' => undef, 'style' => 0, 'width' => undef, 'with' => 'lines' },
-    $x10, $x10_12,
-  ],
-  [
-    { 'key' => undef, 'style' => undef, 'width' => undef, 'with' => 'bins' },
-    $x10, $sin10,
-  ]
-];
-}
-      eval { $w->plot(with=>'line', style=>0, $x10, $x10sqrt,
-		      with=>'line', style=>0, $x10, $x10_12,
-		      with=>'bins', style=>3, $sin10,
-		 {title=>"PDL: $engine engine, line & bin plots"}),
-      };
-      is($@, '', "plot succeeded\n");
 
 ##############################
 # Error bars plot
@@ -313,6 +272,58 @@ is_deeply \@args, [
       };
       is($@, '', "justified image and circles plot succeeded");
 
+      ask_yn qq{
+Testing $engine engine: You should see in a 3x1 grid:
+1) error bars (symmetric relative to each plotted point) and limit bars
+(asymmetric about each plotted point).
+2) a radial 11x11 "target" image and some superimposed "circles".
+Since the plot is not justified, the pixels in the target image should
+be oblong and the "circles" should be ellipses.
+3) the same plot as (2), but justified.  superimposed "circles".
+Since the plot is justified, the pixels in the target image should be
+square and the "circles" should really be circles.}, "plots look OK";
+
+##############################
+# Simple line & bin plot
+{
+my @args = PDL::Graphics::Simple::_translate_plot(@$w{qw(held keys)},
+  with=>'line', style=>0, $x10, $x10sqrt,
+  with=>'line', style=>0, $x10, $x10_12,
+  with=>'bins', $x10, $sin10,
+  {title=>"PDL: $engine engine, line & bin plots"}
+);
+delete $args[1]{yrange}; # so different sin can't cause spurious fails
+is_deeply \@args, [
+  [ 'line 1', 'line 2', 'bin 3' ],
+  {
+    'bounds' => undef, 'crange' => undef,
+    'justify' => 0, 'legend' => undef,
+    'logaxis' => '', 'oplot' => 0,
+    'title' => "PDL: $engine engine, line & bin plots", 'wedge' => '',
+    'xlabel' => undef, 'ylabel' => undef,
+    'xrange' => [ 0, 9 ],
+  },
+  [
+    { 'key' => undef, 'style' => 0, 'width' => undef, 'with' => 'lines' },
+    $x10, $x10sqrt,
+  ],
+  [
+    { 'key' => undef, 'style' => 0, 'width' => undef, 'with' => 'lines' },
+    $x10, $x10_12,
+  ],
+  [
+    { 'key' => undef, 'style' => undef, 'width' => undef, 'with' => 'bins' },
+    $x10, $sin10,
+  ]
+];
+}
+      eval { $w->plot(with=>'line', style=>0, $x10, $x10sqrt,
+		      with=>'line', style=>0, $x10, $x10_12,
+		      with=>'bins', style=>3, $sin10,
+		 {title=>"PDL: $engine engine, line & bin plots"}),
+      };
+      is($@, '', "plot succeeded\n");
+
 ##############################
 # Text
 {
@@ -376,21 +387,13 @@ is_deeply \@args, [
       is($@, '', "log scaling succeeded");
 
       ask_yn qq{
-Testing $engine engine: You should see in a 3x2 grid:
+Testing $engine engine: You should see in a 3x1 grid:
 1) 2 superposed line plots with same style and a bin plot with different,
 with x range from 0 to 9 and yrange from 0 to 9.
-2) error bars (symmetric relative to each plotted point) and limit bars
-(asymmetric about each plotted point).
-3) a radial 11x11 "target" image and some superimposed "circles".
-Since the plot is not justified, the pixels in the target image should
-be oblong and the "circles" should be ellipses.
-4) the same plot as (3), but justified.  superimposed "circles".
-Since the plot is justified, the pixels in the target image should be
-square and the "circles" should really be circles.
-5) "left-justified" text left aligned on x=0, "left-with-spaces" just
+2) "left-justified" text left aligned on x=0, "left-with-spaces" just
 right of x=1, "centered" centered on x=2, ">start with '>'" centered on
 x=3, and "right-justified" right-aligned on x=4.
-6) a simple logarithmically scaled plot, with appropriate title.}, "plots look OK";
+3) a simple logarithmically scaled plot, with appropriate title.}, "plots look OK";
 
 ##############################
 # Multiplot

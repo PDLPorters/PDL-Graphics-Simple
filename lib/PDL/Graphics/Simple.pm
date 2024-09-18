@@ -813,10 +813,12 @@ sub _fits_convert {
       $h->{$unit} ? "($h->{$unit})" : $unitdef
     );
   }
-  my ($xcoords, $ycoords) = ndcoords(map $data->dim($_), 0,1)->apply(t_fits($h, {ignore_rgb=>1}))->mv(0,-1)->dog;
+  my @dims01 = map $data->dim($_), 0,1;
+  $data = $data->map(t_identity(), \@dims01, $h); # resample removing rotation etc
+  my ($xcoords, $ycoords) = ndcoords(@dims01)->apply(t_fits($data->hdr, {ignore_rgb=>1}))->mv(0,-1)->dog;
   $new_opts{xrange} = [$xcoords->minmax] if !grep defined, @{$new_opts{xrange}};
   $new_opts{yrange} = [$ycoords->minmax] if !grep defined, @{$new_opts{yrange}};
-  ('image', \%new_opts, $xcoords, $ycoords);
+  ('image', \%new_opts, $data, $xcoords, $ycoords);
 }
 
 sub _translate_plot {

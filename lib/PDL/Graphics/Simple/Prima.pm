@@ -468,8 +468,8 @@ sub plot {
     for my $block (@_) {
       my $co = $block->[0];
       if ($co->{with} eq 'fits') {
-	($co->{with}, my $new_opts, my @coords) = PDL::Graphics::Simple::_fits_convert($block->[1], $ipo);
-	$block = [ $co, @coords, $block->[1] ];
+	($co->{with}, my $new_opts, my $new_img, my @coords) = PDL::Graphics::Simple::_fits_convert($block->[1], $ipo);
+	$block = [ $co, @coords, $new_img ];
 	@$ipo{keys %$new_opts} = values %$new_opts;
       }
     }

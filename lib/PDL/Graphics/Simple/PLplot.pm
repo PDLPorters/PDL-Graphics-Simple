@@ -363,7 +363,8 @@ sub plot {
 	$ppo->{LINEWIDTH} = $co->{width} if $co->{width};
 	my $with = $co->{with};
 	if ($with eq 'fits') {
-	  ($with, my $new_opts, my @coords) = PDL::Graphics::Simple::_fits_convert($data[0], $ipo);
+	  ($with, my $new_opts, my $new_img, my @coords) = PDL::Graphics::Simple::_fits_convert($data[0], $ipo);
+	  $data[-1] = $new_img;
 	  unshift @data, @coords;
 	  $ppo->{XLAB} = delete $new_opts->{xlabel};
 	  $ppo->{YLAB} = delete $new_opts->{ylabel};

@@ -4,6 +4,7 @@ use PDL::Graphics::Simple;
 use Test::More;
 use PDL;
 use PDL::Constants qw(PI);
+use File::Spec::Functions;
 
 my $tests_per_engine = 17;
 my @engines = $ENV{PDL_SIMPLE_ENGINE} || qw/plplot gnuplot pgplot prima/;
@@ -161,44 +162,19 @@ for my $engine (@engines) {
       }
       $pgplot_ran ||= $engine eq 'pgplot';
 
-      eval { $w = PDL::Graphics::Simple->new(engine=>$engine, multi=>[3,1], size=>[8,3]) };
+      eval { $w = PDL::Graphics::Simple->new(engine=>$engine, multi=>[2,2], size=>[6,6]) };
       is($@, '', "constructor for $engine worked OK");
       isa_ok($w, 'PDL::Graphics::Simple', "constructor for $engine worked OK");
 
 ##############################
-# Error bars plot
-{
-my @args = PDL::Graphics::Simple::_translate_plot(@$w{qw(held keys)},
-  with=>'errorbars', $x37_2, $x37sqrd, $x37,
-  with=>'limitbars', $x90, $sin90, $x90_2, $ones_90,
-  {title=>"PDL: $engine engine, error (rel.) & limit (abs.) bars"},
-);
-is_deeply \@args, [
-  [ 'errorbar 1', 'limitbar 2' ],
-  {
-    'bounds' => undef, 'crange' => undef,
-    'justify' => 0, 'legend' => undef,
-    'logaxis' => '', 'oplot' => 0,
-    'title' => "PDL: $engine engine, error (rel.) & limit (abs.) bars",
-    'wedge' => '',
-    'xlabel' => undef, 'ylabel' => undef,
-    'xrange' => [ 0, 89 ], 'yrange' => [ 0, 144 ]
-  },
-  [
-    { 'key' => undef, 'style' => undef, 'width' => undef, 'with' => 'errorbars' },
-    $x37_2, $x37sqrd, $x37,
-  ],
-  [
-    { 'key' => undef, 'style' => undef, 'width' => undef, 'with' => 'limitbars' },
-    $x90, $sin90, $x90_2, $ones_90,
-  ]
-];
-}
-      eval { $w->plot( with=>'errorbars', $x37_2, $x37sqrd, $x37,
-		       with=>'limitbars', $sin90, $x90_2, $ones_90,
-		       {title=>"PDL: $engine engine, error (rel.) & limit (abs.) bars"}
-		 ); };
-      is($@, '', "errorbar plot succeeded");
+# FITS plot of Europe
+my $europe = rfits(catfile(qw(t europe.fits)));
+      eval { $w->plot( with=>'image', $europe,
+        {title=>"PDL: $engine engine, Europe image"}) };
+      is($@, '', "image plot succeeded");
+      eval { $w->plot( with=>'fits', $europe,
+        {xrange=>[-20,20], yrange=>[40,80], title=>"Europe FITS", J=>0}) };
+      is($@, '', "FITS plot succeeded");
 
 ##############################
 # Image & circles plot
@@ -273,15 +249,50 @@ is_deeply \@args, [
       is($@, '', "justified image and circles plot succeeded");
 
       ask_yn qq{
-Testing $engine engine: You should see in a 3x1 grid:
-1) error bars (symmetric relative to each plotted point) and limit bars
-(asymmetric about each plotted point).
-2) a radial 11x11 "target" image and some superimposed "circles".
+Testing $engine engine: You should see in a 2x2 grid:
+1) an image of Europe rotated by 30 degrees clockwise
+2) the same image, but rectified for scientific coordinates so upright again
+3) a radial 11x11 "target" image and some superimposed "circles".
 Since the plot is not justified, the pixels in the target image should
 be oblong and the "circles" should be ellipses.
-3) the same plot as (2), but justified.  superimposed "circles".
+4) the same plot as (2), but justified.  superimposed "circles".
 Since the plot is justified, the pixels in the target image should be
 square and the "circles" should really be circles.}, "plots look OK";
+
+##############################
+# Error bars plot
+{
+my @args = PDL::Graphics::Simple::_translate_plot(@$w{qw(held keys)},
+  with=>'errorbars', $x37_2, $x37sqrd, $x37,
+  with=>'limitbars', $x90, $sin90, $x90_2, $ones_90,
+  {title=>"PDL: $engine engine, error (rel.) & limit (abs.) bars"},
+);
+is_deeply \@args, [
+  [ 'errorbar 1', 'limitbar 2' ],
+  {
+    'bounds' => undef, 'crange' => undef,
+    'justify' => 0, 'legend' => undef,
+    'logaxis' => '', 'oplot' => 0,
+    'title' => "PDL: $engine engine, error (rel.) & limit (abs.) bars",
+    'wedge' => '',
+    'xlabel' => undef, 'ylabel' => undef,
+    'xrange' => [ 0, 89 ], 'yrange' => [ 0, 144 ]
+  },
+  [
+    { 'key' => undef, 'style' => undef, 'width' => undef, 'with' => 'errorbars' },
+    $x37_2, $x37sqrd, $x37,
+  ],
+  [
+    { 'key' => undef, 'style' => undef, 'width' => undef, 'with' => 'limitbars' },
+    $x90, $sin90, $x90_2, $ones_90,
+  ]
+];
+}
+      eval { $w->plot( with=>'errorbars', $x37_2, $x37sqrd, $x37,
+		       with=>'limitbars', $sin90, $x90_2, $ones_90,
+		       {title=>"PDL: $engine engine, error (rel.) & limit (abs.) bars"}
+		 ); };
+      is($@, '', "errorbar plot succeeded");
 
 ##############################
 # Simple line & bin plot
@@ -387,13 +398,15 @@ is_deeply \@args, [
       is($@, '', "log scaling succeeded");
 
       ask_yn qq{
-Testing $engine engine: You should see in a 3x1 grid:
-1) 2 superposed line plots with same style and a bin plot with different,
+Testing $engine engine: You should see in a 2x2 grid:
+1) error bars (symmetric relative to each plotted point) and limit bars
+(asymmetric about each plotted point).
+2) 2 superposed line plots with same style and a bin plot with different,
 with x range from 0 to 9 and yrange from 0 to 9.
-2) "left-justified" text left aligned on x=0, "left-with-spaces" just
+3) "left-justified" text left aligned on x=0, "left-with-spaces" just
 right of x=1, "centered" centered on x=2, ">start with '>'" centered on
 x=3, and "right-justified" right-aligned on x=4.
-3) a simple logarithmically scaled plot, with appropriate title.}, "plots look OK";
+4) a simple logarithmically scaled plot, with appropriate title.}, "plots look OK";
 
 ##############################
 # Multiplot

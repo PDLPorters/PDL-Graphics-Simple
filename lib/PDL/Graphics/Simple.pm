@@ -277,7 +277,7 @@ $VERSION =~ s/_//g;
 ##############################
 # Exporting
 use base 'Exporter';
-our @EXPORT = qw(pgswin line points imag cont hold release erase);
+our @EXPORT = qw(pgswin line points bins imag cont hold release erase);
 our @EXPORT_OK = (@EXPORT, qw(image plot));
 
 our $API_VERSION = '1.012'; # PGS version where that API started
@@ -1112,7 +1112,7 @@ sub oplot {
     plot(@_);
 }
 
-=head2 line, points, image, imag, cont
+=head2 line, points, bins, image, imag, cont
 
 =for usage
 

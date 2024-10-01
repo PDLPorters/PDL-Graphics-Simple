@@ -1,3 +1,5 @@
+- exception when oplot in multiplot mode
+
 1.013 2024-09-24
 - adjust tests to avoid spurious "UNKNOWN" results
 

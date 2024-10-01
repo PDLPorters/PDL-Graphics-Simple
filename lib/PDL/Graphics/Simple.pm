@@ -415,6 +415,9 @@ a single array ref containing (nx, ny).  Subsequent calls to plot
 send graphics to subsequent locations on the window.  The ordering
 is always horizontal first, and left-to-right, top-to-bottom.
 
+B<NOTE> for multiplotting: C<oplot> does not work and will cause an
+exception. This is a limitation imposed by Gnuplot.
+
 =back
 
 =cut
@@ -849,8 +852,7 @@ sub _translate_plot {
       @$po{keys %$h} = values %$h;
   }
 
-  my $called_from_imag = $po->{called_from_imag};
-  delete $po->{called_from_imag};
+  my $called_from_imag = delete $po->{called_from_imag};
 
   $po = $plot_options->options($po);
   $po->{oplot} = 1 if $held;
@@ -949,7 +951,6 @@ sub _translate_plot {
         )  {
         push @args, shift;
     }
-
 
     ##############################
     # Most array refs get immediately converted to
@@ -1078,6 +1079,7 @@ sub _translate_plot {
 sub plot {
   my $obj = &_invocant_or_global;
   my @args = _translate_plot(@$obj{qw(held keys)}, @_);
+  barf "Can't oplot in multiplot" if $obj->{params}{multi} and $args[1]{oplot};
   $obj->{obj}{keys} = $obj->{keys} = shift @args;
   $obj->{obj}->plot(@args);
 }
@@ -1099,16 +1101,8 @@ so that the plot will be overlain on the previous one.
 =cut
 
 sub oplot {
-    my $h;
-
-    if(ref($_[$#_]) eq 'HASH') {
-	$h = $_[$#_];
-    } else {
-	$h = {};
-	push @_, $h;
-    }
-    $h->{replot} = 1;
-
+    push @_, {} if ref($_[-1]) ne 'HASH';
+    $_[-1]{oplot} = 1;
     plot(@_);
 }
 

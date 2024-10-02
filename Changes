@@ -1,4 +1,5 @@
 - exception when oplot in multiplot mode
+- oplot now leaves {x,y}range alone
 
 1.013 2024-09-24
 - adjust tests to avoid spurious "UNKNOWN" results

@@ -168,6 +168,17 @@ for my $engine (@engines) {
       }
       $pgplot_ran ||= $engine eq 'pgplot';
 
+# overplot
+      eval { $w=PDL::Graphics::Simple->new(engine=>$engine); };
+      is($@, '', "window open OK");
+      my ($sq1, $p1) = (pdl('-3 1; -1 1; -1 -1; -3 -1; -3 1'), pdl('1 1 1 1 0'));
+      $w->plot(with=>'polylines', $sq1, $p1,
+        {xrange=>[-4,4],yrange=>[-4,4],j=>1});
+      my $sq2 = pdl('1 1; 3 1; 3 -1; 1 -1; 1 1');
+      $w->oplot(with=>'polylines', $sq2, $p1);
+      ask_yn
+qq{Testing $engine engine: You should see 2 squares}, "oplot OK";
+
       eval { $w = PDL::Graphics::Simple->new(engine=>$engine, multi=>[2,2], size=>[6,6]) };
       is($@, '', "constructor for $engine worked OK");
       isa_ok($w, 'PDL::Graphics::Simple', "constructor for $engine worked OK");

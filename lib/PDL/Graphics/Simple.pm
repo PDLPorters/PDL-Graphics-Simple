@@ -1509,7 +1509,12 @@ C<oplot>, C<xrange>, C<yrange>, C<crange>, C<wedge>, and C<justify>
 parameters are always both present and defined.
 
 If the C<oplot> plot option is set, then the plot should be overlain on
-a previous plot - otherwise the module should display a fresh plot.
+a previous plot, not losing any range settings, nor obeying any given.
+B<NOTE> that if any data given to the original plot or any overplots might
+be changed before plot updates happen, it is the user's responsibility
+to pass in copies, since some engines (Prima and Gnuplot) only store
+data by reference for performance reasons.
+Otherwise the module should display a fresh plot.
 
 Each curve block consists of an ARRAY ref with a hash in the 0 element
 and all required data in the following elements, one PDL per

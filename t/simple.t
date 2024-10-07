@@ -96,7 +96,6 @@ is_deeply \@args, [
 ];
 }
 eval { $a = xvals(50); lines $a sin($a/3), {xlabel=>"Abscissa", ylabel=>"Ordinate"} };
-plan skip_all => 'No plotting engines installed' if $@ =~ /Sorry, all known/;
 is($@, '', "simple lines plot succeeded");
 ok( defined($PDL::Graphics::Simple::global_object), "Global convenience object got spontaneously set" );
 ask_yn q{  test>  $a = xvals(50); lines $a sin($a/3);

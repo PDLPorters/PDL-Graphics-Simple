@@ -31,7 +31,7 @@ jobs:
         # - ''        : test all of the above
         pdl-simple-engine: ['']
         os: [ubuntu-latest]
-        perl-version: ['5.10', '5.14', '5.20']
+        perl-version: ['5.16', '5.20']
         include:
           # Test each on ubuntu separately.
           - perl-version: '5.30'
